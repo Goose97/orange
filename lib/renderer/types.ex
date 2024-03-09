@@ -1,0 +1,53 @@
+defmodule Orange.Renderer.Cell do
+  @moduledoc """
+  A cell is a single unit of the buffer. It consists of a character and styling information: foreground, background color and text modifiers
+  """
+
+  defstruct [:foreground, :background, modifiers: [], character: " "]
+end
+
+defmodule Orange.Renderer.Box do
+  @moduledoc """
+  A box is a primary unit of the render tree. A box children can either be:
+  - A list of boxes
+  - A single text
+  """
+
+  @type t :: %__MODULE__{
+          children: [t] | binary,
+          padding:
+            {top :: non_neg_integer, right :: non_neg_integer, bottom :: non_neg_integer,
+             left :: non_neg_integer},
+          border: {top :: boolean, right :: boolean, bottom :: boolean, left :: boolean} | nil,
+          style: [text_modifiers: [atom], background_color: :atom, color: :atom],
+          width: non_neg_integer | nil,
+          height: non_neg_integer | nil,
+          layout_direction: :row | :column,
+          scroll: {x :: non_neg_integer, y :: non_neg_integer},
+          outer_area: Orange.Renderer.Area.t(),
+          inner_area: Orange.Renderer.Area.t()
+        }
+  defstruct [
+    :children,
+    :padding,
+    :border,
+    :style,
+    :width,
+    :height,
+    :layout_direction,
+    :scroll,
+    :outer_area,
+    :inner_area,
+    :title
+  ]
+end
+
+defmodule Orange.Renderer.Area do
+  @type t :: %__MODULE__{
+          x: non_neg_integer,
+          y: non_neg_integer,
+          width: non_neg_integer,
+          height: non_neg_integer
+        }
+  defstruct [:x, :y, :width, :height]
+end
