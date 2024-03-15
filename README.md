@@ -1,21 +1,74 @@
-# Orange
+Orange is a framework to build TUI (terminal UI) applications in Elixir. Its high-level features are:
 
-**TODO: Add description**
+    * A DSL to describe UI component. The syntax is inspired by React. For example, an snippet like this:
 
-## Installation
+    ```elixir
+    rect style: [border: true, padding: {0, 1}, height: 10, width: 20] do
+      span style: [color: :red] do
+        "Hello"
+      end
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `orange` to your list of dependencies in `mix.exs`:
+      span do
+        "World"
+      end
+    end
+    ```
+
+    will render this:
+
+    * Support handling terminal events: currently, only keyboard events are supported
+
+    * Support custom components: you can create component from builtin primitives like rect, line, span. Custom components can encapsulate state and logic
+
+    * A collection of UI components: Input, VerticalScrollRect, ...
+
+## Examples
+
+First, we need to create a root component:
 
 ```elixir
-def deps do
-  [
-    {:orange, "~> 0.1.0"}
-  ]
+defmodule Counter.App do
+  @behaviour Orange.Component
+
+  import Orange.Macro
+
+  @impl true
+  # Each component can have an internal state
+  # Also, a component can subscribe to receive terminal events
+  def init(_attrs), do: %{state: %{count: 0}, events_subscription: true}
+
+  @impl true
+  def handle_event(event, state, _attrs) do
+    case event do
+      %Orange.Terminal.KeyEvent{code: :up} ->
+        %{state | count: state.count + 1}
+
+      %Orange.Terminal.KeyEvent{code: :down} ->
+        %{state | count: state.count - 1}
+
+      %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
+        # Quit the application
+        Orange.stop()
+        state
+
+      _ ->
+        state
+    end
+  end
+
+  @impl true
+  def render(state, _attrs, _update) do
+    rect style: [border: true, padding: 1] do
+      "Counter: #{state.count}"
+    end
+  end
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/orange>.
+Then start the application:
 
+```elixir
+Orange.start(Counter.App)
+```
+
+For more examples, see [here](/examples).
