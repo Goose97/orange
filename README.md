@@ -1,6 +1,6 @@
 Orange is a framework to build TUI (terminal UI) applications in Elixir. Its high-level features are:
 
-    * A DSL to describe UI component. The syntax is inspired by React. For example, an snippet like this:
+  * A DSL to describe UI component. The syntax is inspired by React. For example, an snippet like this:
 
     ```elixir
     rect style: [border: true, padding: {0, 1}, height: 10, width: 20] do
@@ -16,11 +16,13 @@ Orange is a framework to build TUI (terminal UI) applications in Elixir. Its hig
 
     will render this:
 
-    * Support handling terminal events: currently, only keyboard events are supported
+    ![Rendered result](https://github.com/Goose97/orange/blob/main/.github/assets/example_syntax.png)
 
-    * Support custom components: you can create component from builtin primitives like rect, line, span. Custom components can encapsulate state and logic
+  * Support handling terminal events: currently, only keyboard events are supported.
 
-    * A collection of UI components: Input, VerticalScrollRect, ...
+  * Support custom components: you can create component from builtin primitives like rect, line, span. Custom components can encapsulate state and logic.
+
+  * A collection of UI components: Input, VerticalScrollRect, ...
 
 ## Examples
 
@@ -40,9 +42,11 @@ defmodule Counter.App do
   @impl true
   def handle_event(event, state, _attrs) do
     case event do
+      # Arrow up to increase counter
       %Orange.Terminal.KeyEvent{code: :up} ->
         %{state | count: state.count + 1}
 
+      # Arrow down to decrease counter
       %Orange.Terminal.KeyEvent{code: :down} ->
         %{state | count: state.count - 1}
 
