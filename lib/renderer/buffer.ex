@@ -1,7 +1,7 @@
 defmodule Orange.Renderer.Buffer do
-  @moduledoc """
-  All rendering is done through a buffer. A buffer is a 2D array of cells
-  """
+  @moduledoc false
+
+  # All rendering should be done through a buffer. A buffer is a 2D array of cells
 
   alias Orange.Renderer
 

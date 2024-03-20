@@ -1,4 +1,6 @@
 defmodule Orange.Runtime.EventManager do
+  @moduledoc false
+
   alias Orange.{Terminal, Runtime}
 
   @state __MODULE__.State

@@ -1,7 +1,5 @@
 defmodule Orange.Runtime.ComponentRegistry do
-  @moduledoc """
-  Store component states and origin module
-  """
+  @moduledoc false
 
   @storage __MODULE__.Storage
 

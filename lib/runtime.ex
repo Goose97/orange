@@ -49,12 +49,10 @@ defmodule Orange.Runtime do
   end
 
   defp render_loop(root, {previous_tree, previous_buffer}, opts) do
-    :persistent_term.put({__MODULE__, :mounting_components}, [])
-    :persistent_term.put({__MODULE__, :unmounting_components}, [])
+    {current_tree, mounting_components, unmounting_components} =
+      to_component_tree(root, previous_tree)
 
-    current_tree = to_component_tree(root, previous_tree)
-
-    :persistent_term.put({__MODULE__, :component_tree}, current_tree)
+    Process.put({__MODULE__, :component_tree}, current_tree)
 
     {width, height} = opts[:terminal_size]
 
@@ -64,11 +62,8 @@ defmodule Orange.Runtime do
 
     terminal_impl().draw(current_buffer, previous_buffer)
 
-    :persistent_term.get({__MODULE__, :mounting_components})
-    |> after_mount()
-
-    :persistent_term.get({__MODULE__, :unmounting_components})
-    |> after_unmount()
+    after_mount(mounting_components)
+    after_unmount(unmounting_components)
 
     # Block waiting for re-rendering triggers:
     # a. Events from the event manager
@@ -110,7 +105,18 @@ defmodule Orange.Runtime do
   #    node is a custom component, copy the state from the previous node.
   #   b. If the nodes are of different types, expand the current node as new
   defp to_component_tree(component, previous_tree) do
-    if previous_tree, do: expand_with_prev(component, previous_tree), else: expand_new(component)
+    Process.put({__MODULE__, :mounting_components}, [])
+    Process.put({__MODULE__, :unmounting_components}, [])
+
+    expanded_tree =
+      if previous_tree,
+        do: expand_with_prev(component, previous_tree),
+        else: expand_new(component)
+
+    mounting_components = Process.get({__MODULE__, :mounting_components})
+    unmounting_components = Process.get({__MODULE__, :unmounting_components})
+
+    {expanded_tree, mounting_components, unmounting_components}
   end
 
   defp expand_new(%Span{} = component), do: component
@@ -139,13 +145,13 @@ defmodule Orange.Runtime do
   end
 
   defp add_to_mounting_list(component, opts) do
-    mounted = :persistent_term.get({__MODULE__, :mounting_components})
-    :persistent_term.put({__MODULE__, :mounting_components}, [{component, opts} | mounted])
+    mounted = Process.get({__MODULE__, :mounting_components})
+    Process.put({__MODULE__, :mounting_components}, [{component, opts} | mounted])
   end
 
   defp add_to_unmounting_list(%CustomComponent{} = component) do
-    mounted = :persistent_term.get({__MODULE__, :unmounting_components})
-    :persistent_term.put({__MODULE__, :unmounting_components}, [component | mounted])
+    mounted = Process.get({__MODULE__, :unmounting_components})
+    Process.put({__MODULE__, :unmounting_components}, [component | mounted])
   end
 
   defp add_to_unmounting_list(_component), do: :noop
@@ -256,7 +262,7 @@ defmodule Orange.Runtime do
   def unfocus(component_id), do: find_component_and_apply!(component_id, :unfocus)
 
   defp find_component_and_apply!(component_id, function) do
-    component_tree = :persistent_term.get({__MODULE__, :component_tree})
+    component_tree = Process.get({__MODULE__, :component_tree})
 
     case find_by_id(component_tree, component_id) do
       nil ->

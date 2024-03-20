@@ -1,17 +1,15 @@
 defmodule Orange.Renderer.Cell do
-  @moduledoc """
-  A cell is a single unit of the buffer. It consists of a character and styling information: foreground, background color and text modifiers
-  """
+  @moduledoc false
 
   defstruct [:foreground, :background, modifiers: [], character: " "]
 end
 
 defmodule Orange.Renderer.Box do
-  @moduledoc """
-  A box is a primary unit of the render tree. A box children can either be:
-  - A list of boxes
-  - A single text
-  """
+  @moduledoc false
+
+  # Boxes are builing blocks of the render tree. A box children can either be:
+  # - A list of boxes
+  # - A single text
 
   @type t :: %__MODULE__{
           children: [t] | binary,
@@ -43,6 +41,8 @@ defmodule Orange.Renderer.Box do
 end
 
 defmodule Orange.Renderer.Area do
+  @moduledoc false
+
   @type t :: %__MODULE__{
           x: non_neg_integer,
           y: non_neg_integer,

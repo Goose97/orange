@@ -1,7 +1,6 @@
 defmodule Orange.Terminal do
   @doc """
-  Renders a buffer to the terminal. If previous_buffer is provided, it will only draw
-  the diff between the two buffers
+  Provides API to interact with the terminal.
   """
 
   alias Orange.Renderer.{Cell, Buffer}
@@ -20,6 +19,9 @@ defmodule Orange.Terminal do
 
   def draw(buffer, previous_buffer \\ nil)
 
+  @doc """
+  Draws the buffer to the terminal. If a previous buffer is provided, it will only draw the diff between the two buffers.
+  """
   def draw(buffer, nil) do
     cells =
       buffer.rows
@@ -65,33 +67,54 @@ defmodule Orange.Terminal do
     :ok
   end
 
+  @doc """
+  Polls the terminal for events.
+  """
   defdelegate poll_event(), to: __MODULE__.Binding
 
+  @doc """
+  Enter terminal alternate screen.
+  """
   def enter_alternate_screen() do
     __MODULE__.Binding.enter_alternate_screen()
     :ok
   end
 
+  @doc """
+  Leave terminal alternate screen.
+  """
   def leave_alternate_screen() do
     __MODULE__.Binding.leave_alternate_screen()
     :ok
   end
 
+  @doc """
+  Enable terminal raw mode.
+  """
   def enable_raw_mode() do
     __MODULE__.Binding.enable_raw_mode()
     :ok
   end
 
+  @doc """
+  Disable terminal raw mode.
+  """
   def disable_raw_mode() do
     __MODULE__.Binding.disable_raw_mode()
     :ok
   end
 
+  @doc """
+  Show terminal cursor.
+  """
   def show_cursor() do
     __MODULE__.Binding.show_cursor()
     :ok
   end
 
+  @doc """
+  Hide terminal cursor.
+  """
   def hide_cursor() do
     __MODULE__.Binding.hide_cursor()
     :ok
@@ -100,6 +123,8 @@ defmodule Orange.Terminal do
   defdelegate terminal_size(), to: __MODULE__.Binding
 
   defmodule Binding do
+    @moduledoc false
+
     use Rustler, otp_app: :orange, crate: "orange_terminal_binding"
 
     def draw(_buffer), do: :erlang.nif_error(:nif_not_loaded)

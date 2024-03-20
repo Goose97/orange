@@ -1,4 +1,6 @@
 defmodule Orange.Terminal.KeyEvent do
+  @moduledoc false
+
   @type key_code ::
           :backspace
           | :enter

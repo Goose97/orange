@@ -1,4 +1,6 @@
 defmodule Orange.Renderer do
+  @moduledoc false
+
   alias __MODULE__.Buffer
   alias Orange.{CustomComponent, Rect, Line, Span, Cursor}
 

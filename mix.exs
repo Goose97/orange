@@ -30,8 +30,9 @@ defmodule Orange.MixProject do
     [
       {:rustler, "~> 0.31.0"},
       {:mox, "~> 1.1", only: :test},
-      {:eflambe, "~> 0.3.0", only: :dev},
-      {:benchee, "~> 1.3.0", only: :dev}
+      {:eflambe, "~> 0.3.0", only: :dev, runtime: false},
+      {:benchee, "~> 1.3.0", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.31", only: :dev, runtime: false}
     ]
   end
 end

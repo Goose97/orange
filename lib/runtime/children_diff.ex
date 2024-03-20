@@ -1,13 +1,13 @@
 defmodule Orange.Runtime.ChildrenDiff do
-  @moduledoc """
-  Calculate the diff between two lists of children
-  The algorithm is as follows:
-  1. Find the Longest Common Subsequence (LCS) between the two lists
-  2. Iterate the current list, child present in the LCS is considered as old child, otherwise it's new
+  @moduledoc false
 
-  To simplify the algorithm, we consider that stateless elements (like Span, Line) are always new.
-  This means the children will be rerendered from scratch every time
-  """
+  # Calculate the diff between two lists of children
+  # The algorithm is as follows:
+  # 1. Find the Longest Common Subsequence (LCS) between the two lists
+  # 2. Iterate the current list, child present in the LCS is considered as old child, otherwise it's new
+  #
+  # To simplify the algorithm, we consider that stateless elements (like Span, Line) are always new.
+  # This means that these children will be re-rendered from scratch every time
 
   alias Orange.{Span, Line, Rect, CustomComponent}
 
