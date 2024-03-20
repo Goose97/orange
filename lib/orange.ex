@@ -4,7 +4,15 @@ defmodule Orange do
 
   The root component must be a custom component.
   """
-  defdelegate start(element), to: Orange.Runtime
+  def start(element) do
+    {:ok, pid} = Orange.Runtime.start(element)
+    ref = Process.monitor(pid)
+
+    # Wait for the runtime to stop with `stop/0`
+    receive do
+      {:DOWN, ^ref, :process, _pid, _reason} -> :ok
+    end
+  end
 
   @doc """
   Stop the runtime and exit the application

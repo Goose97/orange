@@ -1,24 +1,34 @@
 defmodule Orange.Runtime.EventManager do
   @moduledoc false
+  # Manage event subscribers. Dispatch events to all subscribers with `dispatch_event/1`
 
-  alias Orange.{Terminal, Runtime}
+  defmodule Behaviour do
+    @callback subscribe(reference()) :: any()
+    @callback unsubscribe(reference()) :: any()
+    @callback focus(reference()) :: any()
+    @callback unfocus(reference()) :: any()
+    @callback dispatch_event(Orange.Terminal.KeyEvent.t()) :: any()
+  end
 
   @state __MODULE__.State
+  @behaviour __MODULE__.Behaviour
 
-  @callback init() :: any()
-  @callback subscribe(reference()) :: any()
-  @callback unsubscribe(reference()) :: any()
-  @callback focus(reference()) :: any()
-  @callback unfocus(reference()) :: any()
-  @callback start_background_event_poller() :: any()
-  @callback dispatch_event(Orange.Terminal.KeyEvent.t()) :: any()
+  alias Orange.Runtime
 
-  @behaviour __MODULE__
+  def child_spec(_) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start, []}
+    }
+  end
 
-  def init() do
+  def start() do
     :ets.new(@state, [:named_table, :set, :public])
     :ets.insert(@state, {:subscribers, MapSet.new()})
     :ets.insert(@state, {:focus, nil})
+
+    # Initialize without registering to the supervisor
+    :ignore
   end
 
   def subscribe(component_ref) do
@@ -49,17 +59,6 @@ defmodule Orange.Runtime.EventManager do
       do: :ets.update_element(@state, :focus, {2, nil})
   end
 
-  def start_background_event_poller() do
-    parent = self()
-    Task.start(fn -> poll_event(parent) end)
-  end
-
-  defp poll_event(parent) do
-    event = terminal_impl().poll_event()
-    send(parent, {:event, event})
-    poll_event(parent)
-  end
-
   @doc """
   Dispatch event to subscribers
   """
@@ -87,6 +86,4 @@ defmodule Orange.Runtime.EventManager do
       MapSet.to_list(subscribers)
     end
   end
-
-  defp terminal_impl(), do: Application.get_env(:orange, :terminal, Terminal)
 end

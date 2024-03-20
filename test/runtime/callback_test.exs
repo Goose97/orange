@@ -2,15 +2,11 @@ defmodule Orange.Runtime.CallbackTest do
   use ExUnit.Case
   import Mox
 
-  alias Orange.{Runtime, Terminal}
-  alias Orange.RuntimeTestHelper
+  alias Orange.{Terminal, RuntimeTestHelper}
 
   setup_all do
     Mox.defmock(Orange.MockTerminal, for: Terminal)
     Application.put_env(:orange, :terminal, Orange.MockTerminal)
-
-    Mox.defmock(Orange.Runtime.MockEventManager, for: Runtime.EventManager)
-    Application.put_env(:orange, :event_manager, Orange.Runtime.MockEventManager)
 
     :ok
   end
@@ -20,10 +16,7 @@ defmodule Orange.Runtime.CallbackTest do
 
   test "triggers after_mount/3 callback" do
     RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {5, 5}
-    )
-
-    RuntimeTestHelper.setup_mock_event_manager(Orange.Runtime.MockEventManager,
+      terminal_size: {5, 5},
       events: [
         # Quit
         %Terminal.KeyEvent{code: {:char, "q"}}
@@ -39,10 +32,7 @@ defmodule Orange.Runtime.CallbackTest do
 
   test "triggers after_unmount/3 callback" do
     RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {5, 5}
-    )
-
-    RuntimeTestHelper.setup_mock_event_manager(Orange.Runtime.MockEventManager,
+      terminal_size: {5, 5},
       events: [
         # Remove the second counter
         %Terminal.KeyEvent{code: {:char, "x"}},
@@ -73,7 +63,7 @@ defmodule Orange.Runtime.CallbackTest do
     def handle_event(event, state, _attrs) do
       case event do
         %Terminal.KeyEvent{code: {:char, "q"}} ->
-          throw(:stop)
+          Orange.stop()
           state
 
         _ ->
@@ -116,7 +106,7 @@ defmodule Orange.Runtime.CallbackTest do
           %{state | remove: true}
 
         %Terminal.KeyEvent{code: {:char, "q"}} ->
-          throw(:stop)
+          Orange.stop()
           state
 
         _ ->

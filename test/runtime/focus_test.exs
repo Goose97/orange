@@ -3,15 +3,11 @@ defmodule Orange.Runtime.FocusTest do
   import Mox
 
   alias Orange.Renderer.Buffer
-  alias Orange.{Runtime, Terminal}
-  alias Orange.RuntimeTestHelper
+  alias Orange.{Terminal, RuntimeTestHelper}
 
   setup_all do
     Mox.defmock(Orange.MockTerminal, for: Terminal)
     Application.put_env(:orange, :terminal, Orange.MockTerminal)
-
-    Mox.defmock(Orange.Runtime.MockEventManager, for: Runtime.EventManager)
-    Application.put_env(:orange, :event_manager, Orange.Runtime.MockEventManager)
 
     :ok
   end
@@ -21,10 +17,7 @@ defmodule Orange.Runtime.FocusTest do
 
   test "focused components receive events and prevent other components from receiving events" do
     RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6}
-    )
-
-    RuntimeTestHelper.setup_mock_event_manager(Orange.Runtime.MockEventManager,
+      terminal_size: {20, 6},
       events: [
         # Increase both counters by one
         %Terminal.KeyEvent{code: :up},
@@ -78,10 +71,7 @@ defmodule Orange.Runtime.FocusTest do
 
   test "unfocus the focused component and all previously subscribed components receive events again" do
     RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6}
-    )
-
-    RuntimeTestHelper.setup_mock_event_manager(Orange.Runtime.MockEventManager,
+      terminal_size: {20, 6},
       events: [
         # Increase both counters by one
         %Terminal.KeyEvent{code: :up},
@@ -179,7 +169,7 @@ defmodule Orange.Runtime.FocusTest do
           state
 
         %Terminal.KeyEvent{code: {:char, "q"}} ->
-          throw(:stop)
+          Orange.stop()
           state
 
         _ ->
@@ -213,7 +203,7 @@ defmodule Orange.Runtime.FocusTest do
           state
 
         %Terminal.KeyEvent{code: {:char, "q"}} ->
-          throw(:stop)
+          Orange.stop()
           state
 
         _ ->

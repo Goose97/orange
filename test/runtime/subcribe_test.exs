@@ -3,15 +3,11 @@ defmodule Orange.Runtime.SubscribeTest do
   import Mox
 
   alias Orange.Renderer.Buffer
-  alias Orange.{Runtime, Terminal}
-  alias Orange.RuntimeTestHelper
+  alias Orange.{Terminal, RuntimeTestHelper}
 
   setup_all do
     Mox.defmock(Orange.MockTerminal, for: Terminal)
     Application.put_env(:orange, :terminal, Orange.MockTerminal)
-
-    Mox.defmock(Orange.Runtime.MockEventManager, for: Runtime.EventManager)
-    Application.put_env(:orange, :event_manager, Orange.Runtime.MockEventManager)
 
     :ok
   end
@@ -21,10 +17,7 @@ defmodule Orange.Runtime.SubscribeTest do
 
   test "render components and subscribe to events" do
     RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6}
-    )
-
-    RuntimeTestHelper.setup_mock_event_manager(Orange.Runtime.MockEventManager,
+      terminal_size: {20, 6},
       events: [
         # Increase by one
         %Terminal.KeyEvent{code: :up},
@@ -70,10 +63,7 @@ defmodule Orange.Runtime.SubscribeTest do
 
   test "unsubcribed components don't receive events" do
     RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6}
-    )
-
-    RuntimeTestHelper.setup_mock_event_manager(Orange.Runtime.MockEventManager,
+      terminal_size: {20, 6},
       events: [
         # Increase by one
         %Terminal.KeyEvent{code: :up},
@@ -144,7 +134,7 @@ defmodule Orange.Runtime.SubscribeTest do
           state - 1
 
         %Terminal.KeyEvent{code: {:char, "q"}} ->
-          throw(:stop)
+          Orange.stop()
           state
 
         _ ->
@@ -176,7 +166,7 @@ defmodule Orange.Runtime.SubscribeTest do
           state
 
         %Terminal.KeyEvent{code: {:char, "q"}} ->
-          throw(:stop)
+          Orange.stop()
           state
 
         _ ->
