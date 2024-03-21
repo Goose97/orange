@@ -1,11 +1,7 @@
 defmodule Orange.Runtime.ComponentRegistry do
   @moduledoc false
 
-  @storage __MODULE__.Storage
-
   def init() do
-    :ets.new(@storage, [:named_table, :set, :public])
-    :ets.insert(@storage, {:state_version_counter, 0})
     Process.put({:component, :state_version_counter}, :atomics.new(1, []))
   end
 

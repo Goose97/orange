@@ -21,8 +21,6 @@ defmodule Orange.Runtime.RenderLoop do
     state = %{
       root: normalize_custom_component(root),
       terminal_size: terminal_impl().terminal_size(),
-      component_registry: %{},
-      state_version_counter: 0,
       previous_tree: nil,
       previous_buffer: nil
     }
@@ -52,6 +50,11 @@ defmodule Orange.Runtime.RenderLoop do
 
   @impl true
   def handle_cast({:update_state, ref, callback_or_value}, state) do
+    process_update(ref, callback_or_value)
+    {:noreply, state}
+  end
+
+  defp process_update(ref, callback_or_value) do
     %{state: component_state} = Runtime.ComponentRegistry.get(ref)
 
     new_component_state =
@@ -64,8 +67,6 @@ defmodule Orange.Runtime.RenderLoop do
     # We perform re-render asynchronously. This way we can potentially batch
     # multiple state updates and avoid redundant re-renders
     send(self(), {:state_updated, version})
-
-    {:noreply, state}
   end
 
   @impl true
@@ -142,10 +143,8 @@ defmodule Orange.Runtime.RenderLoop do
     result = apply(module, :init, [attrs])
     ref = Runtime.ComponentRegistry.register(result.state, attrs, module)
 
-    runtime_process = self()
-
     content =
-      apply(module, :render, [result.state, attrs, &update_callback(ref, runtime_process, &1)])
+      apply(module, :render, [result.state, attrs, &update_callback(ref, &1)])
       |> normalize_custom_component()
       |> expand_new()
 
@@ -200,13 +199,11 @@ defmodule Orange.Runtime.RenderLoop do
     %{state: state} = Runtime.ComponentRegistry.get(previous_component.ref)
     Runtime.ComponentRegistry.update_attributes(previous_component.ref, attrs)
 
-    runtime_process = self()
-
     current_child =
       apply(module, :render, [
         state,
         attrs,
-        &update_callback(previous_component.ref, runtime_process, &1)
+        &update_callback(previous_component.ref, &1)
       ])
       |> normalize_custom_component()
 
@@ -227,11 +224,20 @@ defmodule Orange.Runtime.RenderLoop do
     end
   end
 
-  defp update_callback(component_ref, runtime_process, callback_or_value) do
-    GenServer.cast(
-      __MODULE__,
-      {:update_state, component_ref, callback_or_value}
-    )
+  defp update_callback(component_ref, callback_or_value) do
+    # Optimize for the common case where update_callback is called from the render loop
+    # In this case, we can avoid the cast and directly call process_update to avoid message passing
+    # and the overhead of the GenServer. This is significant if the state is really big
+    render_loop_pid = GenServer.whereis(__MODULE__)
+
+    if self() == render_loop_pid do
+      process_update(component_ref, callback_or_value)
+    else
+      GenServer.cast(
+        __MODULE__,
+        {:update_state, component_ref, callback_or_value}
+      )
+    end
   end
 
   defp after_mount(components) do
@@ -241,8 +247,7 @@ defmodule Orange.Runtime.RenderLoop do
       %{state: state, attributes: attrs, module: module} = Runtime.ComponentRegistry.get(ref)
 
       if function_exported?(module, :after_mount, 3) do
-        runtime_process = self()
-        apply(module, :after_mount, [state, attrs, &update_callback(ref, runtime_process, &1)])
+        apply(module, :after_mount, [state, attrs, &update_callback(ref, &1)])
       end
     end)
   end
@@ -254,8 +259,7 @@ defmodule Orange.Runtime.RenderLoop do
       %{state: state, attributes: attrs, module: module} = Runtime.ComponentRegistry.get(ref)
 
       if function_exported?(module, :after_unmount, 3) do
-        runtime_process = self()
-        apply(module, :after_unmount, [state, attrs, &update_callback(ref, runtime_process, &1)])
+        apply(module, :after_unmount, [state, attrs, &update_callback(ref, &1)])
       end
     end)
   end

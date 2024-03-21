@@ -14,7 +14,6 @@ defmodule Orange.RuntimeTestHelper do
     end
 
     [{_, buffers}] = :ets.lookup(__MODULE__.Buffers, :buffers)
-    IO.inspect(length(buffers))
     buffers
   end
 
