@@ -24,7 +24,7 @@ defmodule Orange.Runtime.CallbackTest do
     )
 
     ref = :atomics.new(1, [])
-    [_] = RuntimeTestHelper.dry_render({__MODULE__.Counter, atomic: ref})
+    RuntimeTestHelper.dry_render({__MODULE__.Counter, atomic: ref})
 
     value = :atomics.get(ref, 1)
     assert value == 1
@@ -44,8 +44,7 @@ defmodule Orange.Runtime.CallbackTest do
     ref1 = :atomics.new(1, [])
     ref2 = :atomics.new(1, [])
 
-    [_, _] =
-      RuntimeTestHelper.dry_render({__MODULE__.CounterWrapper, atomic1: ref1, atomic2: ref2})
+    RuntimeTestHelper.dry_render({__MODULE__.CounterWrapper, atomic1: ref1, atomic2: ref2})
 
     value = :atomics.get(ref2, 1)
     assert value == -1

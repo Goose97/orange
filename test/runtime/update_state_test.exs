@@ -29,7 +29,7 @@ defmodule Orange.Runtime.UpdateStateTest do
     )
 
     ref = :atomics.new(1, [])
-    [buffer1, buffer2, _] = RuntimeTestHelper.dry_render({__MODULE__.Counter, atomic: ref})
+    [buffer1, buffer2 | _] = RuntimeTestHelper.dry_render({__MODULE__.Counter, atomic: ref})
 
     assert Buffer.to_string(buffer1) == """
            ┌─────────────┐-----

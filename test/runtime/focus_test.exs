@@ -30,7 +30,7 @@ defmodule Orange.Runtime.FocusTest do
       ]
     )
 
-    [buffer1, buffer2, buffer3, buffer4] = RuntimeTestHelper.dry_render(__MODULE__.CounterWrapper)
+    [buffer1, buffer2, buffer3, buffer4 | _] = RuntimeTestHelper.dry_render(__MODULE__.CounterWrapper)
 
     assert Buffer.to_string(buffer1) == """
            ┌─────────────┐-----
@@ -88,7 +88,7 @@ defmodule Orange.Runtime.FocusTest do
       ]
     )
 
-    [buffer1, buffer2, buffer3, buffer4, buffer5, buffer6] =
+    [buffer1, buffer2, buffer3, buffer4, buffer5, buffer6 | _] =
       RuntimeTestHelper.dry_render(__MODULE__.CounterWrapper)
 
     assert Buffer.to_string(buffer1) == """
