@@ -125,7 +125,24 @@ defmodule Orange.Terminal do
   defmodule Binding do
     @moduledoc false
 
-    use Rustler, otp_app: :orange, crate: "orange_terminal_binding"
+    use RustlerPrecompiled,
+      otp_app: :orange,
+      crate: "orange_terminal_binding",
+      base_url: "https://github.com/Goose97/orange/releases/download/v0.1.0",
+      version: "0.1.0",
+      targets: [
+        "arm-unknown-linux-gnueabihf",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl",
+        "aarch64-apple-darwin",
+        "riscv64gc-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "x86_64-unknown-linux-gnu",
+        "x86_64-unknown-linux-musl",
+        "x86_64-pc-windows-gnu",
+        "x86_64-pc-windows-msvc"
+      ],
+      nif_versions: ["2.15", "2.16"]
 
     def draw(_buffer), do: :erlang.nif_error(:nif_not_loaded)
     def enter_alternate_screen(), do: :erlang.nif_error(:nif_not_loaded)
