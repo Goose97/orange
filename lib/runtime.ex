@@ -10,7 +10,7 @@ defmodule Orange.Runtime do
   3. Dispatch events to the appropriate UI components.
   """
 
-  alias Orange.{Span, Line, Rect, CustomComponent, Terminal}
+  alias Orange.Terminal
 
   @doc """
   Start the runtime and render the UI root
@@ -49,41 +49,15 @@ defmodule Orange.Runtime do
   def unfocus(component_id), do: find_component_and_apply!(component_id, :unfocus)
 
   defp find_component_and_apply!(component_id, function) do
-    component_tree = __MODULE__.RenderLoop.get_component_tree()
-
-    case find_by_id(component_tree, component_id) do
+    case __MODULE__.RenderLoop.component_ref_by_id(component_id) do
       nil ->
         raise("""
         #{__MODULE__}.#{function}: component not found
         - component_id: #{inspect(component_id)}
         """)
 
-      %CustomComponent{ref: component_ref} ->
+      component_ref when is_reference(component_ref) ->
         apply(event_manager_impl(), function, [component_ref])
-    end
-  end
-
-  defp find_by_id(%Line{}, _component_id), do: nil
-  defp find_by_id(%Span{}, _component_id), do: nil
-
-  defp find_by_id(%Rect{children: children}, component_id),
-    do: find_in_children(children, component_id)
-
-  defp find_by_id(
-         %CustomComponent{children: children, attributes: attributes} = component,
-         component_id
-       ) do
-    if Keyword.has_key?(attributes, :id) && component_id == attributes[:id],
-      do: component,
-      else: find_in_children(children, component_id)
-  end
-
-  defp find_in_children([], _component_id), do: nil
-
-  defp find_in_children([child | remain], component_id) do
-    case find_by_id(child, component_id) do
-      nil -> find_in_children(remain, component_id)
-      component -> component
     end
   end
 end

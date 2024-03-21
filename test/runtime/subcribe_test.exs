@@ -76,7 +76,8 @@ defmodule Orange.Runtime.SubscribeTest do
       ]
     )
 
-    [buffer1, buffer2, buffer3, buffer4 | _] = RuntimeTestHelper.dry_render(__MODULE__.CounterWrapper)
+    [buffer1, buffer2, buffer3, buffer4 | _] =
+      RuntimeTestHelper.dry_render(__MODULE__.CounterWrapper)
 
     assert Buffer.to_string(buffer1) == """
            ┌─────────────┐-----
@@ -114,6 +115,64 @@ defmodule Orange.Runtime.SubscribeTest do
            --------------------\
            """
   end
+
+  test "call unsubcribed from another process" do
+    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
+      terminal_size: {20, 6},
+      events: [
+        # Increase by one
+        %Terminal.KeyEvent{code: :up},
+        # Unsuscribe counter
+        %Terminal.KeyEvent{code: {:char, "x"}},
+        # Make sure unsubscribe event is handled
+        {:wait, 20},
+        # Decrease by one but the event is not handled
+        %Terminal.KeyEvent{code: :down},
+        # Quit
+        %Terminal.KeyEvent{code: {:char, "q"}}
+      ]
+    )
+
+    [buffer1, buffer2, buffer3, buffer4 | _] =
+      RuntimeTestHelper.dry_render({__MODULE__.CounterWrapper, from_other_process: true})
+
+    assert Buffer.to_string(buffer1) == """
+           ┌─────────────┐-----
+           │Counter: 0---│-----
+           └─────────────┘-----
+           --------------------
+           --------------------
+           --------------------\
+           """
+
+    assert Buffer.to_string(buffer2) == """
+           ┌─────────────┐-----
+           │Counter: 1---│-----
+           └─────────────┘-----
+           --------------------
+           --------------------
+           --------------------\
+           """
+
+    assert Buffer.to_string(buffer3) == """
+           ┌─────────────┐-----
+           │Counter: 1---│-----
+           └─────────────┘-----
+           --------------------
+           --------------------
+           --------------------\
+           """
+
+    assert Buffer.to_string(buffer4) == """
+           ┌─────────────┐-----
+           │Counter: 1---│-----
+           └─────────────┘-----
+           --------------------
+           --------------------
+           --------------------\
+           """
+  end
+
 
   defmodule Counter do
     @behaviour Orange.Component
@@ -159,10 +218,13 @@ defmodule Orange.Runtime.SubscribeTest do
     def init(_attrs), do: %{state: nil, events_subscription: true}
 
     @impl true
-    def handle_event(event, state, _attrs) do
+    def handle_event(event, state, attrs) do
       case event do
         %Terminal.KeyEvent{code: {:char, "x"}} ->
-          Orange.unsubscribe(:counter)
+          if attrs[:from_other_process],
+            do: spawn(fn -> Orange.unsubscribe(:counter) end),
+            else: Orange.unsubscribe(:counter)
+
           state
 
         %Terminal.KeyEvent{code: {:char, "q"}} ->

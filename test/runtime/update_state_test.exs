@@ -20,7 +20,7 @@ defmodule Orange.Runtime.UpdateStateTest do
       terminal_size: {20, 6},
       events: [
         # Wait to make sure after_mount fires first
-        {:wait, 100},
+        {:wait, 20},
         # Noop event
         %Terminal.KeyEvent{code: :up},
         # Quit

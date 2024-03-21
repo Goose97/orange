@@ -30,7 +30,8 @@ defmodule Orange.Runtime.FocusTest do
       ]
     )
 
-    [buffer1, buffer2, buffer3, buffer4 | _] = RuntimeTestHelper.dry_render(__MODULE__.CounterWrapper)
+    [buffer1, buffer2, buffer3, buffer4 | _] =
+      RuntimeTestHelper.dry_render(__MODULE__.CounterWrapper)
 
     assert Buffer.to_string(buffer1) == """
            ┌─────────────┐-----
@@ -146,6 +147,87 @@ defmodule Orange.Runtime.FocusTest do
            """
   end
 
+  test "call focus and unfocus from another process" do
+    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
+      terminal_size: {20, 6},
+      events: [
+        # Increase both counters by one
+        %Terminal.KeyEvent{code: :up},
+        # Focus on the first counter
+        %Terminal.KeyEvent{code: {:char, "x"}},
+        # Make sure the focus event is handled
+        {:wait, 20},
+        # Decrease only the focused counter by one
+        %Terminal.KeyEvent{code: :down},
+        # Unfocus
+        %Terminal.KeyEvent{code: {:char, "y"}},
+        # Make sure the unfocus event is handled
+        {:wait, 20},
+        # Decrease both counters by one
+        %Terminal.KeyEvent{code: :down},
+        # Quit
+        %Terminal.KeyEvent{code: {:char, "q"}}
+      ]
+    )
+
+    [buffer1, buffer2, buffer3, buffer4, buffer5, buffer6 | _] =
+      RuntimeTestHelper.dry_render({__MODULE__.CounterWrapper, from_another_process: true})
+
+    assert Buffer.to_string(buffer1) == """
+           ┌─────────────┐-----
+           │Counter: 0---│-----
+           └─────────────┘-----
+           ┌─────────────┐-----
+           │Counter: 0---│-----
+           └─────────────┘-----\
+           """
+
+    assert Buffer.to_string(buffer2) == """
+           ┌─────────────┐-----
+           │Counter: 1---│-----
+           └─────────────┘-----
+           ┌─────────────┐-----
+           │Counter: 1---│-----
+           └─────────────┘-----\
+           """
+
+    assert Buffer.to_string(buffer3) == """
+           ┌─────────────┐-----
+           │Counter: 1---│-----
+           └─────────────┘-----
+           ┌─────────────┐-----
+           │Counter: 1---│-----
+           └─────────────┘-----\
+           """
+
+    assert Buffer.to_string(buffer4) == """
+           ┌─────────────┐-----
+           │Counter: 0---│-----
+           └─────────────┘-----
+           ┌─────────────┐-----
+           │Counter: 1---│-----
+           └─────────────┘-----\
+           """
+
+    assert Buffer.to_string(buffer5) == """
+           ┌─────────────┐-----
+           │Counter: 0---│-----
+           └─────────────┘-----
+           ┌─────────────┐-----
+           │Counter: 1---│-----
+           └─────────────┘-----\
+           """
+
+    assert Buffer.to_string(buffer6) == """
+           ┌─────────────┐-----
+           │Counter: -1--│-----
+           └─────────────┘-----
+           ┌─────────────┐-----
+           │Counter: 0---│-----
+           └─────────────┘-----\
+           """
+  end
+
   defmodule Counter do
     @behaviour Orange.Component
 
@@ -156,7 +238,7 @@ defmodule Orange.Runtime.FocusTest do
       do: %{state: 0, events_subscription: Keyword.get(attrs, :events_subscription, false)}
 
     @impl true
-    def handle_event(event, state, _attrs) do
+    def handle_event(event, state, attrs) do
       case event do
         %Terminal.KeyEvent{code: :up} ->
           state + 1
@@ -165,7 +247,10 @@ defmodule Orange.Runtime.FocusTest do
           state - 1
 
         %Terminal.KeyEvent{code: {:char, "y"}} ->
-          Orange.unfocus(:counter1)
+          if attrs[:from_another_process],
+            do: spawn(fn -> Orange.unfocus(:counter1) end),
+            else: Orange.unfocus(:counter1)
+
           state
 
         %Terminal.KeyEvent{code: {:char, "q"}} ->
@@ -196,10 +281,13 @@ defmodule Orange.Runtime.FocusTest do
     def init(_attrs), do: %{state: nil, events_subscription: true}
 
     @impl true
-    def handle_event(event, state, _attrs) do
+    def handle_event(event, state, attrs) do
       case event do
         %Terminal.KeyEvent{code: {:char, "x"}} ->
-          Orange.focus(:counter1)
+          if attrs[:from_another_process],
+            do: spawn(fn -> Orange.focus(:counter1) end),
+            else: Orange.focus(:counter1)
+
           state
 
         %Terminal.KeyEvent{code: {:char, "q"}} ->
@@ -212,10 +300,19 @@ defmodule Orange.Runtime.FocusTest do
     end
 
     @impl true
-    def render(_state, _attrs, _update) do
+    def render(_state, attrs, _update) do
       rect do
-        {Counter, id: :counter1, events_subscription: true, highlighted: true}
-        {Counter, id: :counter2, events_subscription: true, highlighted: true}
+        {Counter,
+         id: :counter1,
+         events_subscription: true,
+         highlighted: true,
+         from_another_process: attrs[:from_another_process]}
+
+        {Counter,
+         id: :counter2,
+         events_subscription: true,
+         highlighted: true,
+         from_another_process: attrs[:from_another_process]}
       end
     end
   end

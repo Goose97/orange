@@ -263,4 +263,48 @@ defmodule Orange.Runtime.RenderLoop do
       end
     end)
   end
+
+  @impl true
+  def handle_call({:component_ref_by_id, component_id}, _from, state) do
+    {:reply, do_component_ref_by_id(component_id), state}
+  end
+
+  def component_ref_by_id(component_id) do
+    render_loop_pid = GenServer.whereis(__MODULE__)
+
+    # In case the caller is the render loop, don't GenServer.call cause we will be blocked indefinitely
+    if self() == render_loop_pid,
+      do: do_component_ref_by_id(component_id),
+      else: GenServer.call(__MODULE__, {:component_ref_by_id, component_id})
+  end
+
+  defp do_component_ref_by_id(component_id) do
+    Process.get({__MODULE__, :component_tree})
+    |> find_by_id(component_id)
+    |> Map.get(:ref)
+  end
+
+  defp find_by_id(%Line{}, _component_id), do: nil
+  defp find_by_id(%Span{}, _component_id), do: nil
+
+  defp find_by_id(%Rect{children: children}, component_id),
+    do: find_in_children(children, component_id)
+
+  defp find_by_id(
+         %CustomComponent{children: children, attributes: attributes} = component,
+         component_id
+       ) do
+    if Keyword.has_key?(attributes, :id) && component_id == attributes[:id],
+      do: component,
+      else: find_in_children(children, component_id)
+  end
+
+  defp find_in_children([], _component_id), do: nil
+
+  defp find_in_children([child | remain], component_id) do
+    case find_by_id(child, component_id) do
+      nil -> find_in_children(remain, component_id)
+      component -> component
+    end
+  end
 end
