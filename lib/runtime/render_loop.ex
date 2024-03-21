@@ -1,4 +1,8 @@
 defmodule Orange.Runtime.RenderLoop do
+  @moduledoc """
+  Render loop process, holds the state of the UI and triggers re-renders.
+  """
+
   use GenServer
 
   alias Orange.{Span, Line, Rect, CustomComponent, Renderer, Terminal, Runtime}
@@ -83,10 +87,6 @@ defmodule Orange.Runtime.RenderLoop do
     state = if version == latest_version, do: render_tick(state), else: state
 
     {:noreply, state}
-  end
-
-  def get_component_tree() do
-    Process.get({__MODULE__, :component_tree})
   end
 
   defp render_tick(state) do
@@ -269,6 +269,9 @@ defmodule Orange.Runtime.RenderLoop do
     {:reply, do_component_ref_by_id(component_id), state}
   end
 
+  @doc """
+  Given a component_id, returns the component ref
+  """
   def component_ref_by_id(component_id) do
     render_loop_pid = GenServer.whereis(__MODULE__)
 

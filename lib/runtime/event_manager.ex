@@ -1,8 +1,10 @@
 defmodule Orange.Runtime.EventManager do
   @moduledoc false
-  # Manage event subscribers. Dispatch events to all subscribers with `dispatch_event/1`
+  # Manage event subscribers. Dispatch events to all subscribers with `dispatch_event/1`.
 
   defmodule Behaviour do
+    @moduledoc false
+
     @callback subscribe(reference()) :: any()
     @callback unsubscribe(reference()) :: any()
     @callback focus(reference()) :: any()

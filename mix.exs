@@ -12,6 +12,12 @@ defmodule Orange.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
+      docs: [
+        main: "Orange",
+        extras: [
+          "guides/events-subscription.md"
+        ]
+      ]
     ]
   end
 

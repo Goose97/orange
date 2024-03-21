@@ -6,7 +6,7 @@ defmodule Orange.Component do
 
   Custom components can have internal state and receive terminal events to update their state. They also have hooks, which will be trigger at specific points in the component lifecycle, for example, `after_mount/1` and `after_unmount/1`
 
-  ## Example
+  ## Examples
 
   In order to implement a custom component, you need to define a module that implements the `Orange.Component` behaviour. As an example, we will implement a Counter component. We can use up and down button to increase or decrease the counter value.
 
@@ -86,10 +86,10 @@ defmodule Orange.Component do
 
   The update callback will be passed to the `render/3` and lifecycle hooks. The update callback can be called with a new state or a function that receives the current state and returns the new state.
 
-    def render(state, attrs, update_callback)
-      update_callback.(%{state | counter: state.counter + 1})
-      update_callback.(fn state -> %{state | counter: state.counter - 1} end)
-    end
+      def render(state, attrs, update_callback)
+        update_callback.(%{state | counter: state.counter + 1})
+        update_callback.(fn state -> %{state | counter: state.counter - 1} end)
+      end
   """
 
   @type ui_element :: Orange.Rect.t() | Orange.Line.t() | Orange.Span.t()

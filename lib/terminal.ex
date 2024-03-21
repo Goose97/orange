@@ -1,5 +1,5 @@
 defmodule Orange.Terminal do
-  @doc """
+  @moduledoc """
   Provides API to interact with the terminal.
   """
 

@@ -4,17 +4,18 @@ defmodule Orange.Runtime do
   # 2. Improve UX of error logging
 
   @moduledoc """
-  The runtime module is responsible for rendering the UI components. Its major responsibilities are:
-  1. Run the render loop to keep rendering the UI at intervals.
-  2. Keep track of the state of the UI components.
-  3. Dispatch events to the appropriate UI components.
+  The runtime module is responsible for rendering the UI components. The runtime consists of multiple
+  components:
+
+  1. `Orange.Runtime.RenderLoop`: UI rendering loop, implemented as a GenServer. Re-render is triggered in these cases:
+    a. Receive events from the event poller
+    b. Receive state update requests from update callbacks
+  2. `Orange.Runtime.EventManager`: manages event subscriptions and dispatches events to the subscribed components
+  3. `Orange.Runtime.EventPoller`: polls for events from the terminal and sends to the render loop
   """
 
   alias Orange.Terminal
 
-  @doc """
-  Start the runtime and render the UI root
-  """
   def start(root) do
     children = [
       event_manager_impl(),
@@ -25,9 +26,6 @@ defmodule Orange.Runtime do
     Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)
   end
 
-  @doc """
-  Stop the runtime and exit the application
-  """
   def stop do
     terminal_impl().leave_alternate_screen()
     terminal_impl().disable_raw_mode()
