@@ -10,7 +10,8 @@ defmodule Orange.Runtime.RenderLoop do
   def child_spec([root]) do
     %{
       id: __MODULE__,
-      start: {GenServer, :start_link, [__MODULE__, root, [name: __MODULE__]]}
+      start: {GenServer, :start_link, [__MODULE__, root, [name: __MODULE__]]},
+      restart: :temporary
     }
   end
 
@@ -29,7 +30,17 @@ defmodule Orange.Runtime.RenderLoop do
       previous_buffer: nil
     }
 
+    Process.flag(:trap_exit, true)
     {:ok, state, {:continue, :tick}}
+  end
+
+  @impl true
+  def terminate(reason, _state) do
+    terminal_impl().leave_alternate_screen()
+    terminal_impl().disable_raw_mode()
+    terminal_impl().show_cursor()
+
+    :ok
   end
 
   defp normalize_custom_component(root) do

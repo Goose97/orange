@@ -1,8 +1,4 @@
 defmodule Orange.Runtime do
-  # TODO
-  # 1. Handle errors in the handle_event callback
-  # 2. Improve UX of error logging
-
   @moduledoc """
   The runtime module is responsible for rendering the UI components. The runtime consists of multiple
   components:
@@ -14,8 +10,6 @@ defmodule Orange.Runtime do
   3. `Orange.Runtime.EventPoller`: polls for events from the terminal and sends to the render loop
   """
 
-  alias Orange.Terminal
-
   def start(root) do
     children = [
       event_manager_impl(),
@@ -23,17 +17,14 @@ defmodule Orange.Runtime do
       {__MODULE__.RenderLoop, [root]}
     ]
 
-    Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)
+    Supervisor.start_link(children, strategy: :one_for_all, name: __MODULE__)
   end
 
   def stop do
-    terminal_impl().leave_alternate_screen()
-    terminal_impl().disable_raw_mode()
-    terminal_impl().show_cursor()
-    Supervisor.stop(__MODULE__)
+    spawn(fn ->
+      :ok = Supervisor.stop(__MODULE__)
+    end)
   end
-
-  defp terminal_impl(), do: Application.get_env(:orange, :terminal, Terminal)
 
   defp event_manager_impl(),
     do: Application.get_env(:orange, :event_manager, __MODULE__.EventManager)
