@@ -28,6 +28,20 @@ defmodule Orange.MixProject do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
+  defp docs() do
+    [
+      main: "Orange",
+      extras: [
+        "guides/events-subscription.md"
+      ],
+      groups_for_modules: [
+        Components: [
+          Orange.Component.VerticalScrollableRect
+        ]
+      ]
+    ]
+  end
+
   defp package() do
     [
       maintainers: ["Nguyễn Văn Đức"],
@@ -44,6 +58,10 @@ defmodule Orange.MixProject do
     ]
   end
 
+  defp aliases() do
+    [docs: ["docs", &copy_images/1]]
+  end
+
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
@@ -54,5 +72,13 @@ defmodule Orange.MixProject do
       {:benchee, "~> 1.3.0", only: :dev, runtime: false},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false}
     ]
+  end
+
+  defp copy_images(_) do
+    File.rm_rf!("doc/assets")
+
+    File.cp_r!("assets", "doc/assets", fn source, destination ->
+      IO.gets("Overwriting #{destination} by #{source}. Type y to confirm. ") == "y\n"
+    end)
   end
 end

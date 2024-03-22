@@ -17,6 +17,24 @@ defmodule Orange.RuntimeTestHelper do
     buffers
   end
 
+  def dry_render_once(component) do
+    # Temporary ets table to store the rendered buffers produced by `mock_draw/2`
+    :ets.new(__MODULE__.Buffers, [:set, :public, :named_table])
+    :ets.insert(__MODULE__.Buffers, {:buffers, []})
+
+    {:ok, pid} = Orange.Runtime.start(component)
+    Orange.Runtime.stop()
+
+    ref = Process.monitor(pid)
+
+    receive do
+      {:DOWN, ^ref, :process, _pid, _reason} -> :ok
+    end
+
+    [{_, [buffer]}] = :ets.lookup(__MODULE__.Buffers, :buffers)
+    buffer
+  end
+
   def setup_mock_terminal(mock_terminal, opts) do
     terminal_size = Keyword.get(opts, :terminal_size)
     if terminal_size, do: stub(mock_terminal, :terminal_size, fn -> terminal_size end)
@@ -27,6 +45,8 @@ defmodule Orange.RuntimeTestHelper do
       event_counter = :counters.new(1, [])
 
       stub(mock_terminal, :poll_event, fn -> next_event(events, event_counter) end)
+    else
+      stub(mock_terminal, :poll_event, fn -> Process.sleep(:infinity) end)
     end
 
     nullify_terminal_api(mock_terminal)
