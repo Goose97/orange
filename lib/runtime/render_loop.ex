@@ -1,7 +1,7 @@
 defmodule Orange.Runtime.RenderLoop do
-  @moduledoc """
-  Render loop process, holds the state of the UI and triggers re-renders.
-  """
+  @moduledoc false
+
+  # Render loop process, holds the state of the UI and triggers re-renders.
 
   use GenServer
 
