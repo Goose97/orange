@@ -16,7 +16,7 @@ defmodule Orange.Component do
         import Orange.Macro
 
         @impl true
-        def init(_attrs), do: %{state: 0}
+        def init(_attrs), do: %{state: 0, events_subscription: true}
 
         @impl true
         def handle_event(event, state, _attrs) do
@@ -26,10 +26,6 @@ defmodule Orange.Component do
 
             %Orange.Terminal.KeyEvent{code: :down} ->
               state - 1
-
-            %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
-              Orange.stop()
-              state
 
             _ ->
               state
@@ -47,13 +43,14 @@ defmodule Orange.Component do
 
         @impl true
         def render(state, attrs, _update) do
-          rect style: [width: 20, height: 20, border: attrs[:highlight]] do
+          rect style: [width: "100%", height: "1fr", border: attrs[:highlight]] do
             span do
               "Counter: \#{state}"
             end
           end
         end
       end
+
 
   This component can be used as children for other components like this:
 
@@ -63,9 +60,21 @@ defmodule Orange.Component do
         import Orange.Macro
 
         @impl true
-        def init(_attrs), do: %{state: nil}
+        def init(_attrs), do: %{state: nil, events_subscription: true}
 
-        def render do
+        @impl true
+        def handle_event(event, state, _attrs) do
+          case event do
+            %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
+              Orange.stop()
+              state
+
+            _ ->
+              state
+          end
+        end
+
+        def render(_state, _attrs, _update) do
           rect style: [width: 20, height: 20, border: true] do
             # No attributes
             Counter
@@ -75,6 +84,8 @@ defmodule Orange.Component do
           end
         end
       end
+
+  ![Rendered result](assets/component-example.gif)
 
   ## Update callback
 

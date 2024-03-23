@@ -1,14 +1,14 @@
 defmodule Orange.Runtime do
-  @moduledoc """
-  The runtime module is responsible for rendering the UI components. The runtime consists of multiple
-  components:
+  @moduledoc false
 
-  1. `Orange.Runtime.RenderLoop`: UI rendering loop, implemented as a GenServer. Re-render is triggered in these cases:
-    a. Receive events from the event poller
-    b. Receive state update requests from update callbacks
-  2. `Orange.Runtime.EventManager`: manages event subscriptions and dispatches events to the subscribed components
-  3. `Orange.Runtime.EventPoller`: polls for events from the terminal and sends to the render loop
-  """
+  # The runtime module is responsible for rendering the UI components. The runtime consists of multiple
+  # components:
+  #
+  # 1. `Orange.Runtime.RenderLoop`: UI rendering loop, implemented as a GenServer. Re-render is triggered in these cases:
+  #   a. Receive events from the event poller
+  #   b. Receive state update requests from update callbacks
+  # 2. `Orange.Runtime.EventManager`: manages event subscriptions and dispatches events to the subscribed components
+  # 3. `Orange.Runtime.EventPoller`: polls for events from the terminal and sends to the render loop
 
   def start(root) do
     children = [
