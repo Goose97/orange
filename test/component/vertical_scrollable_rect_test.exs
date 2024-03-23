@@ -152,7 +152,7 @@ defmodule Orange.Component.VerticalScrollableRectTest do
     alias Orange.Component.VerticalScrollableRect
 
     @impl true
-    def init(_attrs), do: %{state: nil, events_subscription: true}
+    def init(_attrs), do: %{state: nil}
 
     @impl true
     def render(_state, attrs, _update) do

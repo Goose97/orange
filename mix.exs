@@ -37,7 +37,11 @@ defmodule Orange.MixProject do
       groups_for_modules: [
         Components: [
           Orange.Component,
-          Orange.Component.VerticalScrollableRect
+          Orange.Component.VerticalScrollableRect,
+          Orange.Component.Input
+        ],
+        Events: [
+          Orange.Terminal.KeyEvent
         ]
       ]
     ]

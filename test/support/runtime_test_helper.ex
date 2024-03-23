@@ -35,6 +35,29 @@ defmodule Orange.RuntimeTestHelper do
     buffer
   end
 
+  def catch_render_error(component) do
+    Process.flag(:trap_exit, true)
+    %{start: {m, f, a}} = Orange.Runtime.RenderLoop.child_spec([component])
+    {:ok, pid} = apply(m, f, a)
+    Process.link(pid)
+    ref = Process.monitor(pid)
+
+    receive do
+      {:DOWN, ^ref, :process, _pid, _reason} -> :ok
+    after
+      2500 ->
+        ExUnit.Assertions.flunk("Expected the render loop process to exit, but it didn't")
+    end
+
+    receive do
+      {:EXIT, _, {error, _}} ->
+        error
+    after
+      0 ->
+        ExUnit.Assertions.flunk("Expected to receive an exit message, got nothing")
+    end
+  end
+
   def setup_mock_terminal(mock_terminal, opts) do
     terminal_size = Keyword.get(opts, :terminal_size)
     if terminal_size, do: stub(mock_terminal, :terminal_size, fn -> terminal_size end)

@@ -1,5 +1,9 @@
 defmodule Orange.Terminal.KeyEvent do
-  @moduledoc false
+  @moduledoc """
+  Terminal keyboard events.
+
+  See `key_code/0` below for supported keys.
+  """
 
   @type key_code ::
           :backspace
