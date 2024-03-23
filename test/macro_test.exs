@@ -61,16 +61,6 @@ defmodule Orange.MacroTest do
 
       assert element == %Orange.Line{children: [%Orange.Span{children: ["foo"]}]}
     end
-
-    test "INVALID children" do
-      assert_raise RuntimeError, ~r/Invalid line child. Expected a span, instead got/, fn ->
-        line do
-          rect do
-            "foo"
-          end
-        end
-      end
-    end
   end
 
   describe "span/2" do
@@ -82,18 +72,6 @@ defmodule Orange.MacroTest do
 
       assert element == %Orange.Span{children: ["foo"]}
     end
-
-    test "INVALID children" do
-      assert_raise RuntimeError,
-                   ~r/Invalid span children. Expected a single text child, instead got/,
-                   fn ->
-                     span do
-                       rect do
-                         "foo"
-                       end
-                     end
-                   end
-    end
   end
 
   describe "custom components" do
@@ -104,14 +82,7 @@ defmodule Orange.MacroTest do
         end
 
       assert element == %Orange.Rect{
-               children: [
-                 %Orange.CustomComponent{
-                   module: Orange.MacroTest.TestComponent,
-                   children: nil,
-                   ref: nil,
-                   attributes: []
-                 }
-               ],
+               children: [Orange.MacroTest.TestComponent],
                attributes: []
              }
     end
@@ -124,12 +95,7 @@ defmodule Orange.MacroTest do
 
       assert element == %Orange.Rect{
                children: [
-                 %Orange.CustomComponent{
-                   module: Orange.MacroTest.TestComponent,
-                   children: nil,
-                   ref: nil,
-                   attributes: [style: [width: 20, height: 20], id: "foo"]
-                 }
+                 {Orange.MacroTest.TestComponent, [style: [width: 20, height: 20], id: "foo"]}
                ],
                attributes: []
              }

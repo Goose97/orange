@@ -243,8 +243,6 @@ defmodule Orange.Macro do
         |> Enum.reject(&is_nil/1)
         |> Orange.Macro.normalize_children(:rect)
 
-      Orange.Macro.validate_children!(children, :rect)
-
       %Orange.Rect{
         children: children,
         attributes: unquote(attrs)
@@ -306,8 +304,6 @@ defmodule Orange.Macro do
         |> Enum.reject(&is_nil/1)
         |> Orange.Macro.normalize_children(:line)
 
-      Orange.Macro.validate_children!(children, :line)
-
       %Orange.Line{
         children: children,
         attributes: unquote(attrs)
@@ -342,8 +338,6 @@ defmodule Orange.Macro do
     children = get_children(do_block)
 
     quote do
-      Orange.Macro.validate_children!(unquote(children), :span)
-
       %Orange.Span{
         children: unquote(children),
         attributes: unquote(attrs)
@@ -362,12 +356,6 @@ defmodule Orange.Macro do
 
         span when is_struct(span, Orange.Span) ->
           %Orange.Line{children: [span]}
-
-        custom when is_atom(custom) ->
-          %Orange.CustomComponent{module: custom, attributes: []}
-
-        {custom, attrs} when is_atom(custom) ->
-          %Orange.CustomComponent{module: custom, attributes: attrs}
 
         other ->
           other
@@ -394,47 +382,5 @@ defmodule Orange.Macro do
       child -> [child]
     end
     |> Enum.map(&Macro.expand(&1, __ENV__))
-  end
-
-  def validate_children!(children, :rect) do
-    for child <- children do
-      case child do
-        %Orange.Rect{} ->
-          :ok
-
-        %Orange.Line{} ->
-          :ok
-
-        %Orange.CustomComponent{} ->
-          :ok
-
-        _ ->
-          raise "#{__MODULE__}: Invalid rect child. Expected a rect or line, instead got: #{inspect(child, pretty: true)}"
-      end
-    end
-  end
-
-  @doc false
-  def validate_children!(children, :line) do
-    for child <- children do
-      case child do
-        %Orange.Span{} ->
-          :ok
-
-        _ ->
-          raise "#{__MODULE__}: Invalid line child. Expected a span, instead got: #{inspect(child, pretty: true)}"
-      end
-    end
-  end
-
-  @doc false
-  def validate_children!(children, :span) do
-    case children do
-      [text] when is_binary(text) ->
-        :ok
-
-      _ ->
-        raise "#{__MODULE__}: Invalid span children. Expected a single text child, instead got #{inspect(children, pretty: true)}"
-    end
   end
 end
