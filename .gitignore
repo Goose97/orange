@@ -26,3 +26,6 @@ orange-*.tar
 /tmp/
 
 priv/native
+
+# NIF precompiled files checksum
+checksum-Elixir.Orange.Terminal.Binding.exs
