@@ -8,9 +8,11 @@ defmodule Orange.Component.Input do
 
     - `:on_submit` - A callback triggered when input is submitted. This attribute is required.
     - `:submit_key` - The keyboard key that will trigger submission. This attribute is option and defaults to :enter. See `Orange.Terminal.KeyEvent` for supported values.
+    - `:on_exit` - A callback triggered when input is exited. This attribute is optional.
+    - `:exit_key` - The keyboard key that will unfocus the input. This attribute is option and defaults to :esc. See `Orange.Terminal.KeyEvent` for supported values.
     > #### Info {: .info}
     >
-    > The `:submit_key` can not be `:backspace` as it is reserved for deleting characters.
+    > The `:submit_key` and `:exit_key` can not be `:backspace` as it is reserved for deleting characters.
 
     - `:auto_focus` - Whether to focus automatically after mount. This attribute is optional. If true, the `:id` attribute is required and the input will unfocus after submission.
     - `:prefix` - The input prefix string. This attribute is optional.
@@ -63,11 +65,18 @@ defmodule Orange.Component.Input do
   @impl true
   def handle_event(event, state, attrs) do
     submit_key = Keyword.get(attrs, :submit_key, :enter)
+    exit_key = Keyword.get(attrs, :exit_key, :esc)
 
     case event do
       %Orange.Terminal.KeyEvent{code: ^submit_key} ->
         attrs[:on_submit].(state.input)
         if attrs[:auto_focus], do: Orange.unfocus(attrs[:id])
+
+        state
+
+      %Orange.Terminal.KeyEvent{code: ^exit_key} ->
+        if attrs[:on_exit], do: attrs[:on_exit].()
+        if attrs[:id], do: Orange.unfocus(attrs[:id])
 
         state
 

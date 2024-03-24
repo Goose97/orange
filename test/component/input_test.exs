@@ -181,6 +181,53 @@ defmodule Orange.Component.InputTest do
            """
   end
 
+  test "custom exit_key" do
+    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
+      terminal_size: {25, 5},
+      events: [
+        %Terminal.KeyEvent{code: {:char, "f"}},
+        # Exit
+        %Terminal.KeyEvent{code: {:char, "x"}},
+        # Quit
+        %Terminal.KeyEvent{code: {:char, "q"}}
+      ]
+    )
+
+    counter = :counters.new(1, [])
+
+    [buffer1, buffer2, buffer3 | _] =
+      RuntimeTestHelper.dry_render(
+        {__MODULE__.Input,
+         exit_key: {:char, "x"}, on_exit: fn -> :counters.add(counter, 1, 1) end}
+      )
+
+    assert Buffer.to_string(buffer1) === """
+           Input: ------------------
+           Submitted value: --------
+           -------------------------
+           -------------------------
+           -------------------------\
+           """
+
+    assert Buffer.to_string(buffer2) === """
+           Input: f-----------------
+           Submitted value: --------
+           -------------------------
+           -------------------------
+           -------------------------\
+           """
+
+    assert Buffer.to_string(buffer3) === """
+           Input: f-----------------
+           Submitted value: --------
+           -------------------------
+           -------------------------
+           -------------------------\
+           """
+
+    assert :counters.get(counter, 1) == 1
+  end
+
   test ":auto_focus false" do
     RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
       terminal_size: {25, 5},
@@ -265,9 +312,7 @@ defmodule Orange.Component.InputTest do
       ]
 
       input_attrs =
-        if attrs[:submit_key],
-          do: Keyword.put(input_attrs, :submit_key, attrs[:submit_key]),
-          else: input_attrs
+        Keyword.merge(input_attrs, Keyword.take(attrs, [:submit_key, :exit_key, :on_exit]))
 
       rect style: [width: 20, height: attrs[:height]] do
         {Component.Input, input_attrs}
