@@ -2,7 +2,7 @@ defmodule Orange.MixProject do
   use Mix.Project
 
   # The CI workflow depends on this
-  @version "0.1.0"
+  @version "0.2.0"
   @source_url "https://github.com/Goose97/orange"
 
   def project do
@@ -14,6 +14,8 @@ defmodule Orange.MixProject do
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
       package: package(),
+      docs: docs(),
+      aliases: aliases(),
       description: "A framework to build terminal UI applications in Elixir"
     ]
   end
