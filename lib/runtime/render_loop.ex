@@ -160,12 +160,20 @@ defmodule Orange.Runtime.RenderLoop do
     result = apply(module, :init, [attrs])
     ref = Runtime.ComponentRegistry.register(result.state, attrs, module)
 
-    content =
-      apply(module, :render, [result.state, attrs, &update_callback(ref, &1)])
-      |> normalize_custom_component()
-      |> expand_new()
+    child = apply(module, :render, [result.state, attrs, &update_callback(ref, &1)])
 
-    %{component | children: [content], ref: ref}
+    children =
+      if child do
+        [
+          child
+          |> normalize_custom_component()
+          |> expand_new()
+        ]
+      else
+        []
+      end
+
+    %{component | children: children, ref: ref}
     |> tap(fn component ->
       opts = [events_subscription: Map.get(result, :events_subscription, false)]
       add_to_mounting_list(component, opts)
@@ -224,11 +232,14 @@ defmodule Orange.Runtime.RenderLoop do
         attrs,
         &update_callback(previous_component.ref, &1)
       ])
-      |> normalize_custom_component()
 
-    prev_child = hd(previous_component.children)
-
-    %{previous_component | children: [expand_with_prev(current_child, prev_child)]}
+    if current_child do
+      current_child = normalize_custom_component(current_child)
+      prev_child = hd(previous_component.children)
+      %{previous_component | children: [expand_with_prev(current_child, prev_child)]}
+    else
+      %{previous_component | children: []}
+    end
   end
 
   defp expand_with_prev(%CustomComponent{} = component, _previous_tree),
@@ -239,13 +250,17 @@ defmodule Orange.Runtime.RenderLoop do
       component
       when is_struct(component, Rect)
       when is_struct(component, Line) ->
-        %{component | children: Enum.map(component.children, &to_render_tree/1)}
+        children = component.children |> Enum.map(&to_render_tree/1) |> Enum.reject(&is_nil/1)
+        %{component | children: children}
 
       %Span{} ->
         component
 
-      %CustomComponent{} ->
-        hd(component.children) |> to_render_tree()
+      %CustomComponent{children: []} ->
+        nil
+
+      %CustomComponent{children: [child]} ->
+        to_render_tree(child)
     end
   end
 
