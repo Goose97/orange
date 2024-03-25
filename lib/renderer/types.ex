@@ -11,6 +11,11 @@ defmodule Orange.Renderer.Box do
   # - A list of boxes
   # - A single text
 
+  @type position ::
+          {:fixed, top :: non_neg_integer, right :: non_neg_integer, bottom :: non_neg_integer,
+           left :: non_neg_integer}
+          | nil
+
   @type t :: %__MODULE__{
           children: [t] | binary,
           padding:
@@ -22,6 +27,7 @@ defmodule Orange.Renderer.Box do
           height: non_neg_integer | nil,
           layout_direction: :row | :column,
           scroll: {x :: non_neg_integer, y :: non_neg_integer},
+          position: position(),
           outer_area: Orange.Renderer.Area.t(),
           inner_area: Orange.Renderer.Area.t()
         }
@@ -34,6 +40,7 @@ defmodule Orange.Renderer.Box do
     :height,
     :layout_direction,
     :scroll,
+    :position,
     :outer_area,
     :inner_area,
     :title

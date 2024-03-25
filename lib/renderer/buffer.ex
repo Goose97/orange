@@ -56,6 +56,19 @@ defmodule Orange.Renderer.Buffer do
     %{buffer | rows: :array.set(y, updated_row, buffer.rows)}
   end
 
+  def clear_area(buffer, %Renderer.Area{} = area) do
+    Enum.reduce(0..(area.height - 1), buffer, fn i, acc ->
+      row_to_update = :array.get(area.y + i, acc.rows)
+
+      updated_row =
+        Enum.reduce(0..(area.width - 1), row_to_update, fn j, row ->
+          :array.set(area.x + j, :array.default(row), row)
+        end)
+
+      %{acc | rows: :array.set(area.y + i, updated_row, acc.rows)}
+    end)
+  end
+
   defp buffer_write(%__MODULE__{size: {width, height}} = buffer, {x, y}, text, opts) do
     cond do
       y >= height ->

@@ -1026,6 +1026,160 @@ defmodule Orange.RendererTest do
     end
   end
 
+  describe "fixed position" do
+    test "single fixed element" do
+      element =
+        rect style: [width: "100%", height: 3] do
+          rect do
+            "foo"
+            "bar"
+          end
+
+          rect position: {:fixed, 4, 1, 1, 1}, style: [border: true] do
+            "baz"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 10})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             foo------------
+             bar------------
+             ---------------
+             ---------------
+             -┌───────────┐-
+             -│baz--------│-
+             -│-----------│-
+             -│-----------│-
+             -└───────────┘-
+             ---------------\
+             """
+    end
+
+    test "multiple fixed elements" do
+      element =
+        rect style: [width: "100%", height: 3] do
+          rect do
+            "foo"
+            "bar"
+          end
+
+          rect position: {:fixed, 4, 1, 1, 1}, style: [border: true] do
+            "baz"
+          end
+
+          rect position: {:fixed, 2, 4, 2, 0}, style: [border: true] do
+            "qux"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 10})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             foo------------
+             bar------------
+             ┌─────────┐----
+             │qux------│----
+             │---------│──┐-
+             │---------│--│-
+             │---------│--│-
+             └─────────┘--│-
+             -└───────────┘-
+             ---------------\
+             """
+    end
+
+    test "root fixed element" do
+      element =
+        rect style: [border: true], position: {:fixed, 3, 3, 3, 3} do
+          rect do
+            "foo"
+            "bar"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 10})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ---------------
+             ---------------
+             ---------------
+             ---┌───────┐---
+             ---│foo----│---
+             ---│bar----│---
+             ---└───────┘---
+             ---------------
+             ---------------
+             ---------------\
+             """
+    end
+
+    test "width and height is ignored" do
+      element =
+        rect style: [width: 5, height: 5, border: true], position: {:fixed, 3, 3, 3, 3} do
+          rect do
+            "foo"
+            "bar"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 10})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ---------------
+             ---------------
+             ---------------
+             ---┌───────┐---
+             ---│foo----│---
+             ---│bar----│---
+             ---└───────┘---
+             ---------------
+             ---------------
+             ---------------\
+             """
+    end
+
+    test "overshadows layers behind" do
+      element =
+        rect style: [width: "100%", height: "100%"] do
+          "111"
+          "222"
+          "333"
+          "444"
+          "555"
+
+          rect position: {:fixed, 1, 1, 1, 1}, style: [border: true] do
+            "foo"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             111------------
+             2┌───────────┐-
+             3│foo--------│-
+             4└───────────┘-
+             555------------\
+             """
+    end
+  end
+
   defp get_color(buffer, x, y) do
     cell = Orange.Renderer.Buffer.get_cell(buffer, {x, y})
     cell.foreground

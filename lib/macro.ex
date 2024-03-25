@@ -155,6 +155,22 @@ defmodule Orange.Macro do
     * `:dark_magenta`
     * `:cyan`
     * `:dark_cyan`
+
+  ## Position
+
+  Rect elements support positioning. Supported values are:
+
+    * `{:fixed, top, right, bottom, left}` - the rect will be fixed at the given position. The values are offset to the respective edge of the screen. For example:
+
+      ```
+      rect position: {:fixed, 1, 2, 1, 2} do
+        "Fixed position"
+      end
+      ```
+
+      will render:
+
+      ![rendered result](assets/fixed-position-example.png)
   """
 
   @doc """
@@ -183,6 +199,8 @@ defmodule Orange.Macro do
     * `:scroll_x` - the horizontal scroll offset
 
     * `:scroll_y` - the vertical scroll offset
+
+    * `:position` - the position of the rect. See [Position](#module-position) section
 
   ## Children validation
 

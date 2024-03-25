@@ -49,6 +49,7 @@ defmodule Orange.Renderer do
           height: height,
           style: style,
           layout_direction: Keyword.get(attrs, :direction, :column),
+          position: attrs[:position],
           title: title,
           scroll: if(scroll_x || scroll_y, do: {scroll_x, scroll_y})
         }
@@ -160,11 +161,17 @@ defmodule Orange.Renderer do
           Buffer.t()
         ) :: Buffer.t()
   defp render_root(root, viewport, buffer) do
+    Process.put(:position_fixed_boxes, [])
+
     outer_area = %__MODULE__.Area{x: 0, y: 0}
     root = %{root | outer_area: outer_area}
     {buffer, _} = render_one(root, nil, viewport, buffer, [])
 
-    buffer
+    position_fixed_boxes = Process.get(:position_fixed_boxes)
+
+    Enum.reduce(position_fixed_boxes, buffer, fn box, acc ->
+      render_fixed(box, viewport, acc)
+    end)
   end
 
   defp merge_scrollable_children(buffer, scrollable_buffer, parent) do
@@ -267,6 +274,32 @@ defmodule Orange.Renderer do
     {buffer, box}
   end
 
+  # Fixed position render algorithm:
+  # 1. In the first render pass, all fixed position boxes will be collected (it will render nothing in this pass)
+  # 2. After the first pass, render each fixed position box, according to the order of appearance
+  defp render_fixed(
+         %__MODULE__.Box{position: {:fixed, top, right, bottom, left}} = box,
+         viewport,
+         buffer
+       ) do
+    outer_area = %__MODULE__.Area{
+      x: left,
+      y: top,
+      width: viewport.width - right - left,
+      height: viewport.height - bottom - top
+    }
+
+    box = %{box | outer_area: outer_area, inner_area: nil, position: nil}
+
+    # Fixed layer will overshadow the layer behind it
+    buffer = Buffer.clear_area(buffer, outer_area)
+
+    # We have no parent
+    # The viewport is determined by fixed coordinates, which also equals to the outer area
+    {buffer, after_render_box} = render_one(box, nil, outer_area, buffer, [])
+    post_render_styling(after_render_box, buffer)
+  end
+
   defp render_one(%__MODULE__.Box{} = box, parent, viewport, buffer, style_chain) do
     style_chain = [box.style | style_chain]
 
@@ -284,6 +317,11 @@ defmodule Orange.Renderer do
         box.scroll != nil ->
           render_scroll(box, parent, viewport, buffer, style_chain)
 
+        match?({:fixed, _, _, _, _}, box.position) ->
+          boxes = Process.get(:position_fixed_boxes)
+          Process.put(:position_fixed_boxes, boxes ++ [box])
+          {buffer, nil}
+
         is_list(box.children) ->
           children = maybe_calculate_fraction_sizes(box.children, box.inner_area)
 
@@ -291,7 +329,7 @@ defmodule Orange.Renderer do
           |> render_many(buffer, style_chain, box.layout_direction)
       end
 
-    buffer = post_render_styling(after_render_box, buffer)
+    buffer = if after_render_box, do: post_render_styling(after_render_box, buffer), else: buffer
     {buffer, after_render_box}
   end
 
@@ -522,13 +560,18 @@ defmodule Orange.Renderer do
         {buffer, after_render_child} =
           render_one(child, box, nil, buffer, [box.style | style_chain])
 
-        new_cursor =
-          case direction do
-            :row -> move_cursor_x(current_cursor, after_render_child.outer_area.width)
-            :column -> move_cursor_y(current_cursor, after_render_child.outer_area.height)
-          end
+        if after_render_child do
+          new_cursor =
+            case direction do
+              :row -> move_cursor_x(current_cursor, after_render_child.outer_area.width)
+              :column -> move_cursor_y(current_cursor, after_render_child.outer_area.height)
+            end
 
-        {buffer, rendered_children ++ [after_render_child], new_cursor}
+          {buffer, rendered_children ++ [after_render_child], new_cursor}
+        else
+          # No child was rendered, keep the state
+          {buffer, rendered_children, current_cursor}
+        end
       end)
 
     # Fill in the outer area with sizes calculated from the children
