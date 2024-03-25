@@ -7,9 +7,9 @@ defmodule Orange.Component.Input do
   ## Attributes
 
     - `:on_submit` - A callback triggered when input is submitted. This attribute is required.
-    - `:submit_key` - The keyboard key that will trigger submission. This attribute is option and defaults to :enter. See `Orange.Terminal.KeyEvent` for supported values.
+    - `:submit_key` - The keyboard key that will trigger submission. This attribute is optional and defaults to :enter. See `Orange.Terminal.KeyEvent` for supported values.
     - `:on_exit` - A callback triggered when input is exited. This attribute is optional.
-    - `:exit_key` - The keyboard key that will unfocus the input. This attribute is option and defaults to :esc. See `Orange.Terminal.KeyEvent` for supported values.
+    - `:exit_key` - The keyboard key that will unfocus the input. This attribute is optional and defaults to :esc. See `Orange.Terminal.KeyEvent` for supported values.
     > #### Info {: .info}
     >
     > The `:submit_key` and `:exit_key` can not be `:backspace` as it is reserved for deleting characters.
