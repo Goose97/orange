@@ -235,8 +235,14 @@ defmodule Orange.Runtime.RenderLoop do
 
     if current_child do
       current_child = normalize_custom_component(current_child)
-      prev_child = hd(previous_component.children)
-      %{previous_component | children: [expand_with_prev(current_child, prev_child)]}
+
+      child =
+        case previous_component.children do
+          [] -> expand_new(current_child)
+          [prev_child] -> expand_with_prev(current_child, prev_child)
+        end
+
+      %{previous_component | children: [child]}
     else
       %{previous_component | children: []}
     end
