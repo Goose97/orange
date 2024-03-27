@@ -12,6 +12,8 @@ defmodule Orange.Component.Modal do
     > When the offset_x/y is too big for the terminal size, the modal will not be rendered.
 
     - `:children` - The content of the modal. This attribute is optional.
+    - `:title` - The title of the modal. This attribute is optional.
+    - `:style` - The modal style. This attribute is optional.
 
   ## Examples
 
@@ -64,9 +66,17 @@ defmodule Orange.Component.Modal do
     offset_x = attrs[:offset_x]
     offset_y = attrs[:offset_y]
 
+    style =
+      Keyword.merge(
+        Keyword.get(attrs, :style, []),
+        border: true
+      )
+
     # Plus 2 for the border
     if attrs[:open] && width > offset_x * 2 + 2 && height > offset_y * 2 + 2 do
-      rect position: {:fixed, offset_y, offset_x, offset_y, offset_x}, style: [border: true] do
+      rect position: {:fixed, offset_y, offset_x, offset_y, offset_x},
+           style: style,
+           title: attrs[:title] do
         attrs[:children]
       end
     end
