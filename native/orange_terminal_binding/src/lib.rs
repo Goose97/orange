@@ -2,7 +2,7 @@ use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use crossterm::style::{
     Attribute, Attributes, Color, ContentStyle, PrintStyledContent, StyledContent,
 };
-use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
+use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::{cursor, execute, queue};
 use rustler::{Atom, Encoder, Env, NifStruct, Term};
 use std::io::{self, Write};
@@ -24,7 +24,7 @@ struct Cell {
 
 #[rustler::nif]
 fn draw(env: Env, cells: Vec<(Cell, usize, usize)>) {
-    let mut writer = io::stderr();
+    let mut writer = io::stdout();
     let mut previous_cursor: Option<(u16, u16)> = None;
 
     for (cell, x, y) in cells.iter() {
@@ -127,6 +127,13 @@ struct KeyEvent<T: Encoder> {
     modifiers: Vec<Atom>,
 }
 
+#[derive(Debug, NifStruct)]
+#[module = "Orange.Terminal.ResizeEvent"]
+struct ResizeEvent {
+    width: u16,
+    height: u16,
+}
+
 #[rustler::nif(schedule = "DirtyIo")]
 fn poll_event(env: Env) -> Term {
     match event::read().unwrap() {
@@ -140,6 +147,11 @@ fn poll_event(env: Env) -> Term {
             } else {
                 poll_event(env)
             }
+        }
+
+        Event::Resize(width, height) => {
+            let resize_event = ResizeEvent { width, height };
+            resize_event.encode(env)
         }
 
         _ => poll_event(env),
@@ -221,12 +233,12 @@ fn leave_alternate_screen() {
 
 #[rustler::nif]
 fn enable_raw_mode() {
-    crossterm::terminal::enable_raw_mode().unwrap();
+    terminal::enable_raw_mode().unwrap();
 }
 
 #[rustler::nif]
 fn disable_raw_mode() {
-    crossterm::terminal::disable_raw_mode().unwrap();
+    terminal::disable_raw_mode().unwrap();
 }
 
 #[rustler::nif]
@@ -240,8 +252,16 @@ fn hide_cursor() {
 }
 
 #[rustler::nif]
+fn clear() {
+    let mut writer = io::stdout();
+    queue_command(&mut writer, terminal::Clear(terminal::ClearType::All));
+    queue_command(&mut writer, terminal::Clear(terminal::ClearType::Purge));
+    flush(&mut writer);
+}
+
+#[rustler::nif]
 fn terminal_size(env: Env) -> Term {
-    crossterm::terminal::size().unwrap().encode(env)
+    terminal::size().unwrap().encode(env)
 }
 
 rustler::init!(
@@ -254,6 +274,7 @@ rustler::init!(
         disable_raw_mode,
         show_cursor,
         hide_cursor,
+        clear,
         poll_event,
         terminal_size
     ]

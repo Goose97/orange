@@ -94,3 +94,8 @@ To unsubcribe for events, use `Orange.unsubcribe/1`.
 ## Component focus mode
 
 There are certain cases that you only want one component to receive events and prevent other components. Look at the above example, an input component should receive all the events and prevent users from quitting the application when hitting "q". To do that, we can set a component as focused with `Orange.focus/1`. Only the focused component can receive terminal events. To remove the focus status, use `Orange.unfocus/1`.
+
+# Supported events
+
+- Keyboard events: see `Orange.Terminal.KeyEvent` for more details
+- Terminal resize event: see `Orange.Terminal.ResizeEvent` for more details

@@ -52,3 +52,16 @@ defmodule Orange.Terminal.KeyEvent do
 
   defstruct [:code, :modifiers]
 end
+
+defmodule Orange.Terminal.ResizeEvent do
+  @moduledoc """
+  Terminal resize event.
+  """
+
+  @type t :: %__MODULE__{
+          width: non_neg_integer,
+          height: non_neg_integer
+        }
+
+  defstruct [:width, :height]
+end

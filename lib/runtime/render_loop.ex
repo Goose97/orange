@@ -90,7 +90,16 @@ defmodule Orange.Runtime.RenderLoop do
   @impl true
   def handle_info({:event, event}, state) do
     event_manager_impl().dispatch_event(event)
-    state = render_tick(state)
+
+    state =
+      case event do
+        %Terminal.ResizeEvent{width: w, height: h} ->
+          %{state | terminal_size: {w, h}}
+          |> render_tick(clean_buffer: true)
+
+        %Terminal.KeyEvent{} ->
+          render_tick(state)
+      end
 
     {:noreply, state}
   end
@@ -103,7 +112,7 @@ defmodule Orange.Runtime.RenderLoop do
     {:noreply, state}
   end
 
-  defp render_tick(state) do
+  defp render_tick(state, opts \\ []) do
     {current_tree, mounting_components, unmounting_components} =
       to_component_tree(state.root, state.previous_tree)
 
@@ -116,7 +125,12 @@ defmodule Orange.Runtime.RenderLoop do
       |> tap(&validate_render_tree!/1)
       |> Renderer.render(%{width: width, height: height})
 
-    terminal_impl().draw(current_buffer, state.previous_buffer)
+    if opts[:clean_buffer] do
+      terminal_impl().clear()
+      terminal_impl().draw(current_buffer, nil)
+    else
+      terminal_impl().draw(current_buffer, state.previous_buffer)
+    end
 
     after_mount(mounting_components)
     after_unmount(unmounting_components)

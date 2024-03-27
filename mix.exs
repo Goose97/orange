@@ -44,7 +44,8 @@ defmodule Orange.MixProject do
           Orange.Component.Modal
         ],
         Events: [
-          Orange.Terminal.KeyEvent
+          Orange.Terminal.KeyEvent,
+          Orange.Terminal.ResizeEvent
         ]
       ]
     ]

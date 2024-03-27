@@ -113,6 +113,7 @@ defmodule Orange.RuntimeTestHelper do
     stub(mock_terminal, :disable_raw_mode, fn -> :ok end)
     stub(mock_terminal, :show_cursor, fn -> :ok end)
     stub(mock_terminal, :hide_cursor, fn -> :ok end)
+    stub(mock_terminal, :clear, fn -> :ok end)
   end
 
   defp mock_draw(buffer, _previous_buffer) do

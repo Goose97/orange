@@ -15,6 +15,7 @@ defmodule Orange.Terminal do
   @callback disable_raw_mode() :: :ok
   @callback show_cursor() :: :ok
   @callback hide_cursor() :: :ok
+  @callback clear() :: :ok
   @callback terminal_size() :: {non_neg_integer(), non_neg_integer()}
 
   def draw(buffer, previous_buffer \\ nil)
@@ -120,6 +121,14 @@ defmodule Orange.Terminal do
     :ok
   end
 
+  @doc """
+  Clear all terminal.
+  """
+  def clear() do
+    __MODULE__.Binding.clear()
+    :ok
+  end
+
   defdelegate terminal_size(), to: __MODULE__.Binding
 
   defmodule Binding do
@@ -151,6 +160,7 @@ defmodule Orange.Terminal do
     def disable_raw_mode(), do: :erlang.nif_error(:nif_not_loaded)
     def show_cursor(), do: :erlang.nif_error(:nif_not_loaded)
     def hide_cursor(), do: :erlang.nif_error(:nif_not_loaded)
+    def clear(), do: :erlang.nif_error(:nif_not_loaded)
     def poll_event(), do: :erlang.nif_error(:nif_not_loaded)
     def terminal_size(), do: :erlang.nif_error(:nif_not_loaded)
   end
