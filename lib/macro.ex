@@ -131,6 +131,16 @@ defmodule Orange.Macro do
 
     * `:border_color` - the color of the border. See [Color](#module-color) section for supported colors
 
+  ### Text modifiers
+
+  An array of modifiers which adjust the text style. Supported modifiers are:
+
+    * `:bold`
+    * `:dim`
+    * `:italic`
+    * `:underline`
+    * `:strikethrough`
+
   ### Color
 
     * `:color` - the color of the component text. The color value can be inherited from the parent component. If the color value is not specified, the component will inherit the color from the parent component
@@ -194,7 +204,15 @@ defmodule Orange.Macro do
 
       * `:background_color` - see [Color](#module-color) section
 
-    * `:title` - the title of the rect. If specified, it implies `border` is `true`
+    * `:title` - the title of the rect. If specified, it implies `border` is `true`. The title can be a string or a map with supported keys are:
+
+      * `:text` - the title text. This field is required
+
+      * `:color` - the title color. This field is optional
+
+      * `:text_modifiers` - the title text modifiers. See [Text modifiers](#module-text-modifiers) section. This field is optional
+
+      * `:offset` - an integer specifies the title offset from the left edge. This field is optional and defaults to 0
 
     * `:scroll_x` - the horizontal scroll offset
 

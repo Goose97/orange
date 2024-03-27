@@ -770,11 +770,26 @@ defmodule Orange.Renderer do
   end
 
   defp render_title(box, buffer) do
+    {title_text, offset, opts} =
+      case box.title do
+        title when is_binary(title) ->
+          {title, 0, []}
+
+        title when is_map(title) ->
+          opts =
+            title
+            |> Map.take([:color, :text_modifiers])
+            |> Map.to_list()
+
+          {title[:text], Map.get(title, :offset, 0), opts}
+      end
+
     Buffer.write_string(
       buffer,
-      {box.outer_area.x + 1, box.outer_area.y},
-      box.title,
-      :horizontal
+      {box.outer_area.x + offset + 1, box.outer_area.y},
+      title_text,
+      :horizontal,
+      opts
     )
   end
 

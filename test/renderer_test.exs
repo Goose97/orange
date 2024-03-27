@@ -133,8 +133,10 @@ defmodule Orange.RendererTest do
              -------------------------\
              """
     end
+  end
 
-    test "renders with title" do
+  describe "title" do
+    test ":title is a string" do
       element =
         rect style: [border: true, width: "100%"], title: "Title" do
           "foo"
@@ -154,6 +156,32 @@ defmodule Orange.RendererTest do
              ---------------
              ---------------\
              """
+    end
+
+    test ":title is a map" do
+      element =
+        rect style: [border: true, width: "100%"],
+             title: %{text: "Title", color: :red, text_modifiers: [:bold], offset: 3} do
+          "foo"
+          "bar"
+        end
+
+      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      screen = Orange.Renderer.Buffer.to_string(buffer)
+
+      assert screen == """
+             ┌───Title─────┐
+             │foo----------│
+             │bar----------│
+             └─────────────┘
+             ---------------
+             ---------------\
+             """
+
+      Enum.each(4..8, fn x ->
+        assert get_color(buffer, x, 0) == :red
+        assert :bold in get_modifiers(buffer, x, 0)
+      end)
     end
   end
 

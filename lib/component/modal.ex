@@ -12,8 +12,8 @@ defmodule Orange.Component.Modal do
     > When the offset_x/y is too big for the terminal size, the modal will not be rendered.
 
     - `:children` - The content of the modal. This attribute is optional.
-    - `:title` - The title of the modal. This attribute is optional.
-    - `:style` - The modal style. This attribute is optional.
+    - `:title` - The title of the modal. See `Orange.Macro.rect/2` for supported values. This attribute is optional.
+    - `:style` - The modal style. See `Orange.Macro.rect/2` for supported values. This attribute is optional.
 
   ## Examples
 
