@@ -47,6 +47,8 @@ defmodule Orange do
 
       # Start the application. To quit, press 'q'.
       Orange.start(Panel)
+
+  ![rendered result](assets/random-panel-example.gif)
   """
 
   @doc """

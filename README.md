@@ -1,3 +1,5 @@
+[![Package](https://img.shields.io/badge/-Package-important)](https://hex.pm/packages/orange) [![Documentation](https://img.shields.io/badge/-Documentation-blueviolet)](https://hexdocs.pm/orange)
+
 Orange is a framework to build TUI (terminal UI) applications in Elixir. Its high-level features are:
 
   * A DSL to describe UI component. The syntax is inspired by React. For example, an snippet like this:
