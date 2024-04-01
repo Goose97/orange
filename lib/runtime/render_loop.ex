@@ -204,6 +204,12 @@ defmodule Orange.Runtime.RenderLoop do
     Process.put({__MODULE__, :unmounting_components}, [component | mounted])
   end
 
+  defp add_to_unmounting_list(component)
+       when is_struct(component, Rect)
+       when is_struct(component, Line)
+       when is_struct(component, Span),
+       do: Enum.each(component.children, &add_to_unmounting_list/1)
+
   defp add_to_unmounting_list(_component), do: :noop
 
   defp expand_with_prev(%Span{} = component, _previous_tree), do: component

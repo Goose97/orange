@@ -43,11 +43,14 @@ defmodule Orange.Runtime.CallbackTest do
 
     ref1 = :atomics.new(1, [])
     ref2 = :atomics.new(1, [])
+    ref3 = :atomics.new(1, [])
 
-    RuntimeTestHelper.dry_render({__MODULE__.CounterWrapper, atomic1: ref1, atomic2: ref2})
+    RuntimeTestHelper.dry_render(
+      {__MODULE__.CounterWrapper, atomic1: ref1, atomic2: ref2, atomic3: ref3}
+    )
 
-    value = :atomics.get(ref2, 1)
-    assert value == -1
+    assert :atomics.get(ref2, 1) == -1
+    assert :atomics.get(ref3, 1) == -1
   end
 
   defmodule Counter do
@@ -118,6 +121,14 @@ defmodule Orange.Runtime.CallbackTest do
       rect style: [width: 15] do
         {Counter, atomic: attrs[:atomic1]}
         if !state.remove, do: {Counter, atomic: attrs[:atomic2]}
+
+        if state.remove do
+          span(do: "Removed!")
+        else
+          rect do
+            {Counter, atomic: attrs[:atomic3]}
+          end
+        end
       end
     end
   end
