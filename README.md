@@ -2,29 +2,37 @@
 
 Orange is a framework to build TUI (terminal UI) applications in Elixir. Its high-level features are:
 
-  * A DSL to describe UI component. The syntax is inspired by React. For example, an snippet like this:
+- A DSL to describe UI component. The syntax is inspired by React. For example, an snippet like this:
 
-    ```elixir
-    rect style: [border: true, padding: {0, 1}, height: 10, width: 20] do
-      span style: [color: :red] do
-        "Hello"
-      end
-
-      span do
-        "World"
-      end
+  ```elixir
+  rect style: [border: true, padding: {0, 1}, height: 10, width: 20] do
+    span style: [color: :red] do
+      "Hello"
     end
-    ```
 
-    will render this:
+    span do
+      "World"
+    end
+  end
+  ```
 
-    ![Rendered result](https://github.com/Goose97/orange/blob/main/.github/assets/example_syntax.png)
+  will render this:
 
-  * Support handling terminal events: currently, only keyboard events are supported.
+  ![Rendered result](https://github.com/Goose97/orange/blob/main/.github/assets/example_syntax.png)
 
-  * Support custom components: you can create component from builtin primitives like rect, line, span. Custom components can encapsulate state and logic.
+- Support handling terminal events: currently, only keyboard events are supported.
 
-  * A collection of UI components: Input, VerticalScrollRect, ...
+- Support custom components: you can create component from builtin primitives like rect, line, span. Custom components can encapsulate state and logic.
+
+- A collection of UI components: Input, VerticalScrollRect, ...
+
+## Important
+
+When using Orange, it is essential that you prevent the Erlang VM from reading stdin as it can interfere with the terminal events handling logic. You can achieve this via the `-noinput` flag:
+
+```sh
+elixir --erl "-noinput" -S mix run --no-halt
+```
 
 ## Examples
 
