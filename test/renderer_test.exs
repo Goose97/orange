@@ -1208,6 +1208,77 @@ defmodule Orange.RendererTest do
     end
   end
 
+  describe "line wrap" do
+    test "width is enough" do
+      element =
+        rect style: [width: 10, height: 3, border: true] do
+          line do
+            "foo bar"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌────────┐-----
+             │foo bar-│-----
+             └────────┘-----
+             ---------------
+             ---------------
+             ---------------\
+             """
+    end
+
+    test "width is not enough, split by word basis" do
+      element =
+        rect style: [width: 7, height: 5, border: true] do
+          line do
+            "foo bar"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌─────┐--------
+             │foo--│--------
+             │bar--│--------
+             │-----│--------
+             └─────┘--------
+             ---------------\
+             """
+    end
+
+    test "disable line wrap" do
+      element =
+        rect style: [width: 7, height: 5, border: true] do
+          span style: [line_wrap: false] do
+            "foo bar"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌─────┐--------
+             │foo b│--------
+             │-----│--------
+             │-----│--------
+             └─────┘--------
+             ---------------\
+             """
+    end
+  end
+
   defp get_color(buffer, x, y) do
     cell = Orange.Renderer.Buffer.get_cell(buffer, {x, y})
     cell.foreground

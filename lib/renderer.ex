@@ -74,7 +74,9 @@ defmodule Orange.Renderer do
         }
 
       %Span{attributes: attrs, children: [text]} ->
+        default = [line_wrap: true]
         style = Keyword.get(attrs, :style, [])
+        style = Keyword.merge(default, style)
 
         %__MODULE__.Box{
           children: text,
@@ -534,18 +536,61 @@ defmodule Orange.Renderer do
         text_modifiers: get_style(style_chain, :text_modifiers) || []
       ]
 
-      text =
-        if box.inner_area.width && box.inner_area.width != :infinity,
-          do: String.slice(text, 0, box.inner_area.width),
-          else: text
+      {lines, box_width} =
+        if box.inner_area.width && box.inner_area.width != :infinity do
+          if style[:line_wrap] do
+            lines = split_into_lines(text, box.inner_area.width)
+            width = Enum.map(lines, &String.length/1) |> Enum.max()
+
+            {lines, width}
+          else
+            # If line can not wrap, truncate the text
+            text = String.slice(text, 0, box.inner_area.width)
+            {[text], String.length(text)}
+          end
+        else
+          {[text], String.length(text)}
+        end
 
       new_buffer =
-        Buffer.write_string(buffer, {box.inner_area.x, box.inner_area.y}, text, :horizontal, opts)
+        Enum.with_index(lines)
+        |> Enum.reduce(buffer, fn {line, line_offset}, buffer ->
+          buffer =
+            Buffer.write_string(
+              buffer,
+              {box.inner_area.x, box.inner_area.y + line_offset},
+              line,
+              :horizontal,
+              opts
+            )
 
-      box = %{box | width: String.graphemes(text) |> length(), height: 1}
+          buffer
+        end)
+
+      box = %{box | width: box_width, height: length(lines)}
       box = %{box | outer_area: %{box.outer_area | width: box.width, height: box.height}}
       {new_buffer, box}
     end
+  end
+
+  # When a text can not fit within the box, we split it into multiple lines.
+  # There's one caveat: we can't split a word in the middle. So we need to split on word boundaries.
+  defp split_into_lines(text, line_width) do
+    String.split(text, " ")
+    |> Enum.chunk_while(
+      {[], 0},
+      fn word, {current_line, current_length} ->
+        next_length = current_length + String.length(word) + 1
+
+        if next_length <= line_width do
+          current_line = if current_line == [], do: [word], else: [current_line, " " | word]
+          {:cont, {current_line, next_length}}
+        else
+          {:cont, IO.iodata_to_binary(current_line), {[word], String.length(word)}}
+        end
+      end,
+      fn {current_line, _} -> {:cont, IO.iodata_to_binary(current_line), nil} end
+    )
   end
 
   def render_many(%__MODULE__.Box{children: children} = box, buffer, style_chain, direction) do

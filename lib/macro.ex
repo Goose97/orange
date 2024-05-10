@@ -166,6 +166,10 @@ defmodule Orange.Macro do
     * `:cyan`
     * `:dark_cyan`
 
+  ### Line wrap
+
+  By default, the text will wrap to the next line if it exceeds the width of the component. To disable this behavior, set the `:line_wrap` attribute to `false`
+
   ## Position
 
   Rect elements support positioning. Supported values are:
