@@ -1,65 +1,65 @@
 defmodule Orange.Runtime.ChildrenDiffTest do
   use ExUnit.Case
 
-  alias Orange.{Span, Line, Rect, CustomComponent}
+  alias Orange.{Rect, CustomComponent}
   alias Orange.Runtime.ChildrenDiff
 
   describe "run/2" do
     test "stateless children" do
       list1 = [
-        %Span{children: ["Text: 0"]},
-        %Span{children: ["Text: 1"]},
-        %Span{children: ["Text: 2"]}
+        "Text: 0",
+        "Text: 1",
+        "Text: 2"
       ]
 
       list2 = [
-        %Span{children: ["Text: 1"]},
-        %Span{children: ["Text: 2"]},
-        %Span{children: ["Text: 3"]}
+        "Text: 1",
+        "Text: 2",
+        "Text: 3"
       ]
 
       assert ChildrenDiff.run(list2, list1) ==
                [
-                 {:new, %Orange.Span{children: ["Text: 1"], attributes: []}},
-                 {:new, %Orange.Span{children: ["Text: 2"], attributes: []}},
-                 {:new, %Orange.Span{children: ["Text: 3"], attributes: []}}
+                 {:new, "Text: 1"},
+                 {:new, "Text: 2"},
+                 {:new, "Text: 3"}
                ]
 
       list1 = [
-        %Span{children: ["Text: 0"]},
-        %Span{children: ["Text: 1"]},
-        %Span{children: ["Text: 2"]}
+        "Text: 0",
+        "Text: 1",
+        "Text: 2"
       ]
 
       list2 = [
-        %Span{children: ["Text: 1"]},
-        %Line{children: ["Text: 2"]},
-        %Span{children: ["Text: 3"]}
+        "Text: 1",
+        %Rect{children: ["Text: 2"]},
+        "Text: 3"
       ]
 
       assert ChildrenDiff.run(list2, list1) ==
                [
-                 {:new, %Orange.Span{children: ["Text: 1"], attributes: []}},
-                 {:new, %Orange.Line{children: ["Text: 2"], attributes: []}},
-                 {:new, %Orange.Span{children: ["Text: 3"], attributes: []}},
-                 {:remove, %Orange.Span{children: ["Text: 1"], attributes: []}}
+                 {:new, "Text: 1"},
+                 {:new, %Orange.Rect{children: ["Text: 2"], attributes: []}},
+                 {:new, "Text: 3"},
+                 {:remove, "Text: 1"}
                ]
     end
 
     test "stateful children" do
       list1 = [
-        %Span{children: ["Text: 0"]},
+        "Text: 0",
         %Rect{children: ["Text: 1"]}
       ]
 
       list2 = [
-        %Span{children: ["Text: 1"]},
+        "Text: 1",
         %Rect{children: ["Text: 2"]}
       ]
 
       assert ChildrenDiff.run(list2, list1) ==
                [
-                 {:new, %Span{children: ["Text: 1"], attributes: []}},
+                 {:new, "Text: 1"},
                  {:keep, %Rect{children: ["Text: 2"], attributes: []},
                   %Rect{children: ["Text: 1"], attributes: []}}
                ]
@@ -73,7 +73,7 @@ defmodule Orange.Runtime.ChildrenDiffTest do
 
       list2 = [
         %CustomComponent{children: ["Text: 1"]},
-        %Span{children: ["Text: 1"]},
+        "Text: 1",
         %Rect{children: ["Text: 2"]}
       ]
 
@@ -88,7 +88,7 @@ defmodule Orange.Runtime.ChildrenDiffTest do
                     children: ["Text: 0"],
                     attributes: []
                   }},
-                 {:new, %Orange.Span{children: ["Text: 1"], attributes: []}},
+                 {:new, "Text: 1"},
                  {:keep, %Orange.Rect{children: ["Text: 2"], attributes: []},
                   %Orange.Rect{children: ["Text: 1"], attributes: []}}
                ]
@@ -102,7 +102,7 @@ defmodule Orange.Runtime.ChildrenDiffTest do
 
       list2 = [
         %CustomComponent{children: ["Text: 1"], module: :bar},
-        %Span{children: ["Text: 1"]},
+        "Text: 1",
         %Rect{children: ["Text: 2"]}
       ]
 
@@ -114,7 +114,7 @@ defmodule Orange.Runtime.ChildrenDiffTest do
                     children: ["Text: 1"],
                     attributes: []
                   }},
-                 {:new, %Orange.Span{children: ["Text: 1"], attributes: []}},
+                 {:new, "Text: 1"},
                  {:keep, %Orange.Rect{children: ["Text: 2"], attributes: []},
                   %Orange.Rect{children: ["Text: 1"], attributes: []}},
                  {:remove,

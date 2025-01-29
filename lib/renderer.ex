@@ -1,193 +1,309 @@
 defmodule Orange.Renderer do
-  @moduledoc false
+  @moduledoc """
+  Render element tree to buffer
+  """
 
-  alias __MODULE__.Buffer
-  alias Orange.{CustomComponent, Rect, Line, Span, Cursor}
+  alias Orange.Renderer.Buffer
+  alias Orange.Layout.InputTreeNode
 
   @type window :: %{width: integer, height: integer}
   @type style_chain :: [Keyword.t()]
-  @type ui_element :: Orange.Rect.t() | Orange.Line.t() | Orange.Span.t()
+  @type ui_element :: Orange.Rect.t()
 
-  # We need to render the elements to a buffer before painting them to the screen
-  # A buffer a just a m x n matrix of characters
+  # Render the elements to a buffer before painting them to the screen
+  # A buffer is a m×n matrix of cells
   @spec render(ui_element, window) :: Buffer.t()
-  def render(element, window) do
+  def render(tree, window) do
+    {tree, node_attributes_map, fixed_position_nodes} = to_binding_input_tree(tree)
+
     width = window[:width]
     height = window[:height]
     buffer = Buffer.new({width, height})
 
-    viewport = %__MODULE__.Area{x: 0, y: 0, width: width, height: height}
-    render_tree = to_render_tree(element)
-    validate_render_tree!(render_tree)
-    render_root(render_tree, viewport, buffer)
-  end
-
-  # Convert a element tree to a tree of Renderer.Box
-  defp to_render_tree(element) do
-    case element do
-      %CustomComponent{children: [child]} ->
-        to_render_tree(child)
-
-      %Rect{attributes: attrs, children: children} ->
-        title = attrs[:title]
-        style = Keyword.get(attrs, :style, [])
-
-        {padding, style} = Keyword.pop(style, :padding)
-        padding = if padding, do: expand_padding(padding), else: {0, 0, 0, 0}
-
-        {width, style} = Keyword.pop(style, :width)
-        {height, style} = Keyword.pop(style, :height)
-
-        scroll_x = attrs[:scroll_x]
-        scroll_y = attrs[:scroll_y]
-
-        %__MODULE__.Box{
-          children: Enum.map(children, &to_render_tree/1),
-          padding: padding,
-          border: border_attribute(style, title),
-          width: width,
-          height: height,
-          style: style,
-          layout_direction: Keyword.get(attrs, :direction, :column),
-          position: attrs[:position],
-          title: title,
-          scroll: if(scroll_x || scroll_y, do: {scroll_x, scroll_y})
-        }
-
-      %Line{attributes: attrs, children: children} ->
-        style = Keyword.get(attrs, :style, [])
-
-        {padding, style} = Keyword.pop(style, :padding)
-        padding = if padding, do: expand_padding(padding), else: {0, 0, 0, 0}
-
-        {width, style} = Keyword.pop(style, :width)
-        {height, style} = Keyword.pop(style, :height)
-
-        %__MODULE__.Box{
-          children: Enum.map(children, &to_render_tree/1),
-          padding: padding,
-          border: nil,
-          width: width,
-          height: height,
-          style: style,
-          layout_direction: :row
-        }
-
-      %Span{attributes: attrs, children: [text]} ->
-        default = [line_wrap: true]
-        style = Keyword.get(attrs, :style, [])
-        style = Keyword.merge(default, style)
-
-        %__MODULE__.Box{
-          children: text,
-          padding: {0, 0, 0, 0},
-          border: nil,
-          style: style
-        }
-    end
-  end
-
-  defp border_attribute(style, title) do
-    has_border = Keyword.get(style, :border, false) || title != nil
-
-    if has_border do
-      {Keyword.get(style, :border_top, true), Keyword.get(style, :border_right, true),
-       Keyword.get(style, :border_bottom, true), Keyword.get(style, :border_left, true)}
-    else
-      nil
-    end
-  end
-
-  defp validate_render_tree!(root) do
-    validate_fractional_size = fn type ->
-      # Don't validate custom components
-      has_fraction_size =
-        Enum.any?(root.children, fn child ->
-          size = Map.get(child, type)
-          size && is_binary(size) && Regex.match?(~r/^\d+fr$/, size)
-        end)
-
-      if has_fraction_size do
-        all_has_fraction_size =
-          Enum.all?(root.children, fn child ->
-            size = Map.get(child, type)
-            size && is_binary(size) && Regex.match?(~r/^\d+fr$/, size)
-          end)
-
-        if !all_has_fraction_size do
-          raise "#{__MODULE__}: Fractional #{type} must be set for all children"
-        end
+    # The tree can be nil if the root element is a fixed position node
+    buffer =
+      if tree do
+        output_tree = Orange.Layout.layout(tree, {width, height})
+        render_node(output_tree, buffer, {0, 0}, node_attributes_map, [])
+      else
+        buffer
       end
-    end
 
-    case root do
-      %__MODULE__.Box{children: children} when is_list(children) ->
-        validate_fractional_size.(:width)
-        validate_fractional_size.(:height)
-        Enum.each(children, &validate_render_tree!/1)
-
-      _ ->
-        :ok
-    end
-  end
-
-  # Renders the render tree to a buffer
-  # The box layout algorithm is as follows:
-  # - Boxes will be rendered top-down
-  # - Children boxes has two layout mode: row and column
-  # - A box has two interesting areas: the outer area and the inner area
-  #   * The outer area is the area that the box occupies in the screen. This will be used to render
-  #     the border and the background color. The outer area COULD be partial, specifically missing width or
-  #     height. For example if the box width and height is not specified, these dimensions will be
-  #     determined by the children areas.
-  #   * The inner area is the area that the children MIGHT occupy. This area is affected by the padding
-  #     and the border. The inner area is ALWAYS complete (in constract to the outer area) and the children
-  #     of the box MUST NOT exceed this area.
-  #   * Notice that the inner area might be bigger than the outer area, because it's the potential
-  #     area that the children MIGHT occupy. Whereas the outer area is the actual area that the box
-  #     occupies in the screen
-  #
-  # - The outer area will be calculated as follows:
-  #   * The root box outer area is the whole screen
-  #   * If the width or height is specified, the outer area will has the specified width and height
-  #   * If the width or height is not specified, such dimension will be calculated based on the children
-  # - The inner area will be calculated as follows:
-  #   * If the outer area is complete, the inner area will be the outer area minus the padding
-  #     and the border, if any
-  #   * If the outer area is not complete, a hypothetical outer area will be calculated based on the
-  #     inner area of the parent. The hypothetical area represents the maximum area that this box
-  #     could occupy. The inner area will then be calculated based on this hypothetical area
-  @spec render_root(
-          __MODULE__.Box.t(),
-          __MODULE__.Area.t(),
-          Buffer.t()
-        ) :: Buffer.t()
-  defp render_root(root, viewport, buffer) do
-    Process.put(:position_fixed_boxes, [])
-
-    outer_area = %__MODULE__.Area{x: 0, y: 0}
-    root = %{root | outer_area: outer_area}
-    {buffer, _} = render_one(root, nil, viewport, buffer, [])
-
-    position_fixed_boxes = Process.get(:position_fixed_boxes)
-
-    Enum.reduce(position_fixed_boxes, buffer, fn box, acc ->
-      render_fixed(box, viewport, acc)
+    Enum.reduce(fixed_position_nodes, buffer, fn node, acc ->
+      render_fixed(node, acc, window)
     end)
   end
 
-  defp merge_scrollable_children(buffer, scrollable_buffer, parent) do
-    # We extract the area which is visible in the viewport
-    {scroll_x, scroll_y} = parent.scroll
+  defp render_node(
+         %Orange.Layout.OutputTreeNode{} = node,
+         buffer,
+         origin,
+         node_attributes_map,
+         style_chain
+       ) do
+    node =
+      node
+      |> Map.update!(:x, &(&1 + elem(origin, 0)))
+      |> Map.update!(:y, &(&1 + elem(origin, 1)))
+
+    attributes = Map.get(node_attributes_map, node.id, [])
+
+    buffer
+    |> render_border(node, attributes)
+    |> maybe_render_title(node, attributes[:title])
+    |> render_children(node, node_attributes_map, style_chain)
+    |> maybe_set_background_color(node, attributes)
+  end
+
+  defp render_border(
+         buffer,
+         %Orange.Layout.OutputTreeNode{border: border, x: x, y: y, width: w, height: h},
+         attributes
+       ) do
+    %{top: top, right: right, bottom: bottom, left: left} = border
+
+    border_color = get_in(attributes, [:style, :border_color])
+
+    # Top border
+    buffer =
+      if top > 0 do
+        top_border =
+          if(left > 0, do: "┌", else: "─") <>
+            String.duplicate("─", w - 2) <>
+            if(right > 0, do: "┐", else: "─")
+
+        Buffer.write_string(buffer, {x, y}, top_border, :horizontal, color: border_color)
+      else
+        buffer
+      end
+
+    # Bottom border
+    buffer =
+      if bottom > 0 do
+        bottom_border =
+          if(left > 0, do: "└", else: "─") <>
+            String.duplicate("─", w - 2) <>
+            if(right > 0, do: "┘", else: "─")
+
+        Buffer.write_string(buffer, {x, y + h - 1}, bottom_border, :horizontal,
+          color: border_color
+        )
+      else
+        buffer
+      end
+
+    # Left and right border
+    start = if top > 0, do: y + 1, else: y
+    stop = if bottom > 0, do: y + h - 2, else: y + h - 1
+    length = stop - start + 1
+    vertical_border = String.duplicate("│", length)
+
+    buffer =
+      if left > 0 do
+        Buffer.write_string(buffer, {x, start}, vertical_border, :vertical, color: border_color)
+      else
+        buffer
+      end
+
+    buffer =
+      if right > 0 do
+        Buffer.write_string(buffer, {x + w - 1, start}, vertical_border, :vertical,
+          color: border_color
+        )
+      else
+        buffer
+      end
+
+    buffer
+  end
+
+  defp maybe_render_title(buffer, _, nil), do: buffer
+
+  defp maybe_render_title(buffer, %Orange.Layout.OutputTreeNode{x: x, y: y}, title) do
+    {title_text, offset, opts} =
+      case title do
+        title when is_binary(title) ->
+          {title, 0, []}
+
+        title when is_map(title) ->
+          opts =
+            title
+            |> Map.take([:color, :text_modifiers])
+            |> Map.to_list()
+
+          {title[:text], Map.get(title, :offset, 0), opts}
+      end
+
+    Buffer.write_string(
+      buffer,
+      {x + offset + 1, y},
+      title_text,
+      :horizontal,
+      opts
+    )
+  end
+
+  defp maybe_set_background_color(
+         buffer,
+         %Orange.Layout.OutputTreeNode{
+           x: x,
+           y: y,
+           width: w,
+           height: h
+         },
+         attributes
+       ) do
+    background_color = get_in(attributes, [:style, :background_color])
+
+    if background_color do
+      area =
+        %__MODULE__.Area{x: x, y: y, width: w, height: h}
+
+      Buffer.set_background_color(
+        buffer,
+        area,
+        background_color
+      )
+    else
+      buffer
+    end
+  end
+
+  defp render_children(buffer, node, node_attributes_map, style_chain) do
+    attributes = Map.get(node_attributes_map, node.id, [])
+    scroll_x = attributes[:scroll_x]
+    scroll_y = attributes[:scroll_y]
+
+    if scroll_x || scroll_y,
+      do: render_scrollable_children(buffer, node, node_attributes_map, style_chain),
+      else: do_render_children(buffer, node, node_attributes_map, style_chain)
+  end
+
+  defp do_render_children(buffer, node, node_attributes_map, style_chain) do
+    attributes = Map.get(node_attributes_map, node.id, [])
+    style_chain = [Keyword.get(attributes, :style, []) | style_chain]
+
+    case node.children do
+      {:text, text} ->
+        start_x = node.x + if(node.border.left > 0, do: 1, else: 0) + node.padding.left
+        start_y = node.y + if(node.border.top > 0, do: 1, else: 0) + node.padding.top
+
+        opts = [
+          color: get_style_from_chain(style_chain, :color),
+          text_modifiers: get_style_from_chain(style_chain, :text_modifiers) || []
+        ]
+
+        lines =
+          string_to_lines(
+            text,
+            elem(node.content_size, 0) - node.padding.left - node.padding.right,
+            elem(node.content_size, 1) - node.padding.top - node.padding.bottom
+          )
+
+        {buffer, _} =
+          Enum.reduce(lines, {buffer, 0}, fn line, {acc_buffer, index} ->
+            updated_buffer =
+              Buffer.write_string(acc_buffer, {start_x, start_y + index}, line, :horizontal, opts)
+
+            {updated_buffer, index + 1}
+          end)
+
+        buffer
+
+      {:nodes, nodes} ->
+        # The position of each child is relative to the parent
+        # We need to keep track of the origin of the parent. The new origin is the parent's position
+        new_origin = {node.x, node.y}
+
+        Enum.reduce(nodes, buffer, fn node, buffer ->
+          render_node(node, buffer, new_origin, node_attributes_map, style_chain)
+        end)
+    end
+  end
+
+  # Given the content size calculated by the layout algorithm, split string into lines
+  defp string_to_lines(string, width, height) do
+    words = String.split(string, ~r/\s+/)
+
+    {lines, current_line} =
+      Enum.reduce(words, {[], ""}, fn word, {lines, current_line} ->
+        new_width =
+          String.length(current_line) + String.length(word) + 1
+
+        cond do
+          # If the current line is empty, always append the word
+          current_line == "" ->
+            {lines, word}
+
+          # From the second word onwards, check if the current line is too long
+          new_width > width ->
+            lines = lines ++ [current_line]
+            {lines, word}
+
+          true ->
+            appended = if current_line == "", do: word, else: current_line <> " " <> word
+            {lines, appended}
+        end
+      end)
+
+    lines = if current_line != "", do: lines ++ [current_line], else: lines
+
+    if height != length(lines),
+      do: raise("#{__MODULE__}: Lines count does not match the layout height")
+
+    lines
+  end
+
+  # The render algorithm is as follows:
+  # 1. First render the scrollable children into a separate buffer.
+  # 2. Extract the visible area from the children buffer. This area is determined by the scroll offset (x, y) and
+  # the width and height of the parent node
+  # 3. Merge the visible area into the parent buffer
+  defp render_scrollable_children(buffer, node, node_attributes_map, style_chain) do
+    scroll_buffer = Buffer.new()
+
+    scroll_buffer =
+      do_render_children(
+        scroll_buffer,
+        # Reset the parent container
+        %{node | x: 0, y: 0, border: {0, 0, 0, 0}, padding: {0, 0, 0, 0}},
+        node_attributes_map,
+        style_chain
+      )
+
+    attributes = Map.get(node_attributes_map, node.id, [])
+
+    merge_scrollable_children(
+      buffer,
+      scroll_buffer,
+      node,
+      {attributes[:scroll_x], attributes[:scroll_y]}
+    )
+  end
+
+  defp merge_scrollable_children(buffer, scrollable_buffer, node, {scroll_x, scroll_y}) do
+    inner_width =
+      node.width - node.padding.left - node.padding.right - node.border.left -
+        node.border.right
+
+    inner_height =
+      node.height - node.padding.top - node.padding.bottom - node.border.top -
+        node.border.bottom
+
+    inner_start_x = (scroll_x || 0) + node.padding.left + node.border.left
+    inner_start_y = (scroll_y || 0) + node.padding.top + node.border.top
 
     children_viewport =
       extract_buffer_viewport(
         scrollable_buffer,
-        scroll_x || 0,
-        scroll_y || 0,
-        parent.inner_area.width,
-        parent.inner_area.height
+        inner_start_x,
+        inner_start_y,
+        inner_width,
+        inner_height
       )
+
+    offset_x = node.border.left + node.padding.left
+    offset_y = node.border.top + node.padding.top
 
     Enum.with_index(children_viewport)
     |> Enum.reduce(buffer, fn {row, row_index}, acc ->
@@ -196,7 +312,7 @@ defmodule Orange.Renderer do
         if cell != :undefined do
           Buffer.write_cell(
             acc,
-            {parent.inner_area.x + col_index, parent.inner_area.y + row_index},
+            {node.x + offset_x + col_index, node.y + offset_y + row_index},
             cell
           )
         else
@@ -215,645 +331,168 @@ defmodule Orange.Renderer do
     end)
   end
 
-  defp assert_scrollable_box_has_sizes!(box) do
-    if box.outer_area.width == nil do
-      raise "#{__MODULE__}: Width is required for scrollable box"
-    end
-
-    if box.outer_area.height == nil do
-      raise "#{__MODULE__}: Height is required for scrollable box"
-    end
-
-    box
-  end
-
-  # Scrollable box
-  # The render algorithm is as follows:
-  # 1. First render the scrollable children into a separate buffer. This buffer is not limited in sizes
-  # (width and height are set to :infinity)
-  # 2. Extract the visible area from the children buffer. This area is determined by the scroll offset (x, y) and
-  # the width and height of the parent inner box
-  # 3. Merge the visible area into the parent buffer
-  defp render_scroll(%__MODULE__.Box{scroll: scroll} = box, parent, viewport, buffer, style_chain)
-       when scroll != nil do
-    new_buffer = Buffer.new()
-
-    # The inner area of the scrollable box is guaranteed to be complete
-    {scroll_x, scroll_y} = scroll
-
-    outer_area = %__MODULE__.Area{
-      x: 0,
-      y: 0,
-      width: box.inner_area.width,
-      height: box.inner_area.height
-    }
-
-    inner_area = outer_area
-    inner_area = if scroll_x, do: %{inner_area | width: :infinity}, else: inner_area
-    inner_area = if scroll_y, do: %{inner_area | height: :infinity}, else: inner_area
-
-    # We render the children separately. To do that, we wrap them inside a plain box
-    plain_box = %__MODULE__.Box{
-      children: box.children,
-      layout_direction: box.layout_direction,
-      padding: {0, 0, 0, 0},
-      border: false,
-      style: [],
-      outer_area: outer_area,
-      inner_area: inner_area
-    }
-
-    {new_buffer, _after_render_box} = render_one(plain_box, nil, nil, new_buffer, style_chain)
-
-    box =
-      box
-      |> set_box_outer_area(parent, viewport)
-      |> assert_scrollable_box_has_sizes!()
-      |> set_box_inner_area(parent, viewport)
-
-    buffer = merge_scrollable_children(buffer, new_buffer, box)
-    buffer = post_render_styling(box, buffer)
-    {buffer, box}
-  end
-
   # Fixed position render algorithm:
-  # 1. In the first render pass, all fixed position boxes will be collected (it will render nothing in this pass)
+  # 1. In the first render pass, all fixed position boxes will be collected and removed from the tree
   # 2. After the first pass, render each fixed position box, according to the order of appearance
-  defp render_fixed(
-         %__MODULE__.Box{position: {:fixed, top, right, bottom, left}} = box,
-         viewport,
-         buffer
-       ) do
-    outer_area = %__MODULE__.Area{
-      x: left,
-      y: top,
-      width: viewport.width - right - left,
-      height: viewport.height - bottom - top
-    }
-
-    box = %{box | outer_area: outer_area, inner_area: nil, position: nil}
-
+  defp render_fixed(%Orange.Rect{} = rect, buffer, window) do
     # Fixed layer will overshadow the layer behind it
-    buffer = Buffer.clear_area(buffer, outer_area)
+    {:fixed, top, right, bottom, left} = rect.attributes[:position]
 
-    # We have no parent
-    # The viewport is determined by fixed coordinates, which also equals to the outer area
-    {buffer, after_render_box} = render_one(box, nil, outer_area, buffer, [])
-    post_render_styling(after_render_box, buffer)
-  end
-
-  defp render_one(%__MODULE__.Box{} = box, parent, viewport, buffer, style_chain) do
-    style_chain = [box.style | style_chain]
-
-    box = set_box_outer_area(box, parent, viewport)
-    box = if box.inner_area == nil, do: set_box_inner_area(box, parent, viewport), else: box
-
-    {buffer, after_render_box} =
-      cond do
-        is_binary(box.children) ->
-          render_leaf(box, buffer, style_chain)
-
-        box.children == [] ->
-          {buffer, box}
-
-        box.scroll != nil ->
-          render_scroll(box, parent, viewport, buffer, style_chain)
-
-        match?({:fixed, _, _, _, _}, box.position) ->
-          boxes = Process.get(:position_fixed_boxes)
-          Process.put(:position_fixed_boxes, boxes ++ [box])
-          {buffer, nil}
-
-        is_list(box.children) ->
-          children = maybe_calculate_fraction_sizes(box.children, box.inner_area)
-
-          %{box | children: children}
-          |> render_many(buffer, style_chain, box.layout_direction)
-      end
-
-    buffer = if after_render_box, do: post_render_styling(after_render_box, buffer), else: buffer
-    {buffer, after_render_box}
-  end
-
-  # Render the following:
-  # - borders
-  # - title
-  # - background color
-  defp post_render_styling(box, buffer) do
-    buffer = if box.border, do: render_border(box, buffer), else: buffer
-    buffer = if box.title, do: render_title(box, buffer), else: buffer
-
-    if box.style[:background_color] do
-      # Background color includes the padding but not the border
-      Buffer.set_background_color(
-        buffer,
-        inner_area(
-          box.outer_area,
-          {0, 0, 0, 0},
-          box.border
-        ),
-        box.style[:background_color]
-      )
-    else
-      buffer
-    end
-  end
-
-  defp set_box_outer_area(box, parent, viewport) do
-    # TODO: Assert that total_area is complete
-    # Meaning that if we use percentage width/height for the children, the parent must have
-    # specified width/height
-    total_area = if parent, do: parent.inner_area, else: viewport
-
-    outer_area = box.outer_area
-
-    outer_area =
-      if box.width && !outer_area.width do
-        if total_area.width == :infinity and not is_integer(box.width) do
-          raise "#{__MODULE__}: Horizontal scroll boxes only support children with integer width, instead got #{box.width}"
-        end
-
-        %{outer_area | width: calculate_size(box.width, total_area.width)}
-      else
-        outer_area
-      end
-
-    outer_area =
-      if box.height && !outer_area.height do
-        if total_area.height == :infinity and not is_integer(box.height) do
-          raise "#{__MODULE__}: Vertical scroll boxes only support children with integer height, instead got #{box.height}"
-        end
-
-        %{outer_area | height: calculate_size(box.height, total_area.height)}
-      else
-        outer_area
-      end
-
-    %{box | outer_area: outer_area}
-  end
-
-  defp set_box_inner_area(box, parent, viewport) do
-    outer_area = box.outer_area
-
-    # First, inner_area will be calculated based on the hypothetical max outer area
-    # If width/height of the outer_area is specified, the inner_area can be bounded by the measures
-    # The hypothetical outer area of the root is the viewport
-    hypothetical_max_outer =
-      if parent,
-        do: hypothetical_outer_area(outer_area, parent),
-        else: %{outer_area | width: viewport.width, height: viewport.height}
-
-    inner_area = inner_area(hypothetical_max_outer, box.padding, box.border)
-
-    inner_area =
-      if outer_area.width do
-        # width is bounded
-        %{width: width} = inner_area(outer_area, box.padding, box.border)
-        %{inner_area | width: width}
-      else
-        inner_area
-      end
-
-    inner_area =
-      if outer_area.height do
-        # height is bounded
-        %{height: height} = inner_area(outer_area, box.padding, box.border)
-        %{inner_area | height: height}
-      else
-        inner_area
-      end
-
-    %{box | inner_area: inner_area}
-  end
-
-  defp inner_area(outer_area, padding, border) do
-    {top, right, bottom, left} = padding
-    %__MODULE__.Area{x: x, y: y, width: width, height: height} = outer_area
-
-    width =
-      case width do
-        :infinity -> :infinity
-        width when width != nil -> width - left - right
-        _ -> nil
-      end
-
-    height =
-      case height do
-        :infinity -> :infinity
-        height when height != nil -> height - top - bottom
-        _ -> nil
-      end
+    width = window[:width] - left - right
+    height = window[:height] - top - bottom
 
     area = %__MODULE__.Area{
-      x: x + left,
-      y: y + top,
+      x: left,
+      y: top,
       width: width,
       height: height
     }
 
-    if border do
-      {top_border, _right, _bottom, left_border} = border
-      x = if left_border, do: area.x + 1, else: area.x
-      y = if top_border, do: area.y + 1, else: area.y
+    buffer = Buffer.clear_area(buffer, area)
 
-      {horizontal, vertical} = border_sizes(border)
+    # Render as non-fixed position node
+    rect = %{rect | attributes: Keyword.delete(rect.attributes, :position)}
 
-      width =
-        case area.width do
-          :infinity -> :infinity
-          width when width != nil -> width - horizontal
-          _ -> nil
-        end
+    # The fixed node should have width/height defined by the fixed coordinates
+    # The sizes should fill the available space
+    style = rect.attributes[:style] || []
+    style = Keyword.merge(style, width: "100%", height: "100%")
+    rect = %{rect | attributes: Keyword.put(rect.attributes, :style, style)}
 
-      height =
-        case area.height do
-          :infinity -> :infinity
-          height when height != nil -> height - vertical
-          _ -> nil
-        end
+    # If fixed position node has nested fixed position children, ignore them for now
+    {tree, node_attributes_map, _fixed_position_nodes} = to_binding_input_tree(rect)
 
-      %__MODULE__.Area{
-        x: x,
-        y: y,
-        width: width,
-        height: height
-      }
-    else
-      area
-    end
+    output_tree = Orange.Layout.layout(tree, {width, height})
+    render_node(output_tree, buffer, {left, top}, node_attributes_map, [])
   end
 
-  defp hypothetical_outer_area(outer_area, %__MODULE__.Box{
-         inner_area: %{width: :infinity, height: :infinity}
-       }),
-       do: %{outer_area | width: :infinity, height: :infinity}
+  defp get_style_from_chain(style_chain, attribute),
+    do: Enum.find_value(style_chain, &Keyword.get(&1, attribute))
 
-  defp hypothetical_outer_area(outer_area, parent) do
-    width =
-      case parent.inner_area.width do
-        :infinity ->
-          :infinity
+  defp to_binding_input_tree(
+         _node,
+         counter \\ :atomics.new(1, []),
+         node_map \\ %{},
+         fixed_position_nodes \\ []
+       )
 
-        width when width != nil ->
-          w = width - (outer_area.x - parent.inner_area.x)
-          max(w, 0)
+  # Convert a component tree to a input tree to pass to the layout binding
+  # Traverse the tree and convert recursively. During the traversal:
+  # 1. Collect node attributes
+  # 2. Collect fixed position nodes
+  defp to_binding_input_tree(%Orange.Rect{} = node, counter, node_map, fixed_position_nodes) do
+    new_id = :atomics.add_get(counter, 1, 1)
+    style = if(node.attributes[:style], do: to_binding_style(node.attributes[:style]))
+
+    # Collect fixed position nodes
+    {new_node, node_map, fixed_position_nodes} =
+      case node.attributes[:position] do
+        {:fixed, _, _, _, _} ->
+          {nil, node_map, fixed_position_nodes ++ [node]}
 
         _ ->
-          nil
-      end
+          case node.children do
+            # Special if the node has a single text child
+            # Instead of rect -> rect -> text, we will have rect -> text directly
+            [text] when is_binary(text) ->
+              {%Orange.Layout.InputTreeNode{
+                 id: new_id,
+                 children: {:text, text},
+                 style: style
+               }, node_map, fixed_position_nodes}
 
-    height =
-      case parent.inner_area.height do
-        :infinity ->
-          :infinity
+            nodes ->
+              {children, updated_node_map, updated_fixed_position_nodes} =
+                Enum.reduce(nodes, {[], node_map, fixed_position_nodes}, fn node,
+                                                                            {result, node_map_acc,
+                                                                             fixed_position_nodes_acc} ->
+                  {new_node, new_node_map, new_fixed_position_nodes} =
+                    to_binding_input_tree(node, counter, node_map_acc, fixed_position_nodes_acc)
 
-        height when height != nil ->
-          h = height - (outer_area.y - parent.inner_area.y)
-          max(h, 0)
+                  # new_node can be nil if the node is a fixed position node
+                  result = if new_node, do: result ++ [new_node], else: result
+                  {result, new_node_map, new_fixed_position_nodes}
+                end)
 
-        _ ->
-          nil
-      end
-
-    %{outer_area | width: width, height: height}
-  end
-
-  def render_leaf(
-        %__MODULE__.Box{children: text, style: style} = box,
-        buffer,
-        style_chain
-      ) do
-    style_chain = [style | style_chain]
-
-    # This box is overflown from the parent, hence the zero height or width
-    if box.inner_area.height == 0 || box.inner_area.width == 0 do
-      box = %{box | outer_area: %{box.outer_area | width: 0, height: 0}}
-      {buffer, box}
-    else
-      opts = [
-        color: get_style(style_chain, :color),
-        background_color: style[:background_color],
-        text_modifiers: get_style(style_chain, :text_modifiers) || []
-      ]
-
-      {lines, box_width} =
-        if box.inner_area.width && box.inner_area.width != :infinity do
-          if style[:line_wrap] do
-            lines = split_into_lines(text, box.inner_area.width)
-            width = Enum.map(lines, &String.length/1) |> Enum.max()
-
-            {lines, width}
-          else
-            # If line can not wrap, truncate the text
-            text = String.slice(text, 0, box.inner_area.width)
-            {[text], String.length(text)}
+              {
+                %Orange.Layout.InputTreeNode{
+                  id: new_id,
+                  children: {:nodes, children},
+                  style: style
+                },
+                updated_node_map,
+                updated_fixed_position_nodes
+              }
           end
-        else
-          {[text], String.length(text)}
-        end
-
-      new_buffer =
-        Enum.with_index(lines)
-        |> Enum.reduce(buffer, fn {line, line_offset}, buffer ->
-          buffer =
-            Buffer.write_string(
-              buffer,
-              {box.inner_area.x, box.inner_area.y + line_offset},
-              line,
-              :horizontal,
-              opts
-            )
-
-          buffer
-        end)
-
-      box = %{box | width: box_width, height: length(lines)}
-      box = %{box | outer_area: %{box.outer_area | width: box.width, height: box.height}}
-      {new_buffer, box}
-    end
-  end
-
-  # When a text can not fit within the box, we split it into multiple lines.
-  # There's one caveat: we can't split a word in the middle. So we need to split on word boundaries.
-  defp split_into_lines(text, line_width) do
-    String.split(text, " ")
-    |> Enum.chunk_while(
-      {[], 0},
-      fn word, {current_line, current_length} ->
-        next_length = current_length + String.length(word) + 1
-
-        if next_length <= line_width do
-          current_line = if current_line == [], do: [word], else: [current_line, " " | word]
-          {:cont, {current_line, next_length}}
-        else
-          {:cont, IO.iodata_to_binary(current_line), {[word], String.length(word)}}
-        end
-      end,
-      fn {current_line, _} -> {:cont, IO.iodata_to_binary(current_line), nil} end
-    )
-  end
-
-  def render_many(%__MODULE__.Box{children: children} = box, buffer, style_chain, direction) do
-    cursor = %Cursor{x: box.inner_area.x, y: box.inner_area.y}
-
-    {buffer, rendered_children, _} =
-      Enum.reduce(children, {buffer, [], cursor}, fn child,
-                                                     {buffer, rendered_children, current_cursor} ->
-        partial_outer_area = %__MODULE__.Area{x: current_cursor.x, y: current_cursor.y}
-        child = %{child | outer_area: partial_outer_area}
-
-        {buffer, after_render_child} =
-          render_one(child, box, nil, buffer, [box.style | style_chain])
-
-        if after_render_child do
-          new_cursor =
-            case direction do
-              :row -> move_cursor_x(current_cursor, after_render_child.outer_area.width)
-              :column -> move_cursor_y(current_cursor, after_render_child.outer_area.height)
-            end
-
-          {buffer, rendered_children ++ [after_render_child], new_cursor}
-        else
-          # No child was rendered, keep the state
-          {buffer, rendered_children, current_cursor}
-        end
-      end)
-
-    # Fill in the outer area with sizes calculated from the children
-    bounding_area = Enum.map(rendered_children, & &1.outer_area) |> bounding_areas()
-
-    outer_area = box.outer_area
-
-    outer_area =
-      if !outer_area.width do
-        {_top, right, _bottom, left} = box.padding
-        width = bounding_area.width + left + right
-
-        width =
-          if box.border do
-            {border_horizontal, _border_vertical} = border_sizes(box.border)
-            width + border_horizontal
-          else
-            width
-          end
-
-        %{outer_area | width: width}
-      else
-        outer_area
       end
 
-    outer_area =
-      if !outer_area.height do
-        {top, _right, bottom, _left} = box.padding
-        height = bounding_area.height + top + bottom
+    # Save node attributes
+    node_map = Map.put(node_map, new_id, node.attributes)
 
-        height =
-          if box.border do
-            {_border_horizontal, border_vertical} = border_sizes(box.border)
-            height + border_vertical
-          else
-            height
-          end
-
-        %{outer_area | height: height}
-      else
-        outer_area
-      end
-
-    box = %{box | outer_area: outer_area}
-    {buffer, box}
+    {new_node, node_map, fixed_position_nodes}
   end
 
-  defp border_sizes({top, right, bottom, left}) do
-    horizontal = if(left, do: 1, else: 0) + if(right, do: 1, else: 0)
-    vertical = if(top, do: 1, else: 0) + if(bottom, do: 1, else: 0)
+  defp to_binding_input_tree(string, counter, node_map, fixed_position_nodes) do
+    new_id = :atomics.add_get(counter, 1, 1)
 
-    {horizontal, vertical}
+    new_node = %Orange.Layout.InputTreeNode{
+      id: new_id,
+      children: {:text, string},
+      style: nil
+    }
+
+    {new_node, node_map, fixed_position_nodes}
   end
 
-  defp expand_padding(padding) do
-    case padding do
-      {py, px} -> {py, px, py, px}
-      {_top, _right, _bottom, _left} -> padding
-      padding when is_integer(padding) -> {padding, padding, padding, padding}
-    end
+  defp to_binding_style(style) do
+    %InputTreeNode.Style{
+      width: parse_length_percentage(style[:width]),
+      height: parse_length_percentage(style[:height]),
+      border: expand_border(style),
+      padding: expand_padding_margin(style[:padding]),
+      margin: expand_padding_margin(style[:margin]),
+      flex_direction: style[:flex_direction],
+      flex_grow: style[:flex_grow],
+      flex_shrink: style[:flex_shrink],
+      justify_content: style[:justify_content],
+      align_items: style[:align_items],
+      line_wrap: Keyword.get(style, :line_wrap, true)
+    }
   end
 
-  defp get_style(style_chain, key) do
-    style = Enum.find(style_chain, fn item -> Keyword.get(item, key) end)
-    if style, do: Keyword.get(style, key)
-  end
-
-  defp calculate_size(size, total_size) do
+  defp parse_length_percentage(size) do
     cond do
       is_integer(size) ->
+        {:fixed, size}
+
+      is_binary(size) and String.ends_with?(size, "%") ->
+        {float, "%"} = Float.parse(size)
+        {:percent, float / 100}
+
+      size == nil ->
         size
-
-      result = Regex.run(~r/^calc\((.+)\)$/, size) ->
-        expr = Enum.at(result, 1)
-
-        evaluate_size_expr(expr, total_size)
-
-      result = Regex.run(~r/^(\d+)%$/, size) ->
-        (String.to_integer(Enum.at(result, 1)) * total_size)
-        |> div(100)
     end
   end
 
-  defp evaluate_size_expr(expr, total_size) do
-    {value, _} =
-      Regex.replace(~r/(\d+)%/, expr, fn _, match ->
-        {float, _} = Float.parse(match)
-        to_string(float * total_size / 100)
-      end)
-      |> Code.eval_string()
+  defp expand_border(style) do
+    border = fn position ->
+      border_value =
+        if style[:"border_#{position}"] != nil,
+          do: style[:"border_#{position}"],
+          else: style[:border]
 
-    round(value)
-  end
-
-  defp maybe_calculate_fraction_sizes(boxes, total_area) do
-    calculate_fractional_size = fn boxes, type ->
-      all_use_fraction_size? =
-        Enum.all?(boxes, fn box ->
-          size = Map.get(box, type)
-          size && is_binary(size) && Regex.match?(~r/^\d+fr$/, size)
-        end)
-
-      if all_use_fraction_size? do
-        box_fractions =
-          Enum.map(boxes, fn box ->
-            size = Map.get(box, type)
-            fraction = Regex.run(~r/^(\d+)fr$/, size) |> Enum.at(1)
-
-            {box, String.to_integer(fraction)}
-          end)
-
-        sum_fraction = Enum.map(box_fractions, &elem(&1, 1)) |> Enum.sum()
-
-        new_sizes =
-          Enum.map(box_fractions, fn {box, fraction} ->
-            size = (fraction / sum_fraction * Map.get(total_area, type)) |> round()
-            {box, size}
-          end)
-
-        # To avoid rounding error, the last box size will be the remaining
-        total =
-          Enum.slice(new_sizes, 0, length(new_sizes) - 1) |> Enum.map(&elem(&1, 1)) |> Enum.sum()
-
-        remaining = Map.get(total_area, type) - total
-        new_sizes = put_in(new_sizes, [Access.at(-1), Access.elem(1)], remaining)
-
-        Enum.map(new_sizes, fn {box, size} -> Map.put(box, type, size) end)
-      else
-        boxes
-      end
+      if border_value, do: 1, else: 0
     end
 
-    boxes
-    |> calculate_fractional_size.(:width)
-    |> calculate_fractional_size.(:height)
+    {border.(:top), border.(:right), border.(:bottom), border.(:left)}
   end
 
-  defp move_cursor_x(%Orange.Cursor{} = cursor, amount), do: %{cursor | x: cursor.x + amount}
-  defp move_cursor_y(%Orange.Cursor{} = cursor, amount), do: %{cursor | y: cursor.y + amount}
-
-  defp render_border(box, buffer) do
-    %__MODULE__.Area{x: x, y: y, width: width, height: height} = box.outer_area
-    color = box.style[:border_color]
-
-    {top, right, bottom, left} = box.border
-
-    # Top border
-    buffer =
-      if top do
-        top_border =
-          if(left, do: "┌", else: "─") <>
-            String.duplicate("─", width - 2) <>
-            if(right, do: "┐", else: "─")
-
-        Buffer.write_string(buffer, {x, y}, top_border, :horizontal, color: color)
-      else
-        buffer
-      end
-
-    # Bottom border
-    buffer =
-      if bottom do
-        bottom_border =
-          if(left, do: "└", else: "─") <>
-            String.duplicate("─", width - 2) <>
-            if(right, do: "┘", else: "─")
-
-        Buffer.write_string(buffer, {x, y + height - 1}, bottom_border, :horizontal, color: color)
-      else
-        buffer
-      end
-
-    # Left and right border
-    start = if top, do: y + 1, else: y
-    stop = if bottom, do: y + height - 2, else: y + height - 1
-    length = stop - start + 1
-    vertical_border = String.duplicate("│", length)
-
-    buffer =
-      if left do
-        Buffer.write_string(buffer, {x, start}, vertical_border, :vertical, color: color)
-      else
-        buffer
-      end
-
-    buffer =
-      if right do
-        Buffer.write_string(buffer, {x + width - 1, start}, vertical_border, :vertical,
-          color: color
-        )
-      else
-        buffer
-      end
-
-    buffer
-  end
-
-  defp render_title(box, buffer) do
-    {title_text, offset, opts} =
-      case box.title do
-        title when is_binary(title) ->
-          {title, 0, []}
-
-        title when is_map(title) ->
-          opts =
-            title
-            |> Map.take([:color, :text_modifiers])
-            |> Map.to_list()
-
-          {title[:text], Map.get(title, :offset, 0), opts}
-      end
-
-    Buffer.write_string(
-      buffer,
-      {box.outer_area.x + offset + 1, box.outer_area.y},
-      title_text,
-      :horizontal,
-      opts
-    )
-  end
-
-  # Given a list of areas, return the smallest area which contains all the areas
-  defp bounding_areas(areas) do
-    left = Enum.map(areas, fn %__MODULE__.Area{x: x} -> x end) |> Enum.min()
-
-    right =
-      areas
-      |> Enum.map(fn %__MODULE__.Area{x: x, width: w} -> x + w - 1 end)
-      |> Enum.max()
-
-    top = Enum.map(areas, fn %__MODULE__.Area{y: y} -> y end) |> Enum.min()
-
-    bottom =
-      areas
-      |> Enum.map(fn %__MODULE__.Area{y: y, height: h} -> y + h - 1 end)
-      |> Enum.max()
-
-    %__MODULE__.Area{x: left, y: top, width: right - left + 1, height: bottom - top + 1}
+  defp expand_padding_margin(value) do
+    case value do
+      {vy, vx} -> {vy, vx, vy, vx}
+      {_top, _right, _bottom, _left} -> value
+      v when is_integer(v) -> {v, v, v, v}
+      nil -> {0, 0, 0, 0}
+    end
   end
 end

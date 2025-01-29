@@ -26,9 +26,9 @@ defmodule Orange.RendererTest do
              """
     end
 
-    test "renders with direction" do
+    test "renders with flex direction" do
       element =
-        rect style: [border: true], direction: :row do
+        rect style: [border: true, flex_direction: :row] do
           "foo"
           "bar"
         end
@@ -47,7 +47,7 @@ defmodule Orange.RendererTest do
              """
 
       element =
-        rect style: [border: true], direction: :column do
+        rect style: [border: true, flex_direction: :column] do
           "foo"
           "bar"
         end
@@ -58,10 +58,10 @@ defmodule Orange.RendererTest do
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
-             ┌───┐----------
-             │foo│----------
-             │bar│----------
-             └───┘----------
+             ┌─────────────┐
+             │foo----------│
+             │bar----------│
+             └─────────────┘
              ---------------\
              """
     end
@@ -80,25 +80,25 @@ defmodule Orange.RendererTest do
 
       screen =
         element
-        |> Orange.Renderer.render(%{width: 15, height: 10})
+        |> Orange.Renderer.render(%{width: 20, height: 10})
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
-             ┌──────────┐---
-             │┌───┐-----│---
-             ││foo│-----│---
-             ││---│-----│---
-             │└───┘-----│---
-             │┌────────┐│---
-             ││bar-----││---
-             │└────────┘│---
-             └──────────┘---
-             ---------------\
+             ┌───────────────┐---
+             │┌───┐┌────────┐│---
+             ││foo││bar-----││---
+             ││---││--------││---
+             │└───┘└────────┘│---
+             └───────────────┘---
+             --------------------
+             --------------------
+             --------------------
+             --------------------\
              """
 
       element =
-        rect style: [border: true] do
-          rect style: [border: true], direction: :row do
+        rect style: [border: true, flex_direction: :row] do
+          rect style: [border: true] do
             rect style: [border: true, width: 7] do
               "foo"
             end
@@ -115,22 +115,22 @@ defmodule Orange.RendererTest do
 
       screen =
         element
-        |> Orange.Renderer.render(%{width: 25, height: 12})
+        |> Orange.Renderer.render(%{width: 35, height: 12})
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
-             ┌─────────────────────┐--
-             │┌───────────────────┐│--
-             ││┌─────┐┌──────────┐││--
-             │││foo--││bar-------│││--
-             ││└─────┘└──────────┘││--
-             │└───────────────────┘│--
-             │┌────────┐-----------│--
-             ││baz-----│-----------│--
-             │└────────┘-----------│--
-             └─────────────────────┘--
-             -------------------------
-             -------------------------\
+             ┌───────────────────────────────┐--
+             │┌───────────────────┐┌────────┐│--
+             ││┌─────┐┌──────────┐││baz-----││--
+             │││foo--││bar-------│││--------││--
+             ││└─────┘└──────────┘││--------││--
+             │└───────────────────┘└────────┘│--
+             └───────────────────────────────┘--
+             -----------------------------------
+             -----------------------------------
+             -----------------------------------
+             -----------------------------------
+             -----------------------------------\
              """
     end
   end
@@ -150,9 +150,9 @@ defmodule Orange.RendererTest do
 
       assert screen == """
              ┌Title────────┐
-             │foo----------│
-             │bar----------│
+             │foobar-------│
              └─────────────┘
+             ---------------
              ---------------
              ---------------\
              """
@@ -160,7 +160,7 @@ defmodule Orange.RendererTest do
 
     test ":title is a map" do
       element =
-        rect style: [border: true, width: "100%"],
+        rect style: [border: true, width: "100%", flex_direction: :column],
              title: %{text: "Title", color: :red, text_modifiers: [:bold], offset: 3} do
           "foo"
           "bar"
@@ -246,144 +246,6 @@ defmodule Orange.RendererTest do
              │┌────┐------│------
              ││foo-│------│------
              │└────┘------│------
-             └────────────┘------
-             --------------------
-             --------------------
-             --------------------\
-             """
-    end
-
-    test "renders with height and width as fraction" do
-      element =
-        rect style: [border: true, width: "100%"], direction: :row do
-          rect style: [border: true, width: "2fr"] do
-            "foo"
-          end
-
-          rect style: [border: true, width: "3fr"] do
-            "bar"
-          end
-        end
-
-      screen =
-        element
-        |> Orange.Renderer.render(%{width: 20, height: 8})
-        |> Orange.Renderer.Buffer.to_string()
-
-      assert screen == """
-             ┌──────────────────┐
-             │┌─────┐┌─────────┐│
-             ││foo--││bar------││
-             │└─────┘└─────────┘│
-             └──────────────────┘
-             --------------------
-             --------------------
-             --------------------\
-             """
-
-      element =
-        rect style: [border: true, width: "100%"], direction: :column do
-          rect style: [border: true, height: "2fr", width: "100%"] do
-            "foo"
-          end
-
-          rect style: [border: true, height: "2fr", width: "100%"] do
-            "bar"
-          end
-        end
-
-      screen =
-        element
-        |> Orange.Renderer.render(%{width: 20, height: 12})
-        |> Orange.Renderer.Buffer.to_string()
-
-      assert screen == """
-             ┌──────────────────┐
-             │┌────────────────┐│
-             ││foo-------------││
-             ││----------------││
-             ││----------------││
-             │└────────────────┘│
-             │┌────────────────┐│
-             ││bar-------------││
-             ││----------------││
-             ││----------------││
-             │└────────────────┘│
-             └──────────────────┘\
-             """
-    end
-
-    test "if frational size is used, all children must be set" do
-      assert_raise RuntimeError, ~r/Fractional width must be set for all children/, fn ->
-        element =
-          rect do
-            rect style: [width: "2fr"] do
-              "foo"
-            end
-
-            rect do
-              "bar"
-            end
-          end
-
-        Orange.Renderer.render(element, %{width: 20, height: 8})
-      end
-
-      assert_raise RuntimeError, ~r/Fractional height must be set for all children/, fn ->
-        element =
-          rect do
-            rect style: [height: "2fr"] do
-              "foo"
-            end
-
-            rect do
-              "bar"
-            end
-          end
-
-        Orange.Renderer.render(element, %{width: 20, height: 8})
-      end
-    end
-
-    test "renders with height and width as calc expressions" do
-      element =
-        rect style: [border: true, height: "calc(75% + 1)", width: "calc(50% - 3)"] do
-          "foo"
-        end
-
-      screen =
-        element
-        |> Orange.Renderer.render(%{width: 20, height: 8})
-        |> Orange.Renderer.Buffer.to_string()
-
-      assert screen == """
-             ┌─────┐-------------
-             │foo--│-------------
-             │-----│-------------
-             │-----│-------------
-             │-----│-------------
-             │-----│-------------
-             └─────┘-------------
-             --------------------\
-             """
-
-      element =
-        rect style: [border: true, width: "70%"] do
-          rect style: [border: true, width: "calc(25% + 4)"] do
-            "foo"
-          end
-        end
-
-      screen =
-        element
-        |> Orange.Renderer.render(%{width: 20, height: 8})
-        |> Orange.Renderer.Buffer.to_string()
-
-      assert screen == """
-             ┌────────────┐------
-             │┌─────┐-----│------
-             ││foo--│-----│------
-             │└─────┘-----│------
              └────────────┘------
              --------------------
              --------------------
@@ -527,21 +389,28 @@ defmodule Orange.RendererTest do
     test "single value padding" do
       element =
         rect style: [padding: 1, border: true, width: "100%"] do
-          "foo"
+          rect style: [padding: 2, border: true, width: "100%"] do
+            "foo"
+          end
         end
 
       screen =
         element
-        |> Orange.Renderer.render(%{width: 15, height: 7})
+        |> Orange.Renderer.render(%{width: 15, height: 12})
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
              ┌─────────────┐
              │-------------│
-             │-foo---------│
+             │-┌─────────┐-│
+             │-│---------│-│
+             │-│---------│-│
+             │-│--foo----│-│
+             │-│---------│-│
+             │-│---------│-│
+             │-└─────────┘-│
              │-------------│
              └─────────────┘
-             ---------------
              ---------------\
              """
     end
@@ -549,21 +418,26 @@ defmodule Orange.RendererTest do
     test "double values padding" do
       element =
         rect style: [padding: {1, 2}, border: true, width: "100%"] do
-          "foo"
+          rect style: [padding: {1, 1}, border: true, width: "100%"] do
+            "foo"
+          end
         end
 
       screen =
         element
-        |> Orange.Renderer.render(%{width: 15, height: 7})
+        |> Orange.Renderer.render(%{width: 15, height: 10})
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
              ┌─────────────┐
              │-------------│
-             │--foo--------│
+             │--┌───────┐--│
+             │--│-------│--│
+             │--│-foo---│--│
+             │--│-------│--│
+             │--└───────┘--│
              │-------------│
              └─────────────┘
-             ---------------
              ---------------\
              """
     end
@@ -571,137 +445,284 @@ defmodule Orange.RendererTest do
     test "four-values padding" do
       element =
         rect style: [padding: {1, 2, 1, 3}, border: true, width: "100%"] do
-          "foo"
+          rect style: [padding: {2, 1, 3, 1}, border: true, width: "100%"] do
+            "foo"
+          end
         end
 
       screen =
         element
-        |> Orange.Renderer.render(%{width: 15, height: 7})
+        |> Orange.Renderer.render(%{width: 15, height: 12})
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
              ┌─────────────┐
              │-------------│
-             │---foo-------│
+             │---┌──────┐--│
+             │---│------│--│
+             │---│------│--│
+             │---│-foo--│--│
+             │---│------│--│
+             │---│------│--│
+             │---│------│--│
+             │---└──────┘--│
              │-------------│
-             └─────────────┘
+             └─────────────┘\
+             """
+    end
+  end
+
+  describe "color" do
+    test "renders cells with color" do
+      element =
+        rect style: [border: true, width: 10, color: :red] do
+          "foo"
+        end
+
+      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      screen = Orange.Renderer.Buffer.to_string(buffer)
+
+      assert screen == """
+             ┌────────┐-----
+             │foo-----│-----
+             └────────┘-----
              ---------------
+             ---------------
+             ---------------\
+             """
+
+      Enum.each(1..3, fn x ->
+        assert get_color(buffer, x, 1) == :red
+      end)
+    end
+  end
+
+  describe "background color" do
+    test "renders cells with background color" do
+      element =
+        rect style: [border: true, width: 10, background_color: :red] do
+          "foo"
+        end
+
+      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      screen = Orange.Renderer.Buffer.to_string(buffer)
+
+      assert screen == """
+             ┌────────┐-----
+             │foo     │-----
+             └────────┘-----
+             ---------------
+             ---------------
+             ---------------\
+             """
+
+      Enum.each(0..2, fn y ->
+        Enum.each(0..9, fn x ->
+          assert get_background_color(buffer, x, y) == :red
+        end)
+      end)
+    end
+  end
+
+  describe "text modifiers" do
+    test "renders text with modifiers" do
+      element =
+        rect style: [border: true, width: 10, text_modifiers: [:bold]] do
+          "foo"
+        end
+
+      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      screen = Orange.Renderer.Buffer.to_string(buffer)
+
+      assert screen == """
+             ┌────────┐-----
+             │foo-----│-----
+             └────────┘-----
+             ---------------
+             ---------------
+             ---------------\
+             """
+
+      Enum.each(1..3, fn x ->
+        assert :bold in get_modifiers(buffer, x, 1)
+      end)
+    end
+  end
+
+  describe "flex_direction" do
+    test "renders elements in the horizontal direction if flex_direction is :row" do
+      element =
+        rect style: [border: true, height: 5, width: 12, flex_direction: :row] do
+          "foo"
+          "bar"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌──────────┐---
+             │foobar----│---
+             │----------│---
+             │----------│---
+             └──────────┘---
+             ---------------\
+             """
+    end
+
+    test "renders elements in the vertical direction if flex_direction is :column" do
+      element =
+        rect style: [border: true, height: 5, width: 12, flex_direction: :column] do
+          "foo"
+          "bar"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌──────────┐---
+             │foo-------│---
+             │bar-------│---
+             │----------│---
+             └──────────┘---
              ---------------\
              """
     end
   end
 
-  describe "line element" do
-    test "renders a plain line" do
+  describe "flex_grow" do
+    test "renders elements with corresponding flex_grow" do
       element =
-        line do
+        rect style: [border: true, height: 5, width: "100%", flex_direction: :row] do
           "foo"
+
+          rect style: [flex_grow: 1] do
+            "bar"
+          end
+
+          "baz"
         end
 
       screen =
         element
-        |> Orange.Renderer.render(%{width: 10, height: 3})
+        |> Orange.Renderer.render(%{width: 20, height: 6})
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
-             foo-------
-             ----------
-             ----------\
+             ┌──────────────────┐
+             │foobar---------baz│
+             │------------------│
+             │------------------│
+             └──────────────────┘
+             --------------------\
              """
-    end
-
-    test "renders with color" do
-      element =
-        line style: [color: :red] do
-          "foo"
-        end
-
-      buffer = Orange.Renderer.render(element, %{width: 10, height: 3})
-
-      Enum.each([{0, 0}, {1, 0}, {2, 0}], fn {x, y} ->
-        assert get_color(buffer, x, y) == :red
-      end)
-    end
-
-    test "renders with background color" do
-      element =
-        line style: [background_color: :red] do
-          "foo"
-        end
-
-      buffer = Orange.Renderer.render(element, %{width: 10, height: 3})
-
-      Enum.each([{0, 0}, {1, 0}, {2, 0}], fn {x, y} ->
-        assert get_background_color(buffer, x, y) == :red
-      end)
     end
   end
 
-  describe "span element" do
-    test "renders a plain span" do
+  describe "flex_shrink" do
+    test "renders elements with corresponding flex_shrink" do
       element =
-        span do
-          "foo"
+        rect style: [border: true, height: "100%", width: "100%", flex_direction: :row] do
+          rect style: [width: 7, flex_shrink: 0] do
+            "foo"
+          end
+
+          rect style: [width: 7, flex_shrink: 1] do
+            "bar"
+          end
+
+          rect style: [width: 7, flex_shrink: 0] do
+            "baz"
+          end
         end
 
       screen =
         element
-        |> Orange.Renderer.render(%{width: 10, height: 3})
+        |> Orange.Renderer.render(%{width: 20, height: 6})
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
-             foo-------
-             ----------
-             ----------\
+             ┌──────────────────┐
+             │foo----bar-baz----│
+             │------------------│
+             │------------------│
+             │------------------│
+             └──────────────────┘\
              """
     end
+  end
 
-    test "renders with color" do
+  describe "justify_content" do
+    test "renders elements with corresponding justify_content" do
       element =
-        span style: [color: :red] do
+        rect style: [
+               border: true,
+               height: "100%",
+               width: "100%",
+               flex_direction: :row,
+               justify_content: :center
+             ] do
           "foo"
+          "bar"
         end
 
-      buffer = Orange.Renderer.render(element, %{width: 10, height: 3})
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 20, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
 
-      Enum.each([{0, 0}, {1, 0}, {2, 0}], fn {x, y} ->
-        assert get_color(buffer, x, y) == :red
-      end)
+      assert screen == """
+             ┌──────────────────┐
+             │------foobar------│
+             │------------------│
+             │------------------│
+             │------------------│
+             └──────────────────┘\
+             """
     end
+  end
 
-    test "renders with background color" do
+  describe "align_items" do
+    test "renders elements with corresponding align_items" do
       element =
-        span style: [background_color: :red] do
+        rect style: [
+               border: true,
+               height: "100%",
+               width: "100%",
+               flex_direction: :row,
+               align_items: :center
+             ] do
           "foo"
+          "bar"
         end
 
-      buffer = Orange.Renderer.render(element, %{width: 10, height: 3})
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 20, height: 7})
+        |> Orange.Renderer.Buffer.to_string()
 
-      Enum.each([{0, 0}, {1, 0}, {2, 0}], fn {x, y} ->
-        assert get_background_color(buffer, x, y) == :red
-      end)
-    end
-
-    test "renders with text modifiers" do
-      element =
-        span style: [text_modifiers: [:bold, :underline]] do
-          "foo"
-        end
-
-      buffer = Orange.Renderer.render(element, %{width: 10, height: 3})
-
-      Enum.each([{0, 0}, {1, 0}, {2, 0}], fn {x, y} ->
-        assert :bold in get_modifiers(buffer, x, y)
-        assert :underline in get_modifiers(buffer, x, y)
-      end)
+      assert screen == """
+             ┌──────────────────┐
+             │------------------│
+             │------------------│
+             │foobar------------│
+             │------------------│
+             │------------------│
+             └──────────────────┘\
+             """
     end
   end
 
   describe "style inheritance" do
     test "inherits styles from ancestors" do
       element =
-        line style: [color: :red, text_modifiers: [:bold]] do
-          span do
+        rect style: [color: :red, text_modifiers: [:bold]] do
+          rect do
             "foo"
           end
         end
@@ -714,10 +735,10 @@ defmodule Orange.RendererTest do
       end)
     end
 
-    test "children styles have precedence over ancestor styles" do
+    test "children styles have higher precedence over ancestor styles" do
       element =
-        line style: [color: :red, text_modifiers: [:bold]] do
-          span style: [color: :blue, text_modifiers: [:italic]] do
+        rect style: [color: :red, text_modifiers: [:bold]] do
+          rect style: [color: :blue, text_modifiers: [:italic]] do
             "foo"
           end
         end
@@ -745,7 +766,7 @@ defmodule Orange.RendererTest do
 
       assert screen == """
              ┌────┐---------
-             │foob│---------
+             │foobar--------
              └────┘---------
              ---------------
              ---------------\
@@ -766,7 +787,7 @@ defmodule Orange.RendererTest do
       assert screen == """
              ┌────┐---------
              │----│---------
-             │-fo-│---------
+             │-foo│---------
              │----│---------
              └────┘---------
              ---------------
@@ -774,57 +795,9 @@ defmodule Orange.RendererTest do
              """
     end
 
-    test "multiple child, parent no padding" do
-      element =
-        rect style: [width: 6, border: true] do
-          line do
-            "foo"
-            "bar"
-          end
-        end
-
-      screen =
-        element
-        |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
-
-      assert screen == """
-             ┌────┐---------
-             │foob│---------
-             └────┘---------
-             ---------------
-             ---------------\
-             """
-    end
-
-    test "multiple child, parent with padding" do
-      element =
-        rect style: [width: 8, padding: 1, border: true] do
-          line do
-            "foo"
-            "bar"
-          end
-        end
-
-      screen =
-        element
-        |> Orange.Renderer.render(%{width: 15, height: 7})
-        |> Orange.Renderer.Buffer.to_string()
-
-      assert screen == """
-             ┌──────┐-------
-             │------│-------
-             │-foob-│-------
-             │------│-------
-             └──────┘-------
-             ---------------
-             ---------------\
-             """
-    end
-
     test "vertical overflow" do
       element =
-        rect style: [height: 3, border: true] do
+        rect style: [height: 3, border: true, flex_direction: :column] do
           "foo"
           "bar"
           "baz"
@@ -836,10 +809,10 @@ defmodule Orange.RendererTest do
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
-             ┌───┐----------
-             │foo│----------
-             └───┘----------
-             ---------------
+             ┌─────────────┐
+             │foo----------│
+             └bar──────────┘
+             -baz-----------
              ---------------
              ---------------
              ---------------\
@@ -850,8 +823,8 @@ defmodule Orange.RendererTest do
   describe "content scroll" do
     test "vertical scroll" do
       element =
-        rect style: [width: "100%", height: 3], scroll_y: 1 do
-          rect do
+        rect style: [width: "100%", height: 3, flex_direction: :column], scroll_y: 1 do
+          rect style: [flex_direction: :column] do
             "foo"
             "bar"
           end
@@ -872,12 +845,17 @@ defmodule Orange.RendererTest do
              ---------------
              ---------------\
              """
-    end
 
-    test "vertical scroll with styled children" do
       element =
-        rect style: [width: "100%", height: 5, padding: {0, 1}, border: true], scroll_y: 2 do
-          rect style: [border: true] do
+        rect style: [
+               width: "100%",
+               height: 5,
+               padding: {0, 1},
+               border: true,
+               flex_direction: :column
+             ],
+             scroll_y: 2 do
+          rect style: [width: 8, border: true, flex_direction: :column] do
             "foo"
             "bar"
           end
@@ -893,17 +871,51 @@ defmodule Orange.RendererTest do
 
       assert screen == """
              ┌─────────────┐
-             │-│bar│-------│
-             │-└───┘-------│
+             │-│bar---│----│
+             │-└──────┘----│
              │-baz---------│
              └─────────────┘\
              """
     end
 
+    test "vertical scroll in nested children" do
+      element =
+        rect style: [
+               width: "100%",
+               height: 5,
+               padding: {0, 1},
+               border: true,
+               flex_direction: :column
+             ] do
+          rect style: [width: 8, height: 3, border: true, flex_direction: :column], scroll_y: 1 do
+            "foo"
+            "bar"
+          end
+
+          "baz"
+          "qux"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 7})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌─────────────┐
+             │-┌──────┐----│
+             │-│bar---│----│
+             │-└──────┘----│
+             └─baz─────────┘
+             --qux----------
+             ---------------\
+             """
+    end
+
     test "vertical over scroll" do
       element =
-        rect style: [width: "100%", height: 3], scroll_y: 4 do
-          rect do
+        rect style: [width: "100%", height: 3, flex_direction: :column], scroll_y: 4 do
+          rect style: [flex_direction: :column] do
             "foo"
             "bar"
           end
@@ -928,8 +940,8 @@ defmodule Orange.RendererTest do
 
     test "horizontal scroll" do
       element =
-        rect style: [width: 3, height: "100%"], scroll_x: 1 do
-          rect do
+        rect style: [width: 3, height: "100%", flex_direction: :column], scroll_x: 1 do
+          rect style: [flex_direction: :column] do
             "foo"
             "bar"
           end
@@ -950,12 +962,17 @@ defmodule Orange.RendererTest do
              ux-------------
              ---------------\
              """
-    end
 
-    test "horizontal scroll with styled children" do
       element =
-        rect style: [width: 7, height: "100%", padding: {0, 1}, border: true], scroll_x: 2 do
-          rect style: [border: true] do
+        rect style: [
+               width: 10,
+               height: "100%",
+               padding: {0, 1},
+               border: true,
+               flex_direction: :column
+             ],
+             scroll_x: 2 do
+          rect style: [border: true, flex_direction: :column] do
             "foo"
             "bar"
           end
@@ -970,19 +987,55 @@ defmodule Orange.RendererTest do
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
-             ┌─────┐--------
-             │-──┐-│--------
-             │-oo│-│--------
-             │-ar│-│--------
-             │-──┘-│--------
-             │-z---│--------
-             └─────┘--------\
+             ┌────────┐-----
+             │-───┐---│-----
+             │-oo-│---│-----
+             │-ar-│---│-----
+             │-───┘---│-----
+             │-z------│-----
+             └────────┘-----\
+             """
+    end
+
+    test "horizontal scroll with nested children" do
+      element =
+        rect style: [
+               width: 10,
+               height: "100%",
+               padding: {0, 1},
+               border: true,
+               flex_direction: :column
+             ] do
+          rect style: [border: true, flex_direction: :column], scroll_x: 2 do
+            "foo"
+            "bar"
+          end
+
+          "baz"
+          "qux"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 9})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌────────┐-----
+             │-┌────┐-│-----
+             │-│o---│-│-----
+             │-│r---│-│-----
+             │-└────┘-│-----
+             │-baz----│-----
+             │-qux----│-----
+             │--------│-----
+             └────────┘-----\
              """
     end
 
     test "horizontal over scroll" do
       element =
-        rect style: [width: 3, height: "100%"], scroll_x: 4 do
+        rect style: [width: 3, height: "100%"], scroll_x: 14 do
           rect do
             "foo"
             "bar"
@@ -1001,53 +1054,6 @@ defmodule Orange.RendererTest do
              ---------------
              ---------------
              ---------------
-             ---------------
-             ---------------\
-             """
-    end
-
-    test "scroll children has percentage size in scroll dimension" do
-      element =
-        rect style: [width: 2, height: "100%"], scroll_y: 1 do
-          rect style: [height: "100%"] do
-            "foo"
-            "bar"
-          end
-
-          "baz"
-          "qux"
-        end
-
-      assert_raise RuntimeError,
-                   ~r/Vertical scroll boxes only support children with integer height, instead got 100%/,
-                   fn ->
-                     element
-                     |> Orange.Renderer.render(%{width: 15, height: 5})
-                     |> Orange.Renderer.Buffer.to_string()
-                   end
-    end
-
-    test "scroll children has percentage size in other dimension" do
-      element =
-        rect style: [width: 2, height: "100%"], scroll_y: 1 do
-          rect style: [width: "100%"] do
-            "foo"
-            "bar"
-          end
-
-          "baz"
-          "qux"
-        end
-
-      screen =
-        element
-        |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
-
-      assert screen == """
-             ba-------------
-             ba-------------
-             qu-------------
              ---------------
              ---------------\
              """
@@ -1074,8 +1080,8 @@ defmodule Orange.RendererTest do
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
-             foo------------
-             bar------------
+             foobar---------
+             ---------------
              ---------------
              ---------------
              -┌───────────┐-
@@ -1100,7 +1106,10 @@ defmodule Orange.RendererTest do
           end
 
           rect position: {:fixed, 2, 4, 2, 0}, style: [border: true] do
-            "qux"
+            rect style: [padding: 1, flex_direction: :column] do
+              "qux"
+              "quux"
+            end
           end
         end
 
@@ -1110,12 +1119,12 @@ defmodule Orange.RendererTest do
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
-             foo------------
-             bar------------
+             foobar---------
+             ---------------
              ┌─────────┐----
-             │qux------│----
-             │---------│──┐-
-             │---------│--│-
+             │---------│----
+             │-qux-----│──┐-
+             │-quux----│--│-
              │---------│--│-
              └─────────┘--│-
              -└───────────┘-
@@ -1126,7 +1135,7 @@ defmodule Orange.RendererTest do
     test "root fixed element" do
       element =
         rect style: [border: true], position: {:fixed, 3, 3, 3, 3} do
-          rect do
+          rect style: [flex_direction: :column] do
             "foo"
             "bar"
           end
@@ -1170,8 +1179,8 @@ defmodule Orange.RendererTest do
              ---------------
              ---------------
              ---┌───────┐---
-             ---│foo----│---
-             ---│bar----│---
+             ---│foobar-│---
+             ---│-------│---
              ---└───────┘---
              ---------------
              ---------------
@@ -1181,7 +1190,7 @@ defmodule Orange.RendererTest do
 
     test "overshadows layers behind" do
       element =
-        rect style: [width: "100%", height: "100%"] do
+        rect style: [width: "100%", height: "100%", flex_direction: :column] do
           "111"
           "222"
           "333"
@@ -1212,7 +1221,7 @@ defmodule Orange.RendererTest do
     test "width is enough" do
       element =
         rect style: [width: 10, height: 3, border: true] do
-          line do
+          rect do
             "foo bar"
           end
         end
@@ -1235,7 +1244,7 @@ defmodule Orange.RendererTest do
     test "width is not enough, split by word basis" do
       element =
         rect style: [width: 7, height: 5, border: true] do
-          line do
+          rect do
             "foo bar"
           end
         end
@@ -1258,7 +1267,7 @@ defmodule Orange.RendererTest do
     test "disable line wrap" do
       element =
         rect style: [width: 7, height: 5, border: true] do
-          span style: [line_wrap: false] do
+          rect style: [line_wrap: false] do
             "foo bar"
           end
         end
@@ -1270,7 +1279,7 @@ defmodule Orange.RendererTest do
 
       assert screen == """
              ┌─────┐--------
-             │foo b│--------
+             │foo bar-------
              │-----│--------
              │-----│--------
              └─────┘--------

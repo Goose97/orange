@@ -265,7 +265,7 @@ defmodule Orange.Runtime.FocusTest do
     @impl true
     def render(state, attrs, _update) do
       rect style: [width: 15, border: attrs[:highlighted]] do
-        span do
+        rect do
           "Counter: #{state}"
         end
       end
@@ -301,7 +301,7 @@ defmodule Orange.Runtime.FocusTest do
 
     @impl true
     def render(_state, attrs, _update) do
-      rect do
+      rect style: [flex_direction: :column] do
         {Counter,
          id: :counter1,
          events_subscription: true,

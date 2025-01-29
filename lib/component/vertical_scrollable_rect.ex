@@ -7,7 +7,7 @@ defmodule Orange.Component.VerticalScrollableRect do
     - `:height` - The height of the container rect. This attribute is required.
     - `:content_height` - The height of the inner content. This attribute is required.
     - `:scroll_offset` - The vertical scroll offset. This attribute is required.
-    - `:children` - The children of the container rect. This attribute is required.
+    - `:children` - A list of elements rendered inside the container rect. This attribute is required.
     - `:title` - The title of the scrolling box. This attribute is optional.
 
   ## Examples
@@ -51,18 +51,19 @@ defmodule Orange.Component.VerticalScrollableRect do
   @impl true
   def render(_state, attrs, _update) do
     overflow = overflow?(attrs)
-    width = if overflow, do: "calc(100% - 1)", else: "100%"
 
     scrolling_box_style = [
-      width: width,
+      width: "100%",
       height: "100%",
       border: true,
-      border_right: !overflow
+      border_right: not overflow,
+      flex_direction: :column,
+      flex_grow: 1
     ]
 
     scrolling_box_style = Keyword.merge(attrs[:style] || [], scrolling_box_style)
 
-    rect direction: :row, style: [height: "100%"] do
+    rect style: [width: "100%", height: "100%"] do
       rect style: scrolling_box_style, title: attrs[:title], scroll_y: scroll_offset(attrs) do
         attrs[:children]
       end
@@ -100,7 +101,7 @@ defmodule Orange.Component.VerticalScrollableRect do
     scroll_thumb_end = round(total_scrolled / attrs[:content_height] * scroll_bar_track)
     scroll_thumb_start = scroll_thumb_end - scroll_thumb_height
 
-    rect style: [width: 1], direction: :column do
+    rect style: [width: 1, flex_direction: :column] do
       [
         "▲",
         List.duplicate("│", scroll_thumb_start),

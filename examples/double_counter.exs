@@ -37,7 +37,7 @@ defmodule Counter.Child do
   @impl true
   def render(state, attrs, update) do
     rect style: [width: 20, height: 20, border: attrs[:highlighted]] do
-      span do
+      rect do
         "Counter: #{state}"
       end
     end

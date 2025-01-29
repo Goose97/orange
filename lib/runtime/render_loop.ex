@@ -5,7 +5,7 @@ defmodule Orange.Runtime.RenderLoop do
 
   use GenServer
 
-  alias Orange.{Span, Line, Rect, CustomComponent, Renderer, Terminal, Runtime}
+  alias Orange.{Rect, CustomComponent, Renderer, Terminal, Runtime}
 
   def child_spec([root]) do
     %{
@@ -47,10 +47,23 @@ defmodule Orange.Runtime.RenderLoop do
   # Orange.CustomComponent or {Orange.CustomComponent, attrs} into %Orange.CustomComponent{}
   defp normalize_custom_component(root) do
     case root do
-      module when is_atom(module) -> %CustomComponent{module: module}
-      {module, attrs} when is_atom(module) -> %CustomComponent{module: module, attributes: attrs}
-      leaf when is_binary(leaf) -> leaf
-      _ -> %{root | children: Enum.map(root.children, &normalize_custom_component/1)}
+      module when is_atom(module) ->
+        %CustomComponent{module: module}
+
+      {module, attrs} when is_atom(module) ->
+        # Expand the children
+        attrs =
+          Keyword.update(attrs, :children, [], fn children ->
+            Enum.map(children, &normalize_custom_component/1)
+          end)
+
+        %CustomComponent{module: module, attributes: attrs}
+
+      leaf when is_binary(leaf) ->
+        leaf
+
+      _ ->
+        %{root | children: Enum.map(root.children, &normalize_custom_component/1)}
     end
   end
 
@@ -122,7 +135,6 @@ defmodule Orange.Runtime.RenderLoop do
 
     current_buffer =
       to_render_tree(current_tree)
-      |> tap(&validate_render_tree!/1)
       |> Renderer.render(%{width: width, height: height})
 
     if opts[:clean_buffer] do
@@ -161,13 +173,10 @@ defmodule Orange.Runtime.RenderLoop do
     {expanded_tree, mounting_components, unmounting_components}
   end
 
-  defp expand_new(%Span{} = component), do: component
+  defp expand_new(component) when is_binary(component), do: component
 
-  defp expand_new(component)
-       when is_struct(component, Rect)
-       when is_struct(component, Line) do
-    %{component | children: Enum.map(component.children, &expand_new/1)}
-  end
+  defp expand_new(%Rect{} = component),
+    do: %{component | children: Enum.map(component.children, &expand_new/1)}
 
   # Custom components
   defp expand_new(%CustomComponent{module: module, attributes: attrs} = component) do
@@ -204,19 +213,12 @@ defmodule Orange.Runtime.RenderLoop do
     Process.put({__MODULE__, :unmounting_components}, [component | mounted])
   end
 
-  defp add_to_unmounting_list(component)
-       when is_struct(component, Rect)
-       when is_struct(component, Line)
-       when is_struct(component, Span),
-       do: Enum.each(component.children, &add_to_unmounting_list/1)
+  defp add_to_unmounting_list(%Rect{} = component),
+    do: Enum.each(component.children, &add_to_unmounting_list/1)
 
   defp add_to_unmounting_list(_component), do: :noop
 
-  defp expand_with_prev(%Span{} = component, _previous_tree), do: component
-
-  defp expand_with_prev(component, previous_tree)
-       when is_struct(component, Line) and is_struct(previous_tree, Line)
-       when is_struct(component, Rect) and is_struct(previous_tree, Rect) do
+  defp expand_with_prev(%Rect{} = component, %Rect{} = previous_tree) do
     diffs = Runtime.ChildrenDiff.run(component.children, previous_tree.children)
 
     new_children =
@@ -236,8 +238,8 @@ defmodule Orange.Runtime.RenderLoop do
     %{component | children: new_children}
   end
 
-  defp expand_with_prev(%Line{} = component, _previous_tree), do: expand_new(component)
   defp expand_with_prev(%Rect{} = component, _previous_tree), do: expand_new(component)
+  defp expand_with_prev(component, _previous_tree) when is_binary(component), do: component
 
   defp expand_with_prev(
          %CustomComponent{module: module, attributes: attrs},
@@ -273,59 +275,18 @@ defmodule Orange.Runtime.RenderLoop do
 
   defp to_render_tree(component) do
     case component do
-      component
-      when is_struct(component, Rect)
-      when is_struct(component, Line) ->
+      text when is_binary(text) ->
+        text
+
+      %Rect{} ->
         children = component.children |> Enum.map(&to_render_tree/1) |> Enum.reject(&is_nil/1)
         %{component | children: children}
-
-      %Span{} ->
-        component
 
       %CustomComponent{children: []} ->
         nil
 
       %CustomComponent{children: [child]} ->
         to_render_tree(child)
-    end
-  end
-
-  # Render tree has strict rules about the components:
-  # 1. Rect can only have children of type Rect, Line, or CustomComponent
-  # 2. Line can only have children of type Span, or CustomComponent
-  # 3. Span can only have a SINGLE children of type string
-  defp validate_render_tree!(%Rect{} = component) do
-    Enum.each(component.children, fn
-      child
-      when is_struct(child, Rect)
-      when is_struct(child, Line)
-      when is_struct(child, CustomComponent) ->
-        validate_render_tree!(child)
-
-      child ->
-        raise "#{__MODULE__}: Invalid child of rect. Expected a rect, a line, or a custom component, instead got: #{inspect(child, pretty: true)}"
-    end)
-  end
-
-  defp validate_render_tree!(%Line{} = component) do
-    Enum.each(component.children, fn
-      child
-      when is_struct(child, Span)
-      when is_struct(child, CustomComponent) ->
-        validate_render_tree!(child)
-
-      child ->
-        raise "#{__MODULE__}: Invalid child of line. Expected a span, or a custom component, instead got: #{inspect(child, pretty: true)}"
-    end)
-  end
-
-  defp validate_render_tree!(%Span{} = component) do
-    case component.children do
-      [text] when is_binary(text) ->
-        :ok
-
-      child ->
-        raise "#{__MODULE__}: Invalid child of span. Expected a single text child, instead got: #{inspect(child, pretty: true)}"
     end
   end
 
@@ -392,12 +353,8 @@ defmodule Orange.Runtime.RenderLoop do
     |> Map.get(:ref)
   end
 
-  defp find_by_id(%Span{}, _component_id), do: nil
-
-  defp find_by_id(component, component_id)
-       when is_struct(component, Rect)
-       when is_struct(component, Line),
-       do: find_in_children(component.children, component_id)
+  defp find_by_id(%Rect{} = component, component_id),
+    do: find_in_children(component.children, component_id)
 
   defp find_by_id(
          %CustomComponent{children: children, attributes: attributes} = component,
@@ -407,6 +364,8 @@ defmodule Orange.Runtime.RenderLoop do
       do: component,
       else: find_in_children(children, component_id)
   end
+
+  defp find_by_id(_, _), do: nil
 
   defp find_in_children([], _component_id), do: nil
 

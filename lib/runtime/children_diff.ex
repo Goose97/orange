@@ -6,12 +6,12 @@ defmodule Orange.Runtime.ChildrenDiff do
   # 1. Find the Longest Common Subsequence (LCS) between the two lists
   # 2. Iterate the current list, child present in the LCS is considered as old child, otherwise it's new
   #
-  # To simplify the algorithm, we consider that stateless elements (like Span) are always new.
+  # To simplify the algorithm, we consider that stateless elements (like text) are always new.
   # This means that these children will be re-rendered from scratch every time
 
-  alias Orange.{Span, Line, Rect, CustomComponent}
+  alias Orange.{Rect, CustomComponent}
 
-  @type child :: Span.t() | Line.t() | Rect.t() | CustomComponent.t()
+  @type child :: Rect.t() | binary() | CustomComponent.t()
   @spec run([child], [child]) :: [
           {:keep, current :: child, prev :: child} | {:new, child} | {:remove, child}
         ]
@@ -29,8 +29,7 @@ defmodule Orange.Runtime.ChildrenDiff do
             case element do
               element
               when is_struct(element, CustomComponent)
-              when is_struct(element, Rect)
-              when is_struct(element, Line) ->
+              when is_struct(element, Rect) ->
                 {:keep, element, Enum.at(previous, j)}
 
               _ ->
@@ -93,6 +92,12 @@ defmodule Orange.Runtime.ChildrenDiff do
 
   defp same_type(element1, element2) do
     cond do
+      is_binary(element1) ->
+        is_binary(element2)
+
+      is_binary(element2) ->
+        is_binary(element1)
+
       is_struct(element1, CustomComponent) and is_struct(element2, CustomComponent) ->
         element1.module == element2.module
 

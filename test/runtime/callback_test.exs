@@ -86,7 +86,7 @@ defmodule Orange.Runtime.CallbackTest do
     @impl true
     def render(state, _attrs, _update) do
       rect style: [width: 15] do
-        span do
+        rect do
           "Counter: #{state}"
         end
       end
@@ -123,7 +123,7 @@ defmodule Orange.Runtime.CallbackTest do
         if !state.remove, do: {Counter, atomic: attrs[:atomic2]}
 
         if state.remove do
-          span(do: "Removed!")
+          rect(do: "Removed!")
         else
           rect do
             {Counter, atomic: attrs[:atomic3]}
