@@ -9,7 +9,7 @@ defmodule Orange.MixProject do
     [
       app: :orange,
       version: @version,
-      elixir: "~> 1.14",
+      elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -58,9 +58,9 @@ defmodule Orange.MixProject do
       links: %{"GitHub" => @source_url},
       files: [
         "lib",
-        "native/orange_terminal_binding/.cargo",
-        "native/orange_terminal_binding/src",
-        "native/orange_terminal_binding/Cargo*",
+        "native/orange_rust_binding/.cargo",
+        "native/orange_rust_binding/src",
+        "native/orange_rust_binding/Cargo*",
         "checksum-*.exs",
         "mix.exs"
       ]

@@ -28,8 +28,8 @@ defmodule Orange.Component.ModalTest do
            --------------------
            --------------------
            ----┌──────────┐----
-           ----│foo-------│----
-           ----│bar-------│----
+           ----│foobar----│----
+           ----│----------│----
            ----│----------│----
            ----│----------│----
            ----│----------│----
@@ -129,13 +129,13 @@ defmodule Orange.Component.ModalTest do
         end
 
       rect style: [width: "100%", height: "100%"] do
-        line do
+        rect do
           "Displaying modal..."
         end
 
         {
           Component.Modal,
-          offset_x: offset_x, offset_y: offset_y, children: modal_content, open: attrs[:open]
+          offset_x: offset_x, offset_y: offset_y, children: [modal_content], open: attrs[:open]
         }
       end
     end

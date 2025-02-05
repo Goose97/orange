@@ -40,7 +40,7 @@ defmodule Orange.Component.Input do
               auto_focus: true
             }
 
-            line do
+            rect do
               "Search value: \#{state.search_value}"
             end
           end
@@ -103,7 +103,7 @@ defmodule Orange.Component.Input do
     text = state.input
     text = if attrs[:prefix], do: "#{attrs[:prefix]} #{text}", else: text
 
-    line style: Keyword.get(attrs, :style, []) do
+    rect style: Keyword.get(attrs, :style, []) do
       text
     end
   end

@@ -58,3 +58,17 @@ defmodule Orange.Renderer.Area do
         }
   defstruct [:x, :y, :width, :height]
 end
+
+defmodule Orange.Renderer.LayoutBox do
+  @moduledoc false
+
+  defstruct [:width, :height, :x, :y, :border, :text]
+
+  defmodule Border do
+    defstruct [:left, :right, :top, :bottom]
+  end
+
+  defmodule Tree do
+    defstruct [:node, :children]
+  end
+end

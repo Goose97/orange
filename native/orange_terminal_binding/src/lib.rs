@@ -1,3 +1,5 @@
+use std::io::{self, Write};
+
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use crossterm::style::{
     Attribute, Attributes, Color, ContentStyle, PrintStyledContent, StyledContent,
@@ -5,7 +7,6 @@ use crossterm::style::{
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::{cursor, execute, queue};
 use rustler::{Atom, Encoder, Env, NifStruct, Term};
-use std::io::{self, Write};
 
 #[derive(Debug, NifStruct)]
 #[module = "Orange.Renderer.Buffer"]
@@ -20,6 +21,26 @@ struct Cell {
     foreground: Option<Atom>,
     background: Option<Atom>,
     modifiers: Vec<Atom>,
+}
+
+#[derive(Debug, NifStruct)]
+#[module = "Orange.Renderer.LayoutBox"]
+struct LayoutBox {
+    width: usize,
+    height: usize,
+    x: usize,
+    y: usize,
+    border: LayoutBoxBorder,
+    text: Option<String>,
+}
+
+#[derive(Debug, NifStruct)]
+#[module = "Orange.Renderer.LayoutBox.Border"]
+struct LayoutBoxBorder {
+    left: usize,
+    right: usize,
+    top: usize,
+    bottom: usize,
 }
 
 #[rustler::nif]
@@ -276,6 +297,6 @@ rustler::init!(
         hide_cursor,
         clear,
         poll_event,
-        terminal_size
+        terminal_size,
     ]
 );

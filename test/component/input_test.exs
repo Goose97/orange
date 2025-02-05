@@ -314,10 +314,10 @@ defmodule Orange.Component.InputTest do
       input_attrs =
         Keyword.merge(input_attrs, Keyword.take(attrs, [:submit_key, :exit_key, :on_exit]))
 
-      rect style: [width: 20, height: attrs[:height]] do
+      rect style: [width: 20, height: attrs[:height], flex_direction: :column] do
         {Component.Input, input_attrs}
 
-        line do
+        rect do
           "Submitted value: #{state.input_value}"
         end
       end

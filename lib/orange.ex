@@ -38,7 +38,7 @@ defmodule Orange do
         @impl true
         def render(state, _attrs, _update) do
           rect style: [width: 25, height: 10, border: true] do
-            span do
+            rect do
               "Random number: \#{state}"
             end
           end
@@ -93,7 +93,7 @@ defmodule Orange do
 
         @impl true
         def render(_state, _attrs, _update) do
-          span do
+          rect do
             "Hello"
           end
         end

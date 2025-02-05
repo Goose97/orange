@@ -81,7 +81,7 @@ defmodule Orange.Runtime.UpdateStateTest do
     @impl true
     def render(state, _attrs, _update) do
       rect style: [width: 15, border: true] do
-        span do
+        rect do
           "Counter: #{state}"
         end
       end

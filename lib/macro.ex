@@ -2,21 +2,20 @@ defmodule Orange.Macro do
   @moduledoc """
   Macros for creating Orange primitive components
 
-  Currently, Orange supports three primitive components:
+  Currently, Orange supports only one primitive component:
     * `rect` for creating a rectangle
-    * `line` for creating a line
-    * `span` for creating a span
 
   ## Examples
 
+  TODO: double check the examples
   Macro provides an ergonomic way to create Orange components. For example, the following code:
 
       rect style: [width: 12, border: true], direction: :row do
-        span style: [color: :red] do
+        rect style: [color: :red] do
           "Hello"
         end
 
-        span do
+        rect do
           "World"
         end
       end
@@ -25,16 +24,8 @@ defmodule Orange.Macro do
 
       %Orange.Rect{
         children: [
-          %Orange.Line{
-            children: [
-              %Orange.Span{children: ["Hello"], attributes: [style: [color: :red]]}
-            ],
-            attributes: []
-          },
-          %Orange.Line{
-            children: [%Orange.Span{children: ["World"], attributes: []}],
-            attributes: []
-          }
+          %Orange.Rect{children: ["Hello"], attributes: [style: [color: :red]]},
+          %Orange.Rect{children: ["World"], attributes: []}
         ],
         attributes: [style: [width: 12, border: true], direction: :row]
       }
@@ -44,11 +35,11 @@ defmodule Orange.Macro do
   Orange components can have children, provided by the do block. The syntax took inspiration from HTML:
 
       rect do
-        span do
+        rect do
           "Hello"
         end
 
-        span do
+        rect do
           "World"
         end
       end
@@ -57,11 +48,11 @@ defmodule Orange.Macro do
 
       rect do
         [
-          span do
+          rect do
             "Hello"
           end,
 
-          span do
+          rect do
             "World"
           end
         ]
@@ -224,203 +215,39 @@ defmodule Orange.Macro do
 
     * `:position` - the position of the rect. See [Position](#module-position) section
 
-  ## Children validation
-
-  Rect only accepts `Orange.Rect` and `Orange.Line` as children. To provide better ergonomics, the macro will automatically wrap `Orange.Span` and string to `Orange.Line`. For example, the following code:
-
-      rect do
-        "Hello"
-      end
-
-      rect do
-        span do
-          "Hello"
-        end
-      end
-
-    will both produce the result:
-
-      %Orange.Rect{
-        children: [
-          %Orange.Line{
-            children: [%Orange.Span{children: ["Hello"], attributes: []}],
-            attributes: []
-          }
-        ],
-        attributes: []
-      }
-
   ## Examples
 
       iex> import Orange.Macro
       iex> rect style: [width: 5, border: true], direction: :row do
       ...>   "foo"
       ...>
-      ...>   span do
+      ...>   rect do
       ...>     "bar"
       ...>   end
       ...> end
       %Orange.Rect{
         children: [
-          %Orange.Line{
-            children: [%Orange.Span{children: ["foo"], attributes: []}],
-            attributes: []
-          },
-          %Orange.Line{
-            children: [%Orange.Span{children: ["bar"], attributes: []}],
-            attributes: []
-          }
+          %Orange.Rect{children: ["foo"], attributes: []},
+          %Orange.Rect{children: ["bar"], attributes: []}
         ],
         attributes: [style: [width: 5, border: true], direction: :row]
       }
   """
   defmacro rect(attrs \\ [], do_block) do
-    children = get_children(do_block)
+    children =
+      case do_block[:do] do
+        {:__block__, _, children} -> children
+        child -> [child]
+      end
+      |> Enum.map(&Macro.expand(&1, __ENV__))
 
     quote do
-      children =
-        unquote(children)
-        |> Enum.reject(&is_nil/1)
-        |> Orange.Macro.normalize_children(:rect)
+      children = Enum.reject(unquote(children), &is_nil/1) |> List.flatten()
 
       %Orange.Rect{
         children: children,
         attributes: unquote(attrs)
       }
     end
-  end
-
-  @doc """
-  Generates a `Orange.Line` struct
-
-  ## Options
-
-    * `:style` - style attributes for the line. Supported keys are:
-
-      * `:width` - see [Sizing](#module-sizing) section
-
-      * `:height` - see [Sizing](#module-sizing) section
-
-      * `:padding` - see [Padding](#module-padding) section
-
-      * `:color` - see [Color](#module-color) section
-
-      * `:background_color` - see [Color](#module-color) section
-
-  ## Children validation
-
-  Line only accepts `Orange.Span` as children. To provide better ergonomics, the macro will automatically wrap string to `Orange.Span`. For example, the following code:
-
-      line do
-        "Hello"
-      end
-
-    will produce the result:
-
-      %Orange.Line{
-        children: [%Orange.Span{children: ["Hello"], attributes: []}],
-        attributes: []
-      }
-
-  ## Examples
-
-      iex> import Orange.Macro
-      iex> line style: [width: 5, color: :red] do
-      ...>   span do
-      ...>     "foo"
-      ...>   end
-      ...> end
-      %Orange.Line{
-        children: [%Orange.Span{children: ["foo"], attributes: []}],
-        attributes: [style: [width: 5, color: :red]]
-      }
-  """
-  defmacro line(attrs \\ [], do_block) do
-    children = get_children(do_block)
-
-    quote do
-      children =
-        unquote(children)
-        |> Enum.reject(&is_nil/1)
-        |> Orange.Macro.normalize_children(:line)
-
-      %Orange.Line{
-        children: children,
-        attributes: unquote(attrs)
-      }
-    end
-  end
-
-  @doc """
-  Generates a `Orange.Span` struct
-
-  ## Options
-
-    * `:style` - style attributes for the line. Supported keys are:
-
-      * `:color` - see [Color](#module-color) section
-
-      * `:background_color` - see [Color](#module-color) section
-
-  ## Children validation
-
-  Span only accepts a single string as children
-
-  ## Examples
-
-      iex> import Orange.Macro
-      iex> span style: [color: :red] do
-      ...>   "foo"
-      ...> end
-      %Orange.Span{children: ["foo"], attributes: [style: [color: :red]]}
-  """
-  defmacro span(attrs \\ [], do_block) do
-    children = get_children(do_block)
-
-    quote do
-      %Orange.Span{
-        children: unquote(children),
-        attributes: unquote(attrs)
-      }
-    end
-  end
-
-  @doc false
-  def normalize_children(children, :rect) when is_list(children) do
-    for child <- List.flatten(children) do
-      case child do
-        text when is_binary(text) ->
-          span = %Orange.Span{children: [text]}
-
-          %Orange.Line{children: [span]}
-
-        span when is_struct(span, Orange.Span) ->
-          %Orange.Line{children: [span]}
-
-        other ->
-          other
-      end
-    end
-  end
-
-  @doc false
-  def normalize_children(children, :line) when is_list(children) do
-    for child <- List.flatten(children) do
-      case child do
-        text when is_binary(text) ->
-          %Orange.Span{children: [text]}
-
-        other ->
-          other
-      end
-    end
-  end
-
-  defp get_children(do_block) do
-    case do_block[:do] do
-      {:__block__, _, children} -> children
-      child -> [child]
-    end
-    |> Enum.map(&Macro.expand(&1, __ENV__))
   end
 end

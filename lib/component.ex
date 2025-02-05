@@ -44,7 +44,7 @@ defmodule Orange.Component do
         @impl true
         def render(state, attrs, _update) do
           rect style: [width: "100%", height: "1fr", border: attrs[:highlight]] do
-            span do
+            rect do
               "Counter: \#{state}"
             end
           end
@@ -103,7 +103,7 @@ defmodule Orange.Component do
       end
   """
 
-  @type ui_element :: Orange.Rect.t() | Orange.Line.t() | Orange.Span.t()
+  @type ui_element :: Orange.Rect.t()
   @type state :: map
   @type event :: Orange.Terminal.KeyEvent.t()
   @type update_callback :: (state -> state) | state

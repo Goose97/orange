@@ -1,6 +1,6 @@
 defmodule Orange.Terminal do
   @moduledoc """
-  Provides API to interact with the terminal.
+  Provides API to interact with the terminal via Rust bindings.
   """
 
   alias Orange.Renderer.{Cell, Buffer}
@@ -137,8 +137,8 @@ defmodule Orange.Terminal do
     use RustlerPrecompiled,
       otp_app: :orange,
       crate: "orange_terminal_binding",
-      base_url: "https://github.com/Goose97/orange/releases/download/v0.4.0",
-      version: "0.4.0",
+      base_url: "https://github.com/Goose97/orange/releases/download/v0.5.0",
+      version: "0.5.0",
       targets: [
         "arm-unknown-linux-gnueabihf",
         "aarch64-unknown-linux-gnu",

@@ -5,20 +5,6 @@ defmodule Orange.Rect do
   defstruct [:children, attributes: []]
 end
 
-defmodule Orange.Line do
-  @moduledoc false
-
-  # :children must be a list of spans
-  defstruct [:children, attributes: []]
-end
-
-defmodule Orange.Span do
-  @moduledoc false
-
-  # :children must be a text
-  defstruct [:children, attributes: []]
-end
-
 defmodule Orange.CustomComponent do
   @moduledoc false
 

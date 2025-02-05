@@ -25,7 +25,7 @@ defmodule Counter.App do
   end
 
   @impl true
-  def after_mount(state, _attrs, update) do
+  def after_mount(_state, _attrs, update) do
     # Set counter value to 10 after 5 seconds
     spawn(fn ->
       Process.sleep(5000)
@@ -35,10 +35,14 @@ defmodule Counter.App do
 
   @impl true
   def render(state, _attrs, _update) do
-    rect style: [width: 20, height: 20, border: true] do
-      span do
+    rect style: [width: 20, height: 20, border: true, justify_content: :space_between] do
+      "-"
+
+      rect do
         "Counter: #{state}"
       end
+
+      "+"
     end
   end
 end

@@ -59,7 +59,7 @@ defmodule Orange.Component.VerticalScrollableRectTest do
   describe "when content is overflow" do
     test "offset is 0" do
       RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-        terminal_size: {25, 15}
+        terminal_size: {25, 12}
       )
 
       buffer =
@@ -79,16 +79,13 @@ defmodule Orange.Component.VerticalScrollableRectTest do
              │Item 8------------│-----
              └──────────────────▼-----
              -------------------------
-             -------------------------
-             -------------------------
-             -------------------------
              -------------------------\
              """
     end
 
     test "offset is non-zero" do
       RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-        terminal_size: {25, 15}
+        terminal_size: {25, 12}
       )
 
       buffer =
@@ -107,9 +104,6 @@ defmodule Orange.Component.VerticalScrollableRectTest do
              │Item 10-----------│-----
              │Item 11-----------│-----
              └──────────────────▼-----
-             -------------------------
-             -------------------------
-             -------------------------
              -------------------------
              -------------------------\
              """

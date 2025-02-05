@@ -46,6 +46,9 @@ jobs:
             }
           - { target: x86_64-pc-windows-gnu, os: windows-2019 }
           - { target: x86_64-pc-windows-msvc, os: windows-2019 }
+        crate:
+          - { name: orange_terminal_binding, dir: "native/orange_terminal_binding" }
+          - { name: orange_layout_binding, dir: "native/orange_layout_binding" }
 
     steps:
       - name: Checkout source code
@@ -73,12 +76,12 @@ jobs:
         id: build-crate
         uses: philss/rustler-precompiled-action@v1.1.3
         with:
-          project-name: orange_terminal_binding
+          project-name: ${{ matrix.crate.name }}
           project-version: ${{ env.PROJECT_VERSION }}
           target: ${{ matrix.job.target }}
           nif-version: ${{ matrix.nif }}
           use-cross: ${{ matrix.job.use-cross }}
-          project-dir: "native/orange_terminal_binding"
+          project-dir: ${{ matrix.crate.dir }}
 
       - name: Artifact upload
         uses: actions/upload-artifact@v3

@@ -6,11 +6,11 @@ Orange is a framework to build TUI (terminal UI) applications in Elixir. Its hig
 
   ```elixir
   rect style: [border: true, padding: {0, 1}, height: 10, width: 20] do
-    span style: [color: :red] do
+    rect style: [color: :red] do
       "Hello"
     end
 
-    span do
+    rect do
       "World"
     end
   end
@@ -22,7 +22,7 @@ Orange is a framework to build TUI (terminal UI) applications in Elixir. Its hig
 
 - Support handling terminal events: currently, only keyboard events are supported.
 
-- Support custom components: you can create component from builtin primitives like rect, line, span. Custom components can encapsulate state and logic.
+- Support custom components: you can create component from builtin primitives. Custom components can encapsulate state and logic.
 
 - A collection of UI components: Input, VerticalScrollRect, ...
 
