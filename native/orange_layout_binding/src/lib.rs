@@ -154,17 +154,6 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
     let mut default_style = Style::default();
 
     if let Some(style) = &node.style {
-        match style
-            .display
-            .to_term(env)
-            .atom_to_string()
-            .unwrap()
-            .as_str()
-        {
-            "flex" => default_style.display = Display::Flex,
-            "grid" => default_style.display = Display::Grid,
-            _ => default_style.display = Display::Flex, // Default to flex if invalid value
-        };
         default_style.size = node_size(style);
 
         default_style.border = Rect {
@@ -187,6 +176,22 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
             bottom: LengthPercentageAuto::Length(style.margin.2 as f32),
             left: LengthPercentageAuto::Length(style.margin.3 as f32),
         };
+
+        // Display attributes
+
+        default_style.display = match style
+            .display
+            .to_term(env)
+            .atom_to_string()
+            .unwrap()
+            .as_str()
+        {
+            "flex" => Display::Flex,
+            "grid" => Display::Grid,
+            _ => Display::Flex,
+        };
+
+        // Flex related attributes
 
         match style
             .flex_direction
