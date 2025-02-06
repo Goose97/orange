@@ -509,8 +509,8 @@ defmodule Orange.Renderer do
 
   defp parse_grid_tracks(tracks) when is_list(tracks) do
     Enum.map(tracks, fn
-      v when v in [:min_content, :max_content, :auto] ->
-        v
+      :auto ->
+        :auto
 
       {:repeat, count, track} when is_integer(count) ->
         {:repeat, count, parse_length_percentage(track)}

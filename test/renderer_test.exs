@@ -1447,6 +1447,53 @@ defmodule Orange.RendererTest do
              └──────────────────┘\
              """
     end
+
+    test "accepts auto" do
+      element =
+        rect style: [
+               border: true,
+               height: "100%",
+               width: "100%",
+               display: :grid,
+               grid_template_rows: [4, :auto, 4],
+               grid_template_columns: [5, :auto, 5]
+             ] do
+          rect style: [grid_row: {1, 2}, grid_column: {1, 2}, border: true] do
+            "foo"
+          end
+
+          rect style: [grid_row: {2, 3}, grid_column: {2, 3}, border: true] do
+            "bar"
+          end
+
+          rect style: [grid_row: {3, 4}, grid_column: {3, 4}, border: true] do
+            "baz"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 20, height: 15})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌──────────────────┐
+             │┌───┐-------------│
+             ││foo│-------------│
+             ││---│-------------│
+             │└───┘-------------│
+             │-----┌──────┐-----│
+             │-----│bar---│-----│
+             │-----│------│-----│
+             │-----│------│-----│
+             │-----└──────┘-----│
+             │-------------┌───┐│
+             │-------------│baz││
+             │-------------│---││
+             │-------------└───┘│
+             └──────────────────┘\
+             """
+    end
   end
 
   defp get_color(buffer, x, y) do

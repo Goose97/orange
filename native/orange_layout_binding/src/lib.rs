@@ -43,8 +43,6 @@ enum InputGridTrack {
     Fixed(usize),
     Percent(f32),
     Fr(usize),
-    MinContent,
-    MaxContent,
     Auto,
     Repeat(usize, InputLengthPercentage),
 }
@@ -313,8 +311,6 @@ fn grid_tracks(tracks: &[InputGridTrack]) -> Vec<TrackSizingFunction> {
                     vec![repeat_value],
                 )
             }
-            InputGridTrack::MinContent => minmax(min_content(), auto()),
-            InputGridTrack::MaxContent => minmax(auto(), max_content()),
         })
         .collect()
 }

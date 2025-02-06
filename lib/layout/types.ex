@@ -43,8 +43,6 @@ defmodule Orange.Layout.InputTreeNode do
             integer()
             | binary()
             | {:fr, integer()}
-            | :min_content
-            | :max_content
             | :auto
             | {:repeat, integer(), length_or_percent() | {:fr, integer()}}
 
