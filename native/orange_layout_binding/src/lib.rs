@@ -197,7 +197,7 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
             _ => Display::Flex,
         };
 
-        // Flex related attributes
+        // Flex properties
 
         match style
             .flex_direction
@@ -286,11 +286,13 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
         }
 
         if let Some((start, end)) = style.grid_row {
-            default_style.grid_row = Line(GridPlacement::Line(start as i16))..Line(GridPlacement::Line(end as i16));
+            default_style.grid_row =
+                Line(GridPlacement::Line(start as i16))..Line(GridPlacement::Line(end as i16));
         }
 
         if let Some((start, end)) = style.grid_column {
-            default_style.grid_column = Line(GridPlacement::Line(start as i16))..Line(GridPlacement::Line(end as i16));
+            default_style.grid_column =
+                Line(GridPlacement::Line(start as i16))..Line(GridPlacement::Line(end as i16));
         }
     }
 
