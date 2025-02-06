@@ -40,12 +40,13 @@ defmodule Orange.Layout.InputTreeNode do
           }
 
     @type grid_track ::
-            {:fixed, integer()}
-            | {:percent, float()}
+            integer()
+            | binary()
+            | {:fr, integer()}
             | :min_content
             | :max_content
             | :auto
-            | {:repeat, integer(), length_or_percent()}
+            | {:repeat, integer(), length_or_percent() | {:fr, integer()}}
 
     @type grid_line :: {:fixed, integer()} | {:span, integer()} | :auto
 
