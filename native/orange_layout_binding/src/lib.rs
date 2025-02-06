@@ -19,6 +19,7 @@ struct InputTreeNodeStyle {
     padding: (usize, usize, usize, usize),
     margin: (usize, usize, usize, usize),
     border: (usize, usize, usize, usize),
+    display: Atom,
     flex_direction: Atom,
     flex_grow: Option<usize>,
     flex_shrink: Option<usize>,
@@ -152,9 +153,18 @@ fn create_node<'a>(
 fn node_style(node: &InputTreeNode, env: Env) -> Style {
     let mut default_style = Style::default();
 
-    default_style.display = Display::Flex;
-
     if let Some(style) = &node.style {
+        match style
+            .display
+            .to_term(env)
+            .atom_to_string()
+            .unwrap()
+            .as_str()
+        {
+            "flex" => default_style.display = Display::Flex,
+            "grid" => default_style.display = Display::Grid,
+            _ => default_style.display = Display::Flex, // Default to flex if invalid value
+        };
         default_style.size = node_size(style);
 
         default_style.border = Rect {
