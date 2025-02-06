@@ -457,7 +457,11 @@ defmodule Orange.Renderer do
       flex_shrink: style[:flex_shrink],
       justify_content: style[:justify_content],
       align_items: style[:align_items],
-      line_wrap: Keyword.get(style, :line_wrap, true)
+      line_wrap: Keyword.get(style, :line_wrap, true),
+      grid_template_rows: parse_grid_tracks(style[:grid_template_rows]),
+      grid_template_columns: parse_grid_tracks(style[:grid_template_columns]), 
+      grid_row: parse_grid_line_pair(style[:grid_row]),
+      grid_column: parse_grid_line_pair(style[:grid_column])
     }
   end
 
@@ -496,4 +500,26 @@ defmodule Orange.Renderer do
       nil -> {0, 0, 0, 0}
     end
   end
+
+  defp parse_grid_tracks(nil), do: nil
+  defp parse_grid_tracks(tracks) when is_list(tracks) do
+    Enum.map(tracks, fn
+      {:fixed, size} when is_integer(size) -> {:fixed, size}
+      {:percent, value} when is_float(value) -> {:percent, value}
+      :min_content -> :min_content
+      :max_content -> :max_content
+      :auto -> :auto
+      {:repeat, count, track} when is_integer(count) -> 
+        {:repeat, count, parse_length_percentage(track)}
+    end)
+  end
+
+  defp parse_grid_line_pair(nil), do: nil
+  defp parse_grid_line_pair({start, end_}) do
+    {parse_grid_line(start), parse_grid_line(end_)}
+  end
+
+  defp parse_grid_line({:fixed, line}) when is_integer(line), do: {:fixed, line}
+  defp parse_grid_line({:span, span}) when is_integer(span), do: {:span, span}
+  defp parse_grid_line(:auto), do: :auto
 end
