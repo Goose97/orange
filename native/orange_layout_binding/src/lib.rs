@@ -26,6 +26,12 @@ struct InputTreeNodeStyle {
     justify_content: Atom,
     align_items: Atom,
     line_wrap: bool,
+    grid_template_rows: Option<Vec<InputLengthPercentage>>,
+    grid_template_columns: Option<Vec<InputLengthPercentage>>,
+    grid_auto_rows: Option<InputLengthPercentage>,
+    grid_auto_columns: Option<InputLengthPercentage>,
+    grid_row: Option<(usize, usize)>,
+    grid_column: Option<(usize, usize)>,
 }
 
 #[derive(Debug, Clone, NifTaggedEnum)]
@@ -243,6 +249,49 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
             "stretch" => default_style.align_items = Some(AlignItems::Stretch),
             _ => (),
         };
+
+        // Grid properties
+        if let Some(template_rows) = &style.grid_template_rows {
+            default_style.grid_template_rows = template_rows
+                .iter()
+                .map(|v| match v {
+                    InputLengthPercentage::Fixed(val) => TrackSizingFunction::Fixed(*val as f32),
+                    InputLengthPercentage::Percent(val) => TrackSizingFunction::Percent(*val),
+                })
+                .collect();
+        }
+
+        if let Some(template_cols) = &style.grid_template_columns {
+            default_style.grid_template_columns = template_cols
+                .iter()
+                .map(|v| match v {
+                    InputLengthPercentage::Fixed(val) => TrackSizingFunction::Fixed(*val as f32),
+                    InputLengthPercentage::Percent(val) => TrackSizingFunction::Percent(*val),
+                })
+                .collect();
+        }
+
+        if let Some(auto_rows) = &style.grid_auto_rows {
+            default_style.grid_auto_rows = vec![match auto_rows {
+                InputLengthPercentage::Fixed(val) => TrackSizingFunction::Fixed(*val as f32),
+                InputLengthPercentage::Percent(val) => TrackSizingFunction::Percent(*val),
+            }];
+        }
+
+        if let Some(auto_cols) = &style.grid_auto_columns {
+            default_style.grid_auto_columns = vec![match auto_cols {
+                InputLengthPercentage::Fixed(val) => TrackSizingFunction::Fixed(*val as f32),
+                InputLengthPercentage::Percent(val) => TrackSizingFunction::Percent(*val),
+            }];
+        }
+
+        if let Some((start, end)) = style.grid_row {
+            default_style.grid_row = Line(GridPlacement::Line(start as i16))..Line(GridPlacement::Line(end as i16));
+        }
+
+        if let Some((start, end)) = style.grid_column {
+            default_style.grid_column = Line(GridPlacement::Line(start as i16))..Line(GridPlacement::Line(end as i16));
+        }
     }
 
     return default_style;
