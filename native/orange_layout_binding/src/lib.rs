@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use rustler::{Atom, Env, NifStruct, NifTaggedEnum};
-use taffy::{prelude::*, MinMax};
+use taffy::prelude::*;
 
 #[derive(Debug, NifStruct)]
 #[module = "Orange.Layout.InputTreeNode"]
@@ -42,6 +42,7 @@ enum InputLengthPercentage {
 enum InputGridTrack {
     Fixed(usize),
     Percent(f32),
+    Fr(usize),
     MinContent,
     MaxContent,
     Auto,
@@ -299,6 +300,7 @@ fn grid_tracks(tracks: &[InputGridTrack]) -> Vec<TrackSizingFunction> {
         .map(|v| match v {
             InputGridTrack::Fixed(v) => length(*v as f32),
             InputGridTrack::Percent(v) => percent(*v),
+            InputGridTrack::Fr(v) => fr(*v as f32),
             InputGridTrack::Auto => auto(),
             InputGridTrack::Repeat(count, track) => {
                 let repeat_value = match track {
