@@ -256,7 +256,7 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
                 .iter()
                 .map(|v| match v {
                     InputLengthPercentage::Fixed(val) => TrackSizingFunction::Fixed(*val as f32),
-                    InputLengthPercentage::Percent(val) => TrackSizingFunction::Percent(*val),
+                    InputLengthPercentage::Percent(_) => TrackSizingFunction::Auto,
                 })
                 .collect();
         }
@@ -274,14 +274,14 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
         if let Some(auto_rows) = &style.grid_auto_rows {
             default_style.grid_auto_rows = vec![match auto_rows {
                 InputLengthPercentage::Fixed(val) => TrackSizingFunction::Fixed(*val as f32),
-                InputLengthPercentage::Percent(val) => TrackSizingFunction::Percent(*val),
+                InputLengthPercentage::Percent(_) => TrackSizingFunction::Auto,
             }];
         }
 
         if let Some(auto_cols) = &style.grid_auto_columns {
             default_style.grid_auto_columns = vec![match auto_cols {
                 InputLengthPercentage::Fixed(val) => TrackSizingFunction::Fixed(*val as f32),
-                InputLengthPercentage::Percent(val) => TrackSizingFunction::Percent(*val),
+                InputLengthPercentage::Percent(_) => TrackSizingFunction::Auto,
             }];
         }
 
