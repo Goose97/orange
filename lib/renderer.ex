@@ -451,6 +451,7 @@ defmodule Orange.Renderer do
       border: expand_border(style),
       padding: expand_padding_margin(style[:padding]),
       margin: expand_padding_margin(style[:margin]),
+      display: Keyword.get(style, :display, :flex),
       flex_direction: style[:flex_direction],
       flex_grow: style[:flex_grow],
       flex_shrink: style[:flex_shrink],

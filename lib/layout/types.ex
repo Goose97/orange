@@ -15,9 +15,11 @@ defmodule Orange.Layout.InputTreeNode do
     # The style of layout tree node
     # Supports only a subset of styling properties that affect the layout.
 
+    @type length_or_percent :: {:fixed | integer()} | {:percentage, float()}
+
     @type t :: %__MODULE__{
             # Can be a percentage or a fixed value
-            width: {:fixed | integer()} | {:percentage, float()} | nil,
+            width: length_or_percent() | nil,
             height: {:fixed | integer()} | {:percentage, float()} | nil,
             padding: {integer(), integer(), integer(), integer()},
             margin: {integer(), integer(), integer(), integer()},
@@ -30,8 +32,22 @@ defmodule Orange.Layout.InputTreeNode do
               :start | :end | :center | :space_between | :space_around | :space_evenly | :stretch,
             align_items:
               :start | :end | :center | :space_between | :space_around | :space_evenly | :stretch,
-            line_wrap: boolean()
+            line_wrap: boolean(),
+            grid_template_rows: list(grid_track()) | nil,
+            grid_template_columns: list(grid_track()) | nil,
+            grid_row: {grid_line(), grid_line()} | nil,
+            grid_column: {grid_line(), grid_line()} | nil
           }
+
+    @type grid_track ::
+            {:fixed, integer()}
+            | {:percent, float()}
+            | :min_content
+            | :max_content
+            | :auto
+            | {:repeat, integer(), length_or_percent()}
+
+    @type grid_line :: {:fixed, integer()} | {:span, integer()} | :auto
 
     defstruct [
       :width,
@@ -45,7 +61,11 @@ defmodule Orange.Layout.InputTreeNode do
       :flex_shrink,
       :justify_content,
       :align_items,
-      :line_wrap
+      :line_wrap,
+      :grid_template_rows,
+      :grid_template_columns,
+      :grid_row,
+      :grid_column
     ]
   end
 end
