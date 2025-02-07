@@ -141,6 +141,34 @@ defmodule Orange.Macro do
     * `:cyan`
     * `:dark_cyan`
 
+  ### Display
+
+  The `:display` property controls how children are laid out. Supported values are:
+
+    * `:flex` (default) - Flexible box layout
+    * `:grid` - Grid layout
+
+  ### Flex Layout
+
+  When `display: :flex`, the following properties control the layout:
+
+    * `:flex_direction` - Direction of the flex container. Can be `:row` (default) or `:column`
+    * `:flex_grow` - How much the component grows relative to siblings when there is extra space
+    * `:flex_shrink` - How much the component shrinks relative to siblings when space is limited
+    * `:justify_content` - Alignment along the main axis. Can be:
+      * `:start` (default) - Pack items at the start
+      * `:end` - Pack items at the end
+      * `:center` - Center items
+      * `:space_between` - Evenly space items with first/last at edges
+      * `:space_around` - Evenly space items with equal space around
+      * `:space_evenly` - Evenly space items with equal space between
+      * `:stretch` - Stretch items to fill container
+    * `:align_items` - Alignment along the cross axis. Can be:
+      * `:start` - Align items at the start
+      * `:end` - Align items at the end  
+      * `:center` - Center items
+      * `:stretch` (default) - Stretch items to fill container
+
   ### Line wrap
 
   By default, the text will wrap to the next line if it exceeds the width of the component. To disable this behavior, set the `:line_wrap` attribute to `false`
