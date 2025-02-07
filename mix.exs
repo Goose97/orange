@@ -58,9 +58,12 @@ defmodule Orange.MixProject do
       links: %{"GitHub" => @source_url},
       files: [
         "lib",
-        "native/orange_rust_binding/.cargo",
-        "native/orange_rust_binding/src",
-        "native/orange_rust_binding/Cargo*",
+        "native/orange_terminal_binding/.cargo",
+        "native/orange_terminal_binding/src",
+        "native/orange_terminal_binding/Cargo*",
+        "native/orange_layout_binding/.cargo",
+        "native/orange_layout_binding/src",
+        "native/orange_layout_binding/Cargo*",
         "checksum-*.exs",
         "mix.exs"
       ]

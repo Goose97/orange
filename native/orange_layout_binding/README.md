@@ -1,4 +1,4 @@
-# NIF for Elixir.Orange.Rust.Binding
+# NIF for Elixir.Orange.Layout.Binding
 
 ## To build the NIF module:
 
@@ -7,8 +7,8 @@
 ## To load the NIF:
 
 ```elixir
-defmodule Orange.Rust.Binding do
-  use Rustler, otp_app: :orange, crate: "orange_rust_binding"
+defmodule Orange.Layout.Binding do
+  use Rustler, otp_app: :orange, crate: "orange_layout_binding"
 
   # When your NIF is loaded, it will override this function.
   def add(_a, _b), do: :erlang.nif_error(:nif_not_loaded)
