@@ -219,6 +219,16 @@ defmodule Orange.Macro do
 
       * `:background_color` - see [Color](#module-color) section
 
+      * `:display` - layout mode, either `:flex` (default) or `:grid`
+
+      * `:grid_template_rows` - see [Grid Layout](#module-grid-layout) section
+
+      * `:grid_template_columns` - see [Grid Layout](#module-grid-layout) section
+
+      * `:grid_row` - see [Grid Layout](#module-grid-layout) section
+
+      * `:grid_column` - see [Grid Layout](#module-grid-layout) section
+
     * `:title` - the title of the rect. If specified, it implies `border` is `true`. The title can be a string or a map with supported keys are:
 
       * `:text` - the title text. This field is required
