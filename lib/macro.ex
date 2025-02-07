@@ -5,6 +5,15 @@ defmodule Orange.Macro do
   Currently, Orange supports only one primitive component: `rect` (rectangle). Primitive components are
   the building blocks of Orange applications. They can be used to construct more complex components.
 
+  Orange uses [taffy Rust crate](https://docs.rs/taffy/latest/taffy/) for the layout algorithm. Orange
+  currently supports `flex` and `grid` layout algorithms. These are two well known layouts in the
+  web standards.
+
+  For layout management, Orange leverages the [taffy](https://docs.rs/taffy/latest/taffy/) Rust crate.
+  It supports two layouts in the CSS specifications:
+
+    * `flex`: Flexible box layout
+    * `grid`: Grid layout system
 
   ## Examples
 
