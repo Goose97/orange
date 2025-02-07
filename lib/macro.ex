@@ -168,6 +168,16 @@ defmodule Orange.Macro do
 
     * Four integers tuple - padding top, right, bottom, left respectively. For example: `style: [padding: {1, 2, 3, 4}]` means `[padding_top: 1, padding_bottom: 3, padding_left: 4, padding_right: 2]`
 
+  ### Margin
+
+  Margin creates space around the render box. The values for `margin` follow the same format as padding:
+
+    * One integer - margin for all sides. For example: `style: [margin: 1]` means `[margin_top: 1, margin_bottom: 1, margin_left: 1, margin_right: 1]`
+
+    * Two integers tuple - margin vertical and margin horizontal. For example: `style: [margin: {1, 2}]` means `[margin_top: 1, margin_bottom: 1, margin_left: 2, margin_right: 2]`
+
+    * Four integers tuple - margin top, right, bottom, left respectively. For example: `style: [margin: {1, 2, 3, 4}]` means `[margin_top: 1, margin_bottom: 3, margin_left: 4, margin_right: 2]`
+
   ### Border
 
     * `:border` - whether to render a border around the rect. Defaults to `false`
