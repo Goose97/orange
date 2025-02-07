@@ -2,15 +2,15 @@ defmodule Orange.Macro do
   @moduledoc """
   Macros for creating Orange primitive components
 
-  Currently, Orange supports only one primitive component:
-    * `rect` for creating a rectangle
+  Currently, Orange supports only one primitive component: `rect` (rectangle). Primitive components are
+  the building blocks of Orange applications. They can be used to construct more complex components.
+
 
   ## Examples
 
-  TODO: double check the examples
   Macro provides an ergonomic way to create Orange components. For example, the following code:
 
-      rect style: [width: 12, border: true], direction: :row do
+      rect style: [width: 12, border: true, flex_direction: :row] do
         rect style: [color: :red] do
           "Hello"
         end
@@ -27,7 +27,7 @@ defmodule Orange.Macro do
           %Orange.Rect{children: ["Hello"], attributes: [style: [color: :red]]},
           %Orange.Rect{children: ["World"], attributes: []}
         ],
-        attributes: [style: [width: 12, border: true], direction: :row]
+        attributes: [style: [width: 12, border: true, flex_direction: :row]]
       }
 
   ## Components children
@@ -81,22 +81,6 @@ defmodule Orange.Macro do
     * An integer - the number of cells in the terminal. For example: `style: [width: 10]`
 
     * A percentage string - the size is equal to the given percentage of the parent size. For example: `style: [width: "50%"]`
-
-    * An calc expression - the size is calculated based on the given expression. For example: `style: [width: "calc(100% - 10)"]`
-
-    * A fraction string - the size is calculated based on the given fraction of the parent size. All sibling components MUST also have a fraction size. The size will be calculated based on the component fraction divided by the sum of all sibling fractions. For example:
-
-      ```
-      rect style: [width: 12] do
-        rect style: [width: "1fr"] do
-        end
-
-        rect style: [width: "2fr"] do
-        end
-      end
-      ```
-
-      In this example, the first rect will have a width of 1/3 of the parent rect, and the second rect will have a width of 2/3 of the parent rect.
 
   ### Padding
 
@@ -183,8 +167,6 @@ defmodule Orange.Macro do
 
   ## Options
 
-    * `:direction` - the direction to layout children `:row` or `:column` (default)
-
     * `:style` - style attributes for the rect. Supported keys are:
 
       * `:width` - see [Sizing](#module-sizing) section
@@ -218,7 +200,7 @@ defmodule Orange.Macro do
   ## Examples
 
       iex> import Orange.Macro
-      iex> rect style: [width: 5, border: true], direction: :row do
+      iex> rect style: [width: 5, border: true, flex_direction: :row] do
       ...>   "foo"
       ...>
       ...>   rect do
@@ -230,7 +212,7 @@ defmodule Orange.Macro do
           %Orange.Rect{children: ["foo"], attributes: []},
           %Orange.Rect{children: ["bar"], attributes: []}
         ],
-        attributes: [style: [width: 5, border: true], direction: :row]
+        attributes: [style: [width: 5, border: true, flex_direction: :row]]
       }
   """
   defmacro rect(attrs \\ [], do_block) do

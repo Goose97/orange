@@ -383,7 +383,6 @@ defmodule Orange.Renderer do
   defp to_binding_input_tree(%Orange.Rect{} = node, counter, node_map, fixed_position_nodes) do
     new_id = :atomics.add_get(counter, 1, 1)
     style = if(node.attributes[:style], do: to_binding_style(node.attributes[:style]))
-    IO.puts("🪵L8C" <> inspect(style, pretty: true) <> "L8C")
 
     # Collect fixed position nodes
     {new_node, node_map, fixed_position_nodes} =

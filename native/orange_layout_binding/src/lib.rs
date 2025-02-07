@@ -162,7 +162,6 @@ fn create_node<'a>(
     env: Env,
 ) -> NodeId {
     let style = node_style(&node, env);
-    println!("style: {:#?}", style);
 
     let node_id = match &node.children {
         TreeNodeChildren::Text(text) => taffy
