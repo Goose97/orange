@@ -145,6 +145,44 @@ defmodule Orange.Macro do
 
   By default, the text will wrap to the next line if it exceeds the width of the component. To disable this behavior, set the `:line_wrap` attribute to `false`
 
+  ### Grid Layout
+
+  Grid layout allows you to create two-dimensional layouts. To use grid layout, set `display: :grid` and define the grid structure:
+
+    * `:grid_template_rows` - defines the rows in the grid. Takes a list of track sizes
+    * `:grid_template_columns` - defines the columns in the grid. Takes a list of track sizes
+
+  Track sizes can be:
+    * An integer - fixed number of cells
+    * A percentage string - percentage of container size (e.g. "50%")
+    * `{:fr, n}` - takes up n fraction of remaining space
+    * `:auto` - sized based on content
+    * `{:repeat, count, size}` - repeats the size specification count times
+
+  Child items can be positioned in the grid using:
+    * `:grid_row` - specifies grid row placement
+    * `:grid_column` - specifies grid column placement
+
+  Grid placement values can be:
+    * An integer - places at specific grid line
+    * `{:span, n}` - spans n tracks
+    * `:auto` - automatic placement
+    * `{start, end}` - explicit start/end placement
+
+  Example:
+      rect style: [
+        display: :grid,
+        grid_template_columns: [100, {:fr, 1}, "50%"],
+        grid_template_rows: ["33%", {:repeat, 2, {:fr, 1}}]
+      ] do
+        rect style: [grid_column: {1, 3}] do
+          "Header"
+        end
+        rect style: [grid_row: {:span, 2}] do
+          "Sidebar" 
+        end
+      end
+
   ## Position
 
   Rect elements support positioning. Supported values are:
