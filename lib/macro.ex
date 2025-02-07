@@ -70,6 +70,82 @@ defmodule Orange.Macro do
 
   ## Styling
 
+  ### Display
+
+  The `:display` property controls how children are laid out. Supported values are:
+
+    * `:flex` (default) - Flexible box layout
+    * `:grid` - Grid layout
+
+  #### Flex Layout
+
+  When `display: :flex`, the following properties control the layout:
+
+    * `:flex_direction` - Direction of the flex container. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/flex-direction) for more info. Supported values:
+      * `:row` (default) - Main axis is horizontal. Cross axis is vertical.
+      * `:column` - Main axis is vertical. Cross axis is horizontal.
+    * `:flex_grow` - How much the component grows relative to siblings when there is extra space. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/flex-grow) for more info.
+    * `:flex_shrink` - How much the component shrinks relative to siblings when space is limited. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/flex-shrink) for more info.
+    * `:justify_content` - Alignment along the main axis. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/justify-content) for more info. Supported values:
+      * `:start` (default) - Pack items at the start
+      * `:end` - Pack items at the end
+      * `:center` - Center items
+      * `:space_between` - Evenly space items with first/last at edges
+      * `:space_around` - Evenly space items with equal space around
+      * `:space_evenly` - Evenly space items with equal space between
+      * `:stretch` - Stretch items to fill container
+    * `:align_items` - Alignment along the cross axis. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/align-items) for more info. Supported values:
+      * `:start` (default) - Align items at the start
+      * `:end` - Align items at the end
+      * `:center` - Center items
+      * `:space_between` - Evenly space items with first/last at edges
+      * `:space_around` - Evenly space items with equal space around
+      * `:space_evenly` - Evenly space items with equal space between
+      * `:stretch` - Stretch items to fill container
+
+  #### Grid Layout
+
+  When `display: :grid`, the following properties control the layout:
+
+    * `:grid_template_rows` - defines the rows in the grid. Takes a list of track sizes. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-rows) for more info.
+    * `:grid_template_columns` - defines the columns in the grid. Takes a list of track sizes. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns) for more info.
+
+  Track sizes can be:
+
+    * An integer - fixed number of cells
+    * A percentage string - percentage of container size (e.g. "50%")
+    * `{:fr, n}` - takes up n fraction of remaining space
+    * `:auto` - sized based on content
+    * `{:repeat, count, size}` - repeats the size specification count times
+
+  Child items can be positioned in the grid using:
+
+    * `:grid_row` - specifies grid row placement. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row) for more info.
+    * `:grid_column` - specifies grid column placement. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-column) for more info.
+
+  Grid placement values can be:
+
+    * An integer - places at specific grid line
+    * `{:span, n}` - spans n tracks
+    * `:auto` - automatic placement
+    * `{start, end}` - explicit start/end placement where start/end is a grid placement (e.g. {2, {:span, 3}} means
+    start at row/column index 2 and ends at index 5)
+
+      ```
+      rect style: [
+        display: :grid,
+        grid_template_columns: [100, {:fr, 1}, "50%"],
+        grid_template_rows: ["33%", {:repeat, 2, {:fr, 1}}]
+      ] do
+        rect style: [grid_column: {1, 3}] do
+          "Header"
+        end
+        rect style: [grid_row: {:span, 2}] do
+          "Sidebar"
+        end
+      end
+      ```
+
   ### Sizing
 
     * `:width` - the width of the component
@@ -141,75 +217,9 @@ defmodule Orange.Macro do
     * `:cyan`
     * `:dark_cyan`
 
-  ### Display
-
-  The `:display` property controls how children are laid out. Supported values are:
-
-    * `:flex` (default) - Flexible box layout
-    * `:grid` - Grid layout
-
-  ### Flex Layout
-
-  When `display: :flex`, the following properties control the layout:
-
-    * `:flex_direction` - Direction of the flex container. Can be `:row` (default) or `:column`
-    * `:flex_grow` - How much the component grows relative to siblings when there is extra space
-    * `:flex_shrink` - How much the component shrinks relative to siblings when space is limited
-    * `:justify_content` - Alignment along the main axis. Can be:
-      * `:start` (default) - Pack items at the start
-      * `:end` - Pack items at the end
-      * `:center` - Center items
-      * `:space_between` - Evenly space items with first/last at edges
-      * `:space_around` - Evenly space items with equal space around
-      * `:space_evenly` - Evenly space items with equal space between
-      * `:stretch` - Stretch items to fill container
-    * `:align_items` - Alignment along the cross axis. Can be:
-      * `:start` - Align items at the start
-      * `:end` - Align items at the end  
-      * `:center` - Center items
-      * `:stretch` (default) - Stretch items to fill container
-
   ### Line wrap
 
   By default, the text will wrap to the next line if it exceeds the width of the component. To disable this behavior, set the `:line_wrap` attribute to `false`
-
-  ### Grid Layout
-
-  Grid layout allows you to create two-dimensional layouts. To use grid layout, set `display: :grid` and define the grid structure:
-
-    * `:grid_template_rows` - defines the rows in the grid. Takes a list of track sizes
-    * `:grid_template_columns` - defines the columns in the grid. Takes a list of track sizes
-
-  Track sizes can be:
-    * An integer - fixed number of cells
-    * A percentage string - percentage of container size (e.g. "50%")
-    * `{:fr, n}` - takes up n fraction of remaining space
-    * `:auto` - sized based on content
-    * `{:repeat, count, size}` - repeats the size specification count times
-
-  Child items can be positioned in the grid using:
-    * `:grid_row` - specifies grid row placement
-    * `:grid_column` - specifies grid column placement
-
-  Grid placement values can be:
-    * An integer - places at specific grid line
-    * `{:span, n}` - spans n tracks
-    * `:auto` - automatic placement
-    * `{start, end}` - explicit start/end placement
-
-  Example:
-      rect style: [
-        display: :grid,
-        grid_template_columns: [100, {:fr, 1}, "50%"],
-        grid_template_rows: ["33%", {:repeat, 2, {:fr, 1}}]
-      ] do
-        rect style: [grid_column: {1, 3}] do
-          "Header"
-        end
-        rect style: [grid_row: {:span, 2}] do
-          "Sidebar" 
-        end
-      end
 
   ## Position
 
@@ -247,15 +257,25 @@ defmodule Orange.Macro do
 
       * `:background_color` - see [Color](#module-color) section
 
-      * `:display` - layout mode, either `:flex` (default) or `:grid`
+      * `:display` - see [Display][#module-display] section
 
-      * `:grid_template_rows` - see [Grid Layout](#module-grid-layout) section
+      * `:flex_direction` - available for `:flex` display. See [Flex Layout](#module-flex-layout) section
 
-      * `:grid_template_columns` - see [Grid Layout](#module-grid-layout) section
+      * `:justify_content` - available for `:flex` display. See [Flex Layout](#module-flex-layout) section
 
-      * `:grid_row` - see [Grid Layout](#module-grid-layout) section
+      * `:align_items` - available for `:flex` display. See [Flex Layout](#module-flex-layout) section
 
-      * `:grid_column` - see [Grid Layout](#module-grid-layout) section
+      * `:flex_grow` - available for `:flex` display. See [Flex Layout](#module-flex-layout) section
+
+      * `:flex_shrink` - available for `:flex` display. See [Flex Layout](#module-flex-layout) section
+
+      * `:grid_template_rows` - available for `:grid` display. See [Grid Layout](#module-grid-layout) section
+
+      * `:grid_template_columns` - available for `:grid` display. See [Grid Layout](#module-grid-layout) section
+
+      * `:grid_row` - available for `:grid` display. See [Grid Layout](#module-grid-layout) section
+
+      * `:grid_column` - available for `:grid` display. See [Grid Layout](#module-grid-layout) section
 
     * `:title` - the title of the rect. If specified, it implies `border` is `true`. The title can be a string or a map with supported keys are:
 
