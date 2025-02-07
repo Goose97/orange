@@ -92,7 +92,7 @@ defmodule Counter.App do
 
   @impl true
   def render(state, _attrs, _update) do
-    rect direction: :row do
+    rect do
       {Counter.Child, [id: :counter1, highlighted: state.focus == :counter1]}
       {Counter.Child, [id: :counter2, highlighted: state.focus == :counter2]}
     end

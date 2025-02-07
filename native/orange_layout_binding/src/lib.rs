@@ -19,18 +19,52 @@ struct InputTreeNodeStyle {
     padding: (usize, usize, usize, usize),
     margin: (usize, usize, usize, usize),
     border: (usize, usize, usize, usize),
+    display: Atom,
     flex_direction: Atom,
     flex_grow: Option<usize>,
     flex_shrink: Option<usize>,
     justify_content: Atom,
     align_items: Atom,
     line_wrap: bool,
+    grid_template_rows: Option<Vec<InputGridTrack>>,
+    grid_template_columns: Option<Vec<InputGridTrack>>,
+    grid_row: Option<InputGridLines>,
+    grid_column: Option<InputGridLines>,
 }
 
 #[derive(Debug, Clone, NifTaggedEnum)]
 enum InputLengthPercentage {
     Fixed(usize),
     Percent(f32),
+}
+
+#[derive(Debug, Clone, NifTaggedEnum)]
+enum InputGridTrackRepeat {
+    Fixed(usize),
+    Percent(f32),
+    Fr(usize),
+}
+
+#[derive(Debug, Clone, NifTaggedEnum)]
+enum InputGridLines {
+    Single(InputGridLine),
+    Double(InputGridLine, InputGridLine),
+}
+
+#[derive(Debug, Clone, NifTaggedEnum)]
+enum InputGridTrack {
+    Fixed(usize),
+    Percent(f32),
+    Fr(usize),
+    Auto,
+    Repeat(usize, InputGridTrackRepeat),
+}
+
+#[derive(Debug, Clone, NifTaggedEnum)]
+enum InputGridLine {
+    Fixed(usize),
+    Span(usize),
+    Auto,
 }
 
 #[derive(Debug, NifStruct)]
@@ -152,8 +186,6 @@ fn create_node<'a>(
 fn node_style(node: &InputTreeNode, env: Env) -> Style {
     let mut default_style = Style::default();
 
-    default_style.display = Display::Flex;
-
     if let Some(style) = &node.style {
         default_style.size = node_size(style);
 
@@ -177,6 +209,22 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
             bottom: LengthPercentageAuto::Length(style.margin.2 as f32),
             left: LengthPercentageAuto::Length(style.margin.3 as f32),
         };
+
+        // Display attributes
+
+        default_style.display = match style
+            .display
+            .to_term(env)
+            .atom_to_string()
+            .unwrap()
+            .as_str()
+        {
+            "flex" => Display::Flex,
+            "grid" => Display::Grid,
+            _ => Display::Flex,
+        };
+
+        // Flex properties
 
         match style
             .flex_direction
@@ -228,9 +276,82 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
             "stretch" => default_style.align_items = Some(AlignItems::Stretch),
             _ => (),
         };
+
+        // Grid properties
+        if let Some(template_rows) = &style.grid_template_rows {
+            default_style.grid_template_rows = grid_tracks(template_rows);
+        }
+
+        if let Some(template_columns) = &style.grid_template_columns {
+            default_style.grid_template_columns = grid_tracks(template_columns);
+        }
+
+        match &style.grid_row {
+            Some(InputGridLines::Single(line)) => {
+                default_style.grid_row = Line {
+                    start: grid_line(line),
+                    end: auto(),
+                }
+            }
+            Some(InputGridLines::Double(start, end)) => {
+                default_style.grid_row = Line {
+                    start: grid_line(start),
+                    end: grid_line(end),
+                }
+            }
+            None => (),
+        }
+
+        match &style.grid_column {
+            Some(InputGridLines::Single(line)) => {
+                default_style.grid_column = Line {
+                    start: grid_line(line),
+                    end: auto(),
+                }
+            }
+            Some(InputGridLines::Double(start, end)) => {
+                default_style.grid_column = Line {
+                    start: grid_line(start),
+                    end: grid_line(end),
+                }
+            }
+            None => (),
+        }
     }
 
     return default_style;
+}
+
+fn grid_tracks(tracks: &[InputGridTrack]) -> Vec<TrackSizingFunction> {
+    tracks
+        .iter()
+        .map(|v| match v {
+            InputGridTrack::Fixed(v) => length(*v as f32),
+            InputGridTrack::Percent(v) => percent(*v),
+            InputGridTrack::Fr(v) => fr(*v as f32),
+            InputGridTrack::Auto => auto(),
+            InputGridTrack::Repeat(count, track) => {
+                let repeat_value = match track {
+                    InputGridTrackRepeat::Fixed(v) => length(*v as f32),
+                    InputGridTrackRepeat::Percent(v) => percent(*v),
+                    InputGridTrackRepeat::Fr(v) => fr(*v as f32),
+                };
+
+                repeat(
+                    GridTrackRepetition::Count(*count as u16),
+                    vec![repeat_value],
+                )
+            }
+        })
+        .collect()
+}
+
+fn grid_line(input_line: &InputGridLine) -> GridPlacement {
+    match input_line {
+        InputGridLine::Fixed(v) => line(*v as i16),
+        InputGridLine::Span(v) => GridPlacement::Span(*v as u16),
+        InputGridLine::Auto => GridPlacement::Auto,
+    }
 }
 
 fn node_size(style: &InputTreeNodeStyle) -> Size<Dimension> {

@@ -15,13 +15,16 @@ defmodule Orange.Layout.InputTreeNode do
     # The style of layout tree node
     # Supports only a subset of styling properties that affect the layout.
 
+    @type length_or_percent :: {:fixed | integer()} | {:percentage, float()}
+
     @type t :: %__MODULE__{
             # Can be a percentage or a fixed value
-            width: {:fixed | integer()} | {:percentage, float()} | nil,
+            width: length_or_percent() | nil,
             height: {:fixed | integer()} | {:percentage, float()} | nil,
             padding: {integer(), integer(), integer(), integer()},
             margin: {integer(), integer(), integer(), integer()},
             border: {integer(), integer(), integer(), integer()},
+            display: :flex | :grid,
             flex_direction: :row | :column,
             flex_grow: integer(),
             flex_shrink: integer(),
@@ -29,8 +32,22 @@ defmodule Orange.Layout.InputTreeNode do
               :start | :end | :center | :space_between | :space_around | :space_evenly | :stretch,
             align_items:
               :start | :end | :center | :space_between | :space_around | :space_evenly | :stretch,
-            line_wrap: boolean()
+            line_wrap: boolean(),
+            grid_template_rows: list(grid_track()) | nil,
+            grid_template_columns: list(grid_track()) | nil,
+            grid_row: grid_lines(),
+            grid_column: grid_lines()
           }
+
+    @type grid_track ::
+            integer()
+            | binary()
+            | {:fr, integer()}
+            | :auto
+            | {:repeat, integer(), length_or_percent() | {:fr, integer()}}
+
+    @type grid_line :: {:fixed, integer()} | {:span, integer()} | :auto
+    @type grid_lines :: {:single, grid_line()} | {:double, grid_line(), grid_line()}
 
     defstruct [
       :width,
@@ -38,12 +55,17 @@ defmodule Orange.Layout.InputTreeNode do
       :padding,
       :margin,
       :border,
+      :display,
       :flex_direction,
       :flex_grow,
       :flex_shrink,
       :justify_content,
       :align_items,
-      :line_wrap
+      :line_wrap,
+      :grid_template_rows,
+      :grid_template_columns,
+      :grid_row,
+      :grid_column
     ]
   end
 end
