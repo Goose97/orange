@@ -1,7 +1,6 @@
 defmodule Orange.Rect do
   @moduledoc false
 
-  # :children must be a list of rects or lines
   defstruct [:children, attributes: []]
 end
 

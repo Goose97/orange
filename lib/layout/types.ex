@@ -1,4 +1,6 @@
 defmodule Orange.Layout.InputTreeNode do
+  @moduledoc false
+
   # The layout tree uses as the input of the layout API.
 
   @type child :: {:text, binary()} | {:node, __MODULE__.t()}
@@ -12,6 +14,8 @@ defmodule Orange.Layout.InputTreeNode do
   defstruct [:id, :children, :style]
 
   defmodule Style do
+    @moduledoc false
+
     # The style of layout tree node
     # Supports only a subset of styling properties that affect the layout.
 
@@ -71,6 +75,8 @@ defmodule Orange.Layout.InputTreeNode do
 end
 
 defmodule Orange.Layout.OutputTreeNode do
+  @moduledoc false
+
   # The layout tree uses as the output of the layout API.
   # This tree includes the layout information (position, sizes, ...) of the tree.
 
@@ -92,6 +98,8 @@ defmodule Orange.Layout.OutputTreeNode do
   defstruct [:id, :width, :height, :x, :y, :content_size, :border, :padding, :margin, :children]
 
   defmodule FourValues do
+    @moduledoc false
+
     @type t :: %__MODULE__{
             left: integer(),
             right: integer(),

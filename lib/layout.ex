@@ -1,7 +1,6 @@
 defmodule Orange.Layout do
-  @doc """
-  Enter terminal alternate screen.
-  """
+  @moduledoc false
+
   defdelegate layout(tree, window_size), to: __MODULE__.Binding
 
   defmodule Binding do

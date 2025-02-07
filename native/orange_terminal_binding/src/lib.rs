@@ -23,26 +23,6 @@ struct Cell {
     modifiers: Vec<Atom>,
 }
 
-#[derive(Debug, NifStruct)]
-#[module = "Orange.Renderer.LayoutBox"]
-struct LayoutBox {
-    width: usize,
-    height: usize,
-    x: usize,
-    y: usize,
-    border: LayoutBoxBorder,
-    text: Option<String>,
-}
-
-#[derive(Debug, NifStruct)]
-#[module = "Orange.Renderer.LayoutBox.Border"]
-struct LayoutBoxBorder {
-    left: usize,
-    right: usize,
-    top: usize,
-    bottom: usize,
-}
-
 #[rustler::nif]
 fn draw(env: Env, cells: Vec<(Cell, usize, usize)>) {
     let mut writer = io::stdout();

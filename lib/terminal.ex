@@ -1,7 +1,7 @@
 defmodule Orange.Terminal do
-  @moduledoc """
-  Provides API to interact with the terminal via Rust bindings.
-  """
+  @moduledoc false
+
+  # Provides API to interact with the terminal via Rust bindings.
 
   alias Orange.Renderer.{Cell, Buffer}
   alias Orange.Terminal.KeyEvent

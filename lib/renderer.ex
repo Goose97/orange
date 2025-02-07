@@ -1,7 +1,5 @@
 defmodule Orange.Renderer do
-  @moduledoc """
-  Render element tree to buffer
-  """
+  @moduledoc false
 
   alias Orange.Renderer.Buffer
   alias Orange.Layout.InputTreeNode
