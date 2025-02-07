@@ -87,25 +87,45 @@ defmodule Orange.Macro do
   When `display: :flex`, the following properties control the layout:
 
     * `:flex_direction` - Direction of the flex container. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/flex-direction) for more info. Supported values:
+
       * `:row` (default) - Main axis is horizontal. Cross axis is vertical.
+
       * `:column` - Main axis is vertical. Cross axis is horizontal.
+
     * `:flex_grow` - How much the component grows relative to siblings when there is extra space. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/flex-grow) for more info.
+
     * `:flex_shrink` - How much the component shrinks relative to siblings when space is limited. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/flex-shrink) for more info.
+
     * `:justify_content` - Alignment along the main axis. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/justify-content) for more info. Supported values:
+
       * `:start` (default) - Pack items at the start
+
       * `:end` - Pack items at the end
+
       * `:center` - Center items
+
       * `:space_between` - Evenly space items with first/last at edges
+
       * `:space_around` - Evenly space items with equal space around
+
       * `:space_evenly` - Evenly space items with equal space between
+
       * `:stretch` - Stretch items to fill container
+
     * `:align_items` - Alignment along the cross axis. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/align-items) for more info. Supported values:
+
       * `:start` (default) - Align items at the start
+
       * `:end` - Align items at the end
+
       * `:center` - Center items
+
       * `:space_between` - Evenly space items with first/last at edges
+
       * `:space_around` - Evenly space items with equal space around
+
       * `:space_evenly` - Evenly space items with equal space between
+
       * `:stretch` - Stretch items to fill container
 
   #### Grid Layout
@@ -118,21 +138,29 @@ defmodule Orange.Macro do
   Track sizes can be:
 
     * An integer - fixed number of cells
+
     * A percentage string - percentage of container size (e.g. "50%")
+
     * `{:fr, n}` - takes up n fraction of remaining space
+
     * `:auto` - sized based on content
+
     * `{:repeat, count, size}` - repeats the size specification count times
 
   Child items can be positioned in the grid using:
 
     * `:grid_row` - specifies grid row placement. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row) for more info.
+
     * `:grid_column` - specifies grid column placement. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-column) for more info.
 
   Grid placement values can be:
 
     * An integer - places at specific grid line
+
     * `{:span, n}` - spans n tracks
+
     * `:auto` - automatic placement
+
     * `{start, end}` - explicit start/end placement where start/end is a grid placement (e.g. {2, {:span, 3}} means
     start at row/column index 2 and ends at index 5)
 
