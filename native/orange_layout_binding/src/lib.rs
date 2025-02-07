@@ -28,8 +28,8 @@ struct InputTreeNodeStyle {
     line_wrap: bool,
     grid_template_rows: Option<Vec<InputGridTrack>>,
     grid_template_columns: Option<Vec<InputGridTrack>>,
-    grid_row: Option<(InputGridLine, InputGridLine)>,
-    grid_column: Option<(InputGridLine, InputGridLine)>,
+    grid_row: Option<InputGridLines>,
+    grid_column: Option<InputGridLines>,
 }
 
 #[derive(Debug, Clone, NifTaggedEnum)]
@@ -39,12 +39,25 @@ enum InputLengthPercentage {
 }
 
 #[derive(Debug, Clone, NifTaggedEnum)]
+enum InputGridTrackRepeat {
+    Fixed(usize),
+    Percent(f32),
+    Fr(usize),
+}
+
+#[derive(Debug, Clone, NifTaggedEnum)]
+enum InputGridLines {
+    Single(InputGridLine),
+    Double(InputGridLine, InputGridLine),
+}
+
+#[derive(Debug, Clone, NifTaggedEnum)]
 enum InputGridTrack {
     Fixed(usize),
     Percent(f32),
     Fr(usize),
     Auto,
-    Repeat(usize, InputLengthPercentage),
+    Repeat(usize, InputGridTrackRepeat),
 }
 
 #[derive(Debug, Clone, NifTaggedEnum)]
@@ -274,18 +287,36 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
             default_style.grid_template_columns = grid_tracks(template_columns);
         }
 
-        if let Some((start, end)) = &style.grid_row {
-            default_style.grid_row = Line {
-                start: grid_line(start),
-                end: grid_line(end),
+        match &style.grid_row {
+            Some(InputGridLines::Single(line)) => {
+                default_style.grid_row = Line {
+                    start: grid_line(line),
+                    end: auto(),
+                }
             }
+            Some(InputGridLines::Double(start, end)) => {
+                default_style.grid_row = Line {
+                    start: grid_line(start),
+                    end: grid_line(end),
+                }
+            }
+            None => (),
         }
 
-        if let Some((start, end)) = &style.grid_column {
-            default_style.grid_column = Line {
-                start: grid_line(start),
-                end: grid_line(end),
+        match &style.grid_column {
+            Some(InputGridLines::Single(line)) => {
+                default_style.grid_column = Line {
+                    start: grid_line(line),
+                    end: auto(),
+                }
             }
+            Some(InputGridLines::Double(start, end)) => {
+                default_style.grid_column = Line {
+                    start: grid_line(start),
+                    end: grid_line(end),
+                }
+            }
+            None => (),
         }
     }
 
@@ -302,8 +333,9 @@ fn grid_tracks(tracks: &[InputGridTrack]) -> Vec<TrackSizingFunction> {
             InputGridTrack::Auto => auto(),
             InputGridTrack::Repeat(count, track) => {
                 let repeat_value = match track {
-                    InputLengthPercentage::Fixed(v) => length(*v as f32),
-                    InputLengthPercentage::Percent(v) => percent(*v),
+                    InputGridTrackRepeat::Fixed(v) => length(*v as f32),
+                    InputGridTrackRepeat::Percent(v) => percent(*v),
+                    InputGridTrackRepeat::Fr(v) => fr(*v as f32),
                 };
 
                 repeat(

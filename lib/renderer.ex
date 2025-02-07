@@ -383,6 +383,7 @@ defmodule Orange.Renderer do
   defp to_binding_input_tree(%Orange.Rect{} = node, counter, node_map, fixed_position_nodes) do
     new_id = :atomics.add_get(counter, 1, 1)
     style = if(node.attributes[:style], do: to_binding_style(node.attributes[:style]))
+    IO.puts("🪵L8C" <> inspect(style, pretty: true) <> "L8C")
 
     # Collect fixed position nodes
     {new_node, node_map, fixed_position_nodes} =
@@ -513,7 +514,8 @@ defmodule Orange.Renderer do
         :auto
 
       {:repeat, count, track} when is_integer(count) ->
-        {:repeat, count, parse_length_percentage(track)}
+        [track] = parse_grid_tracks([track])
+        {:repeat, count, track}
 
       {:fr, v} when is_integer(v) ->
         {:fr, v}
@@ -527,7 +529,14 @@ defmodule Orange.Renderer do
   end
 
   defp parse_grid_line_pair(nil), do: nil
-  defp parse_grid_line_pair({start, end_}), do: {parse_grid_line(start), parse_grid_line(end_)}
+
+  # Single span
+  defp parse_grid_line_pair({:span, span} = v) when is_integer(span), do: {:single, v}
+
+  defp parse_grid_line_pair({start, end_}),
+    do: {:double, parse_grid_line(start), parse_grid_line(end_)}
+
+  defp parse_grid_line_pair(start), do: {:single, parse_grid_line(start)}
 
   defp parse_grid_line(line) when is_integer(line), do: {:fixed, line}
   defp parse_grid_line({:span, span}) when is_integer(span), do: {:span, span}

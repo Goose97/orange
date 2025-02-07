@@ -35,8 +35,8 @@ defmodule Orange.Layout.InputTreeNode do
             line_wrap: boolean(),
             grid_template_rows: list(grid_track()) | nil,
             grid_template_columns: list(grid_track()) | nil,
-            grid_row: {grid_line(), grid_line()} | nil,
-            grid_column: {grid_line(), grid_line()} | nil
+            grid_row: grid_lines(),
+            grid_column: grid_lines()
           }
 
     @type grid_track ::
@@ -47,6 +47,7 @@ defmodule Orange.Layout.InputTreeNode do
             | {:repeat, integer(), length_or_percent() | {:fr, integer()}}
 
     @type grid_line :: {:fixed, integer()} | {:span, integer()} | :auto
+    @type grid_lines :: {:single, grid_line()} | {:double, grid_line(), grid_line()}
 
     defstruct [
       :width,
