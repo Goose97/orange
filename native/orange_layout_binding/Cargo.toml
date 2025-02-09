@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 [dependencies]
 rustler = { version = "0.31.0", default-features = false, features = ["derive"] }
 taffy = "0.7.5"
+unicode-segmentation = "1.12.0"
 
 [features]
 default = ["nif_version_2_15"]

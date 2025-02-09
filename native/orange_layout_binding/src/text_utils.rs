@@ -1,4 +1,5 @@
 use taffy::prelude::*;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub fn measure_size(
     text: &str,
@@ -12,11 +13,10 @@ pub fn measure_size(
         let words = split_with_whitespaces(text);
 
         for (word, whitespaces_count) in words {
-            // TODO: use graphemes instead
-            let word_width = word.len();
+            let word_width = graphemes_count(word);
 
             // Add the next word and the whitespaces
-            let current_width = current_line.len();
+            let current_width = graphemes_count(&current_line);
             let new_width = current_width + word_width + whitespaces_count;
 
             if current_width == 0 || new_width as f32 <= max_width {
@@ -32,14 +32,15 @@ pub fn measure_size(
             }
         }
 
-        if current_line.len() > 0 {
+        if graphemes_count(&current_line) > 0 {
             lines.push(current_line);
         }
 
         let max_line_width = lines
             .iter()
-            .max_by_key(|line| line.len())
-            .map_or(0, |line| line.len());
+            .map(|line| graphemes_count(line))
+            .max()
+            .unwrap_or(0);
 
         (
             Size {
@@ -52,7 +53,7 @@ pub fn measure_size(
 
     let single_line = (
         Size {
-            width: text.len() as f32,
+            width: graphemes_count(text) as f32,
             height: 1.0,
         },
         vec![text.to_owned()],
@@ -75,7 +76,11 @@ pub fn measure_size(
     return result;
 }
 
-pub fn split_with_whitespaces(text: &str) -> Vec<(&str, usize)> {
+fn graphemes_count(text: &str) -> usize {
+    text.graphemes(true).count()
+}
+
+fn split_with_whitespaces(text: &str) -> Vec<(&str, usize)> {
     let mut result = Vec::new();
     let mut word_start = None;
     let mut whitespace_count = 0;

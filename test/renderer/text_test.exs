@@ -243,4 +243,28 @@ defmodule Orange.Renderer.TextTest do
              """
     end
   end
+
+  test "multi codepoints char" do
+    element =
+      rect style: [width: 15, height: 3, border: true] do
+        rect do
+          "🭬 foo"
+          "bar"
+        end
+      end
+
+    screen =
+      element
+      |> Orange.Renderer.render(%{width: 15, height: 6})
+      |> Orange.Renderer.Buffer.to_string()
+
+    assert screen == """
+           ┌─────────────┐
+           │🭬 foobar-----│
+           └─────────────┘
+           ---------------
+           ---------------
+           ---------------\
+           """
+  end
 end
