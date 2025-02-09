@@ -2,6 +2,8 @@ defmodule Orange.RendererTest do
   use ExUnit.Case
   import Orange.Macro
 
+  alias Orange.RendererTestHelper, as: Helper
+
   describe "rect element" do
     test "renders a plain rect" do
       element =
@@ -144,8 +146,8 @@ defmodule Orange.RendererTest do
       buffer = Orange.Renderer.render(element, %{width: 10, height: 3})
 
       Enum.each([{0, 0}, {1, 0}, {2, 0}], fn {x, y} ->
-        assert get_color(buffer, x, y) == :red
-        assert :bold in get_modifiers(buffer, x, y)
+        assert Helper.get_color(buffer, x, y) == :red
+        assert :bold in Helper.get_modifiers(buffer, x, y)
       end)
     end
 
@@ -160,8 +162,8 @@ defmodule Orange.RendererTest do
       buffer = Orange.Renderer.render(element, %{width: 10, height: 3})
 
       Enum.each([{0, 0}, {1, 0}, {2, 0}], fn {x, y} ->
-        assert get_color(buffer, x, y) == :blue
-        assert :italic in get_modifiers(buffer, x, y)
+        assert Helper.get_color(buffer, x, y) == :blue
+        assert :italic in Helper.get_modifiers(buffer, x, y)
       end)
     end
   end
@@ -631,18 +633,23 @@ defmodule Orange.RendererTest do
     end
   end
 
-  defp get_color(buffer, x, y) do
-    cell = Orange.Renderer.Buffer.get_cell(buffer, {x, y})
-    cell.foreground
-  end
+  test "background text" do
+    element =
+      rect style: [width: 10, height: 4, border: true], background_text: "|" do
+        "foo"
+      end
 
-  defp get_background_color(buffer, x, y) do
-    cell = Orange.Renderer.Buffer.get_cell(buffer, {x, y})
-    cell.background
-  end
+    screen =
+      element
+      |> Orange.Renderer.render(%{width: 15, height: 5})
+      |> Orange.Renderer.Buffer.to_string()
 
-  defp get_modifiers(buffer, x, y) do
-    cell = Orange.Renderer.Buffer.get_cell(buffer, {x, y})
-    cell.modifiers
+    assert screen == """
+           ┌────────┐-----
+           │foo|||||│-----
+           │||||||||│-----
+           └────────┘-----
+           ---------------\
+           """
   end
 end

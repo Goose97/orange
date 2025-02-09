@@ -356,6 +356,24 @@ defmodule Orange.Macro do
 
     * `:position` - the position of the rect. See [Position](#module-position) section
 
+    * `:background_text` - a string that will be repeated to fill the rect's background. For example:
+
+        ```
+        rect style: [width: 10, height: 3], background_text: "-" do
+          "Hello"
+        end
+        ```
+
+        will render:
+
+        ```
+        Hello-----
+        ----------
+        ----------
+        ```
+
+        The background text will be visible in empty areas of the rect, creating a repeating pattern effect.
+
   ## Examples
 
       iex> import Orange.Macro

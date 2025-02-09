@@ -191,6 +191,11 @@ defmodule Orange.Renderer do
     attributes = Map.get(node_attributes_map, node.id, [])
     style_chain = [Keyword.get(attributes, :style, []) | style_chain]
 
+    buffer =
+      if background_text = attributes[:background_text],
+        do: render_background_text(buffer, node, background_text),
+        else: buffer
+
     case node.children do
       {:text, _text} ->
         start_x = node.x + if(node.border.left > 0, do: 1, else: 0) + node.padding.left
@@ -223,6 +228,36 @@ defmodule Orange.Renderer do
           render_node(node, buffer, new_origin, node_attributes_map, style_chain)
         end)
     end
+  end
+
+  defp render_background_text(buffer, node, background_text) do
+    start_x = node.x + if(node.border.left > 0, do: 1, else: 0) + node.padding.left
+    start_y = node.y + if(node.border.top > 0, do: 1, else: 0) + node.padding.top
+
+    inner_width =
+      node.width - node.border.left - node.border.right - node.padding.left -
+        node.padding.right
+
+    inner_height =
+      node.height - node.border.top - node.border.bottom - node.padding.top -
+        node.padding.bottom
+
+    Enum.reduce(0..(inner_height - 1), buffer, fn y_offset, acc ->
+      background_line =
+        String.duplicate(
+          background_text,
+          ceil(inner_width / String.length(background_text))
+        )
+
+      background_line = String.slice(background_line, 0, inner_width)
+
+      Buffer.write_string(
+        acc,
+        {start_x, start_y + y_offset},
+        background_line,
+        :horizontal
+      )
+    end)
   end
 
   # 1. If the first line is all whitespaces or empty, merge it with the second line
