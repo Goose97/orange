@@ -41,7 +41,8 @@ defmodule Orange.MixProject do
           Orange.Component,
           Orange.Component.VerticalScrollableRect,
           Orange.Component.Input,
-          Orange.Component.Modal
+          Orange.Component.Modal,
+          Orange.Component.TabBar
         ],
         Events: [
           Orange.Terminal.KeyEvent,
