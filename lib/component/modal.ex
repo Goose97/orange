@@ -1,6 +1,6 @@
 defmodule Orange.Component.Modal do
   @moduledoc """
-  An modal/dialog component which renders an overlay in the middle of the viewport.
+  A modal/dialog component which renders an overlay in the middle of the viewport.
 
   ## Attributes
 
