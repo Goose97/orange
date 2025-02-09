@@ -28,6 +28,8 @@ struct InputTreeNodeStyle {
     justify_content: Atom,
     align_items: Atom,
     line_wrap: bool,
+    row_gap: Option<usize>,
+    column_gap: Option<usize>,
     grid_template_rows: Option<Vec<InputGridTrack>>,
     grid_template_columns: Option<Vec<InputGridTrack>>,
     grid_row: Option<InputGridLines>,
@@ -329,6 +331,15 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
                 }
             }
             None => (),
+        }
+
+        // Gap properties
+        if let Some(row_gap) = style.row_gap {
+            default_style.gap.height = LengthPercentage::Length(row_gap as f32);
+        }
+
+        if let Some(column_gap) = style.column_gap {
+            default_style.gap.width = LengthPercentage::Length(column_gap as f32);
         }
     }
 

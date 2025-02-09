@@ -37,6 +37,8 @@ defmodule Orange.Layout.InputTreeNode do
             align_items:
               :start | :end | :center | :space_between | :space_around | :space_evenly | :stretch,
             line_wrap: boolean(),
+            row_gap: integer() | nil,
+            column_gap: integer() | nil,
             grid_template_rows: list(grid_track()) | nil,
             grid_template_columns: list(grid_track()) | nil,
             grid_row: grid_lines(),
@@ -69,7 +71,9 @@ defmodule Orange.Layout.InputTreeNode do
       :grid_template_rows,
       :grid_template_columns,
       :grid_row,
-      :grid_column
+      :grid_column,
+      :row_gap,
+      :column_gap
     ]
   end
 end

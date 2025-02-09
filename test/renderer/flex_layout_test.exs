@@ -170,4 +170,168 @@ defmodule Orange.Renderer.FlexLayoutTest do
              """
     end
   end
+
+  describe "gap" do
+    test "renders elements with gap, acts as shorthand for row_gap and column_gap" do
+      element =
+        rect style: [border: true, height: 10, width: 12, flex_direction: :column, gap: 2] do
+          "foo"
+          "bar"
+          "baz"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 10})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌──────────┐---
+             │foo-------│---
+             │----------│---
+             │----------│---
+             │bar-------│---
+             │----------│---
+             │----------│---
+             │baz-------│---
+             │----------│---
+             └──────────┘---\
+             """
+
+      element =
+        rect style: [border: true, height: 5, width: 20, flex_direction: :row, gap: 3] do
+          "foo"
+          "bar"
+          "baz"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 25, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌──────────────────┐-----
+             │foo---bar---baz---│-----
+             │------------------│-----
+             │------------------│-----
+             └──────────────────┘-----
+             -------------------------\
+             """
+    end
+
+    test "renders elements with row_gap" do
+      element =
+        rect style: [border: true, height: 10, width: 12, flex_direction: :column, row_gap: 2] do
+          "foo"
+          "bar"
+          "baz"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 10})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌──────────┐---
+             │foo-------│---
+             │----------│---
+             │----------│---
+             │bar-------│---
+             │----------│---
+             │----------│---
+             │baz-------│---
+             │----------│---
+             └──────────┘---\
+             """
+    end
+
+    test "renders elements with column_gap" do
+      element =
+        rect style: [border: true, height: 5, width: 20, flex_direction: :row, column_gap: 3] do
+          "foo"
+          "bar"
+          "baz"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 25, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌──────────────────┐-----
+             │foo---bar---baz---│-----
+             │------------------│-----
+             │------------------│-----
+             └──────────────────┘-----
+             -------------------------\
+             """
+    end
+
+    test "row_gap has higher priority than gap" do
+      element =
+        rect style: [
+               border: true,
+               height: 10,
+               width: 12,
+               flex_direction: :column,
+               gap: 4,
+               row_gap: 2
+             ] do
+          "foo"
+          "bar"
+          "baz"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 10})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌──────────┐---
+             │foo-------│---
+             │----------│---
+             │----------│---
+             │bar-------│---
+             │----------│---
+             │----------│---
+             │baz-------│---
+             │----------│---
+             └──────────┘---\
+             """
+    end
+
+    test "column_gap has higher priority than gap" do
+      element =
+        rect style: [
+               border: true,
+               height: 5,
+               width: 20,
+               flex_direction: :row,
+               gap: 6,
+               column_gap: 3
+             ] do
+          "foo"
+          "bar"
+          "baz"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 25, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌──────────────────┐-----
+             │foo---bar---baz---│-----
+             │------------------│-----
+             │------------------│-----
+             └──────────────────┘-----
+             -------------------------\
+             """
+    end
+  end
 end

@@ -84,7 +84,7 @@ defmodule Orange.Macro do
 
   #### Flex Layout
 
-  When `display: :flex`, the following properties control the layout:
+  When display is `:flex`, the following properties control the layout:
 
     * `:flex_direction` - Direction of the flex container. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/flex-direction) for more info. Supported values:
 
@@ -130,7 +130,7 @@ defmodule Orange.Macro do
 
   #### Grid Layout
 
-  When `display: :grid`, the following properties control the layout:
+  When display is `:grid`, the following properties control the layout:
 
     * `:grid_template_rows` - defines the rows in the grid. Takes a list of track sizes. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-rows) for more info.
     * `:grid_template_columns` - defines the columns in the grid. Takes a list of track sizes. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns) for more info.
@@ -178,6 +178,16 @@ defmodule Orange.Macro do
         end
       end
       ```
+
+  #### Common properties
+
+  Both `:flex` and `:grid` layouts support the following properties:
+
+    * `:gap` - Sets spacing between items in both directions. Acts as a shorthand for both `:row_gap` and `:column_gap`. Takes an integer value.
+
+    * `:row_gap` - Sets spacing between rows. Takes an integer value. If specified, overrides the row spacing set by `:gap`.
+
+    * `:column_gap` - Sets spacing between columns. Takes an integer value. If specified, overrides the column spacing set by `:gap`.
 
   ### Sizing
 

@@ -459,6 +459,10 @@ defmodule Orange.Renderer do
       align_items: style[:align_items],
       line_wrap: Keyword.get(style, :line_wrap, true),
 
+      # Gap properties
+      row_gap: style[:row_gap] || style[:gap],
+      column_gap: style[:column_gap] || style[:gap],
+
       # Grid properties
       grid_template_rows: parse_grid_tracks(style[:grid_template_rows]),
       grid_template_columns: parse_grid_tracks(style[:grid_template_columns]),
