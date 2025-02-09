@@ -225,6 +225,16 @@ defmodule Orange.Macro do
 
     * `:border_color` - the color of the border. See [Color](#module-color) section for supported colors
 
+    * `:border_style` - the style of the border. Supported styles are:
+
+      * `:default` (default) - normal border
+
+      * `:round_corners` - border with round corners
+
+      * `:dashed` - dashed border
+
+      * `:double` - double border
+
   ### Text modifiers
 
   An array of modifiers which adjust the text style. Supported modifiers are:

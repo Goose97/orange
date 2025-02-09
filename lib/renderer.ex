@@ -2,7 +2,7 @@ defmodule Orange.Renderer do
   @moduledoc false
 
   alias Orange.Renderer.Buffer
-  alias Orange.Layout.InputTreeNode
+  alias Orange.Layout.{OutputTreeNode, InputTreeNode}
 
   @type window :: %{width: integer, height: integer}
   @type style_chain :: [Keyword.t()]
@@ -33,7 +33,7 @@ defmodule Orange.Renderer do
   end
 
   defp render_node(
-         %Orange.Layout.OutputTreeNode{} = node,
+         %OutputTreeNode{} = node,
          buffer,
          origin,
          node_attributes_map,
@@ -55,20 +55,30 @@ defmodule Orange.Renderer do
 
   defp render_border(
          buffer,
-         %Orange.Layout.OutputTreeNode{border: border, x: x, y: y, width: w, height: h},
+         %OutputTreeNode{border: border, x: x, y: y, width: w, height: h},
          attributes
        ) do
     %{top: top, right: right, bottom: bottom, left: left} = border
 
     border_color = get_in(attributes, [:style, :border_color])
+    border_style = get_in(attributes, [:style, :border_style]) || :default
+
+    {top_left_corner, top_right_corner, bottom_left_corner, bottom_right_corner, horizontal,
+     vertical} =
+      case border_style do
+        :default -> {"┌", "┐", "└", "┘", "─", "│"}
+        :dashed -> {"┌", "┐", "└", "┘", "┄", "┆"}
+        :round_corners -> {"╭", "╮", "╰", "╯", "─", "│"}
+        :double -> {"╔", "╗", "╚", "╝", "═", "║"}
+      end
 
     # Top border
     buffer =
       if top > 0 do
         top_border =
-          if(left > 0, do: "┌", else: "─") <>
-            String.duplicate("─", w - 2) <>
-            if(right > 0, do: "┐", else: "─")
+          if(left > 0, do: top_left_corner, else: horizontal) <>
+            String.duplicate(horizontal, w - 2) <>
+            if(right > 0, do: top_right_corner, else: horizontal)
 
         Buffer.write_string(buffer, {x, y}, top_border, :horizontal, color: border_color)
       else
@@ -79,9 +89,9 @@ defmodule Orange.Renderer do
     buffer =
       if bottom > 0 do
         bottom_border =
-          if(left > 0, do: "└", else: "─") <>
-            String.duplicate("─", w - 2) <>
-            if(right > 0, do: "┘", else: "─")
+          if(left > 0, do: bottom_left_corner, else: horizontal) <>
+            String.duplicate(horizontal, w - 2) <>
+            if(right > 0, do: bottom_right_corner, else: horizontal)
 
         Buffer.write_string(buffer, {x, y + h - 1}, bottom_border, :horizontal,
           color: border_color
@@ -94,7 +104,7 @@ defmodule Orange.Renderer do
     start = if top > 0, do: y + 1, else: y
     stop = if bottom > 0, do: y + h - 2, else: y + h - 1
     length = stop - start + 1
-    vertical_border = String.duplicate("│", length)
+    vertical_border = String.duplicate(vertical, length)
 
     buffer =
       if left > 0 do
@@ -117,7 +127,7 @@ defmodule Orange.Renderer do
 
   defp maybe_render_title(buffer, _, nil), do: buffer
 
-  defp maybe_render_title(buffer, %Orange.Layout.OutputTreeNode{x: x, y: y}, title) do
+  defp maybe_render_title(buffer, %OutputTreeNode{x: x, y: y}, title) do
     {title_text, offset, opts} =
       case title do
         title when is_binary(title) ->
@@ -143,7 +153,7 @@ defmodule Orange.Renderer do
 
   defp maybe_set_background_color(
          buffer,
-         %Orange.Layout.OutputTreeNode{
+         %OutputTreeNode{
            x: x,
            y: y,
            width: w,
@@ -383,7 +393,7 @@ defmodule Orange.Renderer do
             # Special if the node has a single text child
             # Instead of rect -> rect -> text, we will have rect -> text directly
             [text] when is_binary(text) ->
-              {%Orange.Layout.InputTreeNode{
+              {%InputTreeNode{
                  id: new_id,
                  children: {:text, text},
                  style: style
@@ -403,7 +413,7 @@ defmodule Orange.Renderer do
                 end)
 
               {
-                %Orange.Layout.InputTreeNode{
+                %InputTreeNode{
                   id: new_id,
                   children: {:nodes, children},
                   style: style
@@ -423,7 +433,7 @@ defmodule Orange.Renderer do
   defp to_binding_input_tree(string, counter, node_map, fixed_position_nodes) do
     new_id = :atomics.add_get(counter, 1, 1)
 
-    new_node = %Orange.Layout.InputTreeNode{
+    new_node = %InputTreeNode{
       id: new_id,
       children: {:text, string},
       style: nil
