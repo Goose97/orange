@@ -30,3 +30,4 @@ priv/native
 # NIF precompiled files checksum
 checksum-Elixir.Orange.Terminal.Binding.exs
 checksum-Elixir.Orange.Layout.Binding.exs
+.aider*
