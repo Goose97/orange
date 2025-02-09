@@ -77,7 +77,7 @@ defmodule Orange.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:rustler, "~> 0.31.0"},
+      {:rustler, "~> 0.36.0"},
       {:rustler_precompiled, "~> 0.8"},
       {:mox, "~> 1.1", only: :test},
       {:eflambe, "~> 0.3.0", only: :dev, runtime: false},

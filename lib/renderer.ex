@@ -192,7 +192,7 @@ defmodule Orange.Renderer do
     style_chain = [Keyword.get(attributes, :style, []) | style_chain]
 
     case node.children do
-      {:text, text} ->
+      {:text, _text} ->
         start_x = node.x + if(node.border.left > 0, do: 1, else: 0) + node.padding.left
         start_y = node.y + if(node.border.top > 0, do: 1, else: 0) + node.padding.top
 
