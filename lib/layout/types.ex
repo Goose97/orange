@@ -88,6 +88,7 @@ defmodule Orange.Layout.OutputTreeNode do
           height: integer(),
           x: integer(),
           y: integer(),
+          content_text_lines: list(binary()) | nil,
           content_size: {integer(), integer()},
           border: __MODULE__.FourValues.t(),
           padding: __MODULE__.FourValues.t(),
@@ -95,7 +96,19 @@ defmodule Orange.Layout.OutputTreeNode do
           children: list(child())
         }
 
-  defstruct [:id, :width, :height, :x, :y, :content_size, :border, :padding, :margin, :children]
+  defstruct [
+    :id,
+    :width,
+    :height,
+    :x,
+    :y,
+    :content_text_lines,
+    :content_size,
+    :border,
+    :padding,
+    :margin,
+    :children
+  ]
 
   defmodule FourValues do
     @moduledoc false

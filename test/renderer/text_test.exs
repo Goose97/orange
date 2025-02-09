@@ -78,4 +78,169 @@ defmodule Orange.Renderer.TextTest do
       end)
     end
   end
+
+  describe "line wrap" do
+    test "width is enough" do
+      element =
+        rect style: [width: 10, height: 3, border: true] do
+          rect do
+            "foo bar"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌────────┐-----
+             │foo bar-│-----
+             └────────┘-----
+             ---------------
+             ---------------
+             ---------------\
+             """
+    end
+
+    test "width is not enough, split by word basis" do
+      element =
+        rect style: [width: 7, height: 5, border: true] do
+          rect do
+            "foo bar"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌─────┐--------
+             │foo--│--------
+             │bar--│--------
+             │-----│--------
+             └─────┘--------
+             ---------------\
+             """
+    end
+
+    test "width is enough, with leading whitespaces" do
+      element =
+        rect style: [width: 12, height: 5, border: true] do
+          rect do
+            "  foo bar"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 18, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌──────────┐------
+             │  foo bar-│------
+             │----------│------
+             │----------│------
+             └──────────┘------
+             ------------------\
+             """
+    end
+
+    test "width is not enough, with leading whitespaces" do
+      element =
+        rect style: [width: 10, height: 5, border: true] do
+          rect do
+            "  foo bar"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 18, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌────────┐--------
+             │  foo---│--------
+             │bar-----│--------
+             │--------│--------
+             └────────┘--------
+             ------------------\
+             """
+    end
+
+    test "multiple whitespaces between words" do
+      # If the text is split into lines, these whitespaces got trimmed
+      element =
+        rect style: [width: 10, height: 5, border: true] do
+          rect do
+            "  foo    bar   baz"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 18, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌────────┐--------
+             │  foo---│--------
+             │bar-----│--------
+             │baz-----│--------
+             └────────┘--------
+             ------------------\
+             """
+    end
+
+    test "preserves trailing whitespaces" do
+      # If the text is split into lines, these whitespaces got trimmed
+      element =
+        rect style: [width: 10, height: 5, border: true] do
+          rect do
+            "  foo    bar   baz   "
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 18, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌────────┐--------
+             │  foo---│--------
+             │bar-----│--------
+             │baz   --│--------
+             └────────┘--------
+             ------------------\
+             """
+    end
+
+    test "disable line wrap" do
+      element =
+        rect style: [width: 7, height: 5, border: true] do
+          rect style: [line_wrap: false] do
+            "foo bar"
+          end
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌─────┐--------
+             │foo bar-------
+             │-----│--------
+             │-----│--------
+             └─────┘--------
+             ---------------\
+             """
+    end
+  end
 end

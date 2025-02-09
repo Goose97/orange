@@ -191,12 +191,8 @@ defmodule Orange.Renderer do
           text_modifiers: get_style_from_chain(style_chain, :text_modifiers) || []
         ]
 
-        lines =
-          string_to_lines(
-            text,
-            elem(node.content_size, 0) - node.padding.left - node.padding.right,
-            elem(node.content_size, 1) - node.padding.top - node.padding.bottom
-          )
+        # If the first line is all whitespaces or empty, merge it with the second line
+        lines = format_lines(node.content_text_lines)
 
         {buffer, _} =
           Enum.reduce(lines, {buffer, 0}, fn line, {acc_buffer, index} ->
@@ -219,37 +215,31 @@ defmodule Orange.Renderer do
     end
   end
 
-  # Given the content size calculated by the layout algorithm, split string into lines
-  defp string_to_lines(string, width, height) do
-    words = String.split(string, ~r/\s+/)
+  # 1. If the first line is all whitespaces or empty, merge it with the second line
+  # 2. Trim trailing whitespaces except for the last line
+  defp format_lines([]), do: []
 
-    {lines, current_line} =
-      Enum.reduce(words, {[], ""}, fn word, {lines, current_line} ->
-        new_width =
-          String.length(current_line) + String.length(word) + 1
+  defp format_lines(lines) do
+    total = length(lines)
+    first_line = hd(lines)
 
-        cond do
-          # If the current line is empty, always append the word
-          current_line == "" ->
-            {lines, word}
+    lines =
+      if String.match?(first_line, ~r/^\s*$/) and total >= 2 do
+        merged = first_line <> Enum.at(lines, 1)
+        [merged | Enum.slice(lines, 2, total - 2)]
+      else
+        lines
+      end
 
-          # From the second word onwards, check if the current line is too long
-          new_width > width ->
-            lines = lines ++ [current_line]
-            {lines, word}
-
-          true ->
-            appended = if current_line == "", do: word, else: current_line <> " " <> word
-            {lines, appended}
-        end
-      end)
-
-    lines = if current_line != "", do: lines ++ [current_line], else: lines
-
-    if height != length(lines),
-      do: raise("#{__MODULE__}: Lines count does not match the layout height")
+    # Remove all trailing whitespaces, except for the last line
+    last_line = length(lines) - 1
 
     lines
+    |> Enum.with_index()
+    |> Enum.map(fn
+      {line, ^last_line} -> line
+      {line, _} -> String.trim_trailing(line, " ")
+    end)
   end
 
   # The render algorithm is as follows:

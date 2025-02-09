@@ -2,9 +2,6 @@ defmodule Orange.RendererTest do
   use ExUnit.Case
   import Orange.Macro
 
-  ############
-  # render/2 #
-  ############
   describe "rect element" do
     test "renders a plain rect" do
       element =
@@ -58,10 +55,10 @@ defmodule Orange.RendererTest do
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
-             ┌─────────────┐
-             │foo----------│
-             │bar----------│
-             └─────────────┘
+             ┌───┐----------
+             │foo│----------
+             │bar│----------
+             └───┘----------
              ---------------\
              """
     end
@@ -226,9 +223,9 @@ defmodule Orange.RendererTest do
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
-             ┌─────────────┐
-             │foo----------│
-             └bar──────────┘
+             ┌───┐----------
+             │foo│----------
+             └bar┘----------
              -baz-----------
              ---------------
              ---------------
@@ -630,77 +627,6 @@ defmodule Orange.RendererTest do
              3│foo--------│-
              4└───────────┘-
              555------------\
-             """
-    end
-  end
-
-  describe "line wrap" do
-    test "width is enough" do
-      element =
-        rect style: [width: 10, height: 3, border: true] do
-          rect do
-            "foo bar"
-          end
-        end
-
-      screen =
-        element
-        |> Orange.Renderer.render(%{width: 15, height: 6})
-        |> Orange.Renderer.Buffer.to_string()
-
-      assert screen == """
-             ┌────────┐-----
-             │foo bar-│-----
-             └────────┘-----
-             ---------------
-             ---------------
-             ---------------\
-             """
-    end
-
-    test "width is not enough, split by word basis" do
-      element =
-        rect style: [width: 7, height: 5, border: true] do
-          rect do
-            "foo bar"
-          end
-        end
-
-      screen =
-        element
-        |> Orange.Renderer.render(%{width: 15, height: 6})
-        |> Orange.Renderer.Buffer.to_string()
-
-      assert screen == """
-             ┌─────┐--------
-             │foo--│--------
-             │bar--│--------
-             │-----│--------
-             └─────┘--------
-             ---------------\
-             """
-    end
-
-    test "disable line wrap" do
-      element =
-        rect style: [width: 7, height: 5, border: true] do
-          rect style: [line_wrap: false] do
-            "foo bar"
-          end
-        end
-
-      screen =
-        element
-        |> Orange.Renderer.render(%{width: 15, height: 6})
-        |> Orange.Renderer.Buffer.to_string()
-
-      assert screen == """
-             ┌─────┐--------
-             │foo bar-------
-             │-----│--------
-             │-----│--------
-             └─────┘--------
-             ---------------\
              """
     end
   end

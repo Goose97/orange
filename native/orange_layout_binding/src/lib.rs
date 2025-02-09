@@ -1,3 +1,5 @@
+mod text_utils;
+
 use std::collections::HashMap;
 
 use rustler::{Atom, Env, NifStruct, NifTaggedEnum};
@@ -95,6 +97,7 @@ struct OutputTreeNode {
     height: usize,
     x: usize,
     y: usize,
+    content_text_lines: Option<Vec<String>>,
     content_size: (usize, usize),
     border: OutputTreeNodeFourValues,
     padding: OutputTreeNodeFourValues,
@@ -125,6 +128,7 @@ fn layout(env: Env, root: InputTreeNode, window_size: (usize, usize)) -> OutputT
     let mut tree: TaffyTree<NodeContext> = TaffyTree::new();
 
     let mut node_id_mapping = HashMap::<NodeId, &InputTreeNode>::new();
+    let mut node_output_lines = HashMap::<NodeId, Vec<String>>::new();
     let taffy_root = create_node(&mut tree, &root, &mut node_id_mapping, env);
 
     // Compute layout with some default viewport size
@@ -140,7 +144,16 @@ fn layout(env: Env, root: InputTreeNode, window_size: (usize, usize)) -> OutputT
                     let input_tree_node = node_id_mapping.get(&node_id).unwrap();
                     // Default to true if style is not specified
                     let line_wrap = input_tree_node.style.as_ref().map_or(true, |v| v.line_wrap);
-                    measure_text_sizes(text, known_dimensions, available_space, line_wrap)
+
+                    let (size, lines) = text_utils::measure_size(
+                        text,
+                        known_dimensions,
+                        available_space,
+                        line_wrap,
+                    );
+
+                    node_output_lines.insert(node_id, lines);
+                    size
                 }
 
                 _ => Size {
@@ -152,7 +165,7 @@ fn layout(env: Env, root: InputTreeNode, window_size: (usize, usize)) -> OutputT
     )
     .unwrap();
 
-    collect_nodes(&tree, taffy_root, &node_id_mapping)
+    collect_nodes(&tree, taffy_root, &node_id_mapping, &mut node_output_lines)
 }
 
 fn create_node<'a>(
@@ -374,80 +387,11 @@ fn node_size(style: &InputTreeNodeStyle) -> Size<Dimension> {
     Size { width, height }
 }
 
-fn measure_text_sizes(
-    text: &str,
-    known_dimensions: Size<Option<f32>>,
-    available_space: Size<AvailableSpace>,
-    line_wrap: bool,
-) -> Size<f32> {
-    let text_sizes = |max_width: f32| -> Size<f32> {
-        let mut lines_count = 0;
-        let mut current_width = 0;
-        let words: Vec<&str> = text.split_whitespace().collect();
-
-        for word in words {
-            // TODO: use graphemes instead
-            let word_width = word.len();
-
-            // Add 1 for space between words
-            let width_with_word = current_width + word_width + 1;
-
-            if current_width == 0 {
-                current_width = word_width;
-            } else if width_with_word as f32 <= max_width {
-                current_width = width_with_word;
-            } else {
-                // Width is too long, move to next line
-                lines_count += 1;
-                current_width = word_width;
-            }
-        }
-
-        if current_width > 0 {
-            lines_count += 1;
-        }
-
-        Size {
-            width: max_width,
-            height: lines_count as f32,
-        }
-    };
-
-    let single_line = Size {
-        width: text.len() as f32,
-        height: 1.0,
-    };
-
-    if !line_wrap {
-        return single_line;
-    }
-
-    let result = match known_dimensions.width {
-        Some(w) => text_sizes(w),
-        None => match available_space.width {
-            AvailableSpace::MinContent => {
-                // For min content, each word is put in a separate line
-                let words: Vec<&str> = text.split_whitespace().collect();
-
-                let longest_word = words.iter().max_by_key(|v| v.len()).map_or(0, |v| v.len());
-
-                Size {
-                    width: longest_word as f32,
-                    height: words.len() as f32,
-                }
-            }
-            AvailableSpace::MaxContent => single_line,
-            AvailableSpace::Definite(width) => text_sizes(width),
-        },
-    };
-
-    return result;
-}
-
 fn collect_nodes(
     tree: &TaffyTree<NodeContext>,
     node_id: NodeId,
     node_id_mapping: &HashMap<NodeId, &InputTreeNode>,
+    node_output_lines: &mut HashMap<NodeId, Vec<String>>,
 ) -> OutputTreeNode {
     let tree_layout = tree.layout(node_id).unwrap();
 
@@ -462,7 +406,7 @@ fn collect_nodes(
                 .children(node_id)
                 .unwrap()
                 .iter()
-                .map(|id| collect_nodes(tree, *id, node_id_mapping))
+                .map(|id| collect_nodes(tree, *id, node_id_mapping, node_output_lines))
                 .collect::<Vec<OutputTreeNode>>();
             TreeNodeChildren::Nodes(children)
         }
@@ -474,6 +418,7 @@ fn collect_nodes(
         height: tree_layout.size.height as usize,
         x: tree_layout.location.x as usize,
         y: tree_layout.location.y as usize,
+        content_text_lines: node_output_lines.remove(&node_id),
         content_size: (
             tree_layout.content_size.width as usize,
             tree_layout.content_size.height as usize,
