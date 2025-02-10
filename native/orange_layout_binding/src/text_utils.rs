@@ -83,16 +83,16 @@ fn graphemes_count(text: &str) -> usize {
 fn split_with_whitespaces(text: &str) -> Vec<(&str, usize)> {
     let mut result = Vec::new();
     let mut word_start = None;
-    let mut whitespace_count = 0;
+    let mut leading_whitespace_count = 0;
     let chars: Vec<(usize, char)> = text.char_indices().collect();
 
     // Handle leading whitespaces
     for (idx, c) in chars.iter() {
         if c.is_whitespace() {
-            whitespace_count += 1;
+            leading_whitespace_count += 1;
         } else {
-            if whitespace_count > 0 {
-                result.push(("", whitespace_count));
+            if leading_whitespace_count > 0 {
+                result.push(("", leading_whitespace_count));
             }
             word_start = Some(*idx);
             break;
@@ -100,7 +100,8 @@ fn split_with_whitespaces(text: &str) -> Vec<(&str, usize)> {
     }
 
     // Process rest of string
-    for (idx, c) in chars.iter().skip(whitespace_count) {
+    let mut whitespace_count = 0;
+    for (idx, c) in chars.iter().skip(leading_whitespace_count) {
         if c.is_whitespace() {
             match word_start {
                 Some(start) => {
@@ -162,6 +163,8 @@ mod tests {
         }
         #[test]
         fn with_leading_whitespaces() {
+            assert_eq!(split_with_whitespaces(" foo"), vec![("", 1), ("foo", 0),]);
+
             assert_eq!(
                 split_with_whitespaces("   foo bar    baz"),
                 vec![("", 3), ("foo", 1), ("bar", 4), ("baz", 0)]
@@ -169,6 +172,8 @@ mod tests {
         }
         #[test]
         fn with_trailing_whitespaces() {
+            assert_eq!(split_with_whitespaces("foo "), vec![("foo", 1)]);
+
             assert_eq!(
                 split_with_whitespaces("foo bar    baz  "),
                 vec![("foo", 1), ("bar", 4), ("baz", 2)]
