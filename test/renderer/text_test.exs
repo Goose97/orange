@@ -52,6 +52,83 @@ defmodule Orange.Renderer.TextTest do
         assert :bold in Helper.get_modifiers(buffer, x, 0)
       end)
     end
+
+    test ":title is a list of strings" do
+      element =
+        rect style: [border: true, width: "100%", flex_direction: :column],
+             title: ["foo", " - ", "bar"] do
+          "foo"
+          "bar"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> Orange.Renderer.Buffer.to_string()
+
+      assert screen == """
+             ┌foo - bar────┐
+             │foo----------│
+             │bar----------│
+             └─────────────┘
+             ---------------
+             ---------------\
+             """
+    end
+
+    test ":title is a list of maps" do
+      element =
+        rect style: [border: true, width: "100%", flex_direction: :column],
+             title: [%{text: "foo - ", text_modifiers: [:bold]}, %{text: "bar", color: :red}] do
+          "foo"
+          "bar"
+        end
+
+      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      screen = Orange.Renderer.Buffer.to_string(buffer)
+
+      Enum.each(1..6, fn x ->
+        assert :bold in Helper.get_modifiers(buffer, x, 0)
+      end)
+
+      Enum.each(7..9, fn x ->
+        assert Helper.get_color(buffer, x, 0) == :red
+      end)
+
+      assert screen == """
+             ┌foo - bar────┐
+             │foo----------│
+             │bar----------│
+             └─────────────┘
+             ---------------
+             ---------------\
+             """
+    end
+
+    test ":title is a mixed list" do
+      element =
+        rect style: [border: true, width: "100%", flex_direction: :column],
+             title: [%{text: "foo - ", text_modifiers: [:bold]}, "bar"] do
+          "foo"
+          "bar"
+        end
+
+      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      screen = Orange.Renderer.Buffer.to_string(buffer)
+
+      Enum.each(1..6, fn x ->
+        assert :bold in Helper.get_modifiers(buffer, x, 0)
+      end)
+
+      assert screen == """
+             ┌foo - bar────┐
+             │foo----------│
+             │bar----------│
+             └─────────────┘
+             ---------------
+             ---------------\
+             """
+    end
   end
 
   describe "text modifiers" do

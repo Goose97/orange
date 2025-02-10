@@ -340,7 +340,7 @@ defmodule Orange.Macro do
 
       * `:grid_column` - available for `:grid` display. See [Grid Layout](#module-grid-layout) section
 
-    * `:title` - the title of the rect. If specified, it implies `border` is `true`. The title can be a string or a map with supported keys are:
+    * `:title` - the title of the rect. If specified, it implies `border` is `true`. The title can be a string, a map, or a list of string or map. Supported keys for map are:
 
       * `:text` - the title text. This field is required
 
@@ -349,6 +349,8 @@ defmodule Orange.Macro do
       * `:text_modifiers` - the title text modifiers. See [Text modifiers](#module-text-modifiers) section. This field is optional
 
       * `:offset` - an integer specifies the title offset from the left edge. This field is optional and defaults to 0
+
+      In case the title is a list, the item will be rendered one after another.
 
     * `:scroll_x` - the horizontal scroll offset
 

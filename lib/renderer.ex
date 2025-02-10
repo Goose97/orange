@@ -127,6 +127,26 @@ defmodule Orange.Renderer do
 
   defp maybe_render_title(buffer, _, nil), do: buffer
 
+  # In case the title is a list, the item will be rendered one after another
+  defp maybe_render_title(buffer, node, title) when is_list(title) do
+    normalized =
+      Enum.map(title, fn
+        string when is_binary(string) -> %{text: string}
+        map when is_map(map) -> map
+      end)
+
+    # Add offset to each title
+    {normalized, _} =
+      Enum.flat_map_reduce(normalized, 0, fn item, acc ->
+        updated = Map.put(item, :offset, acc)
+        {[updated], acc + String.length(item.text)}
+      end)
+
+    Enum.reduce(normalized, buffer, fn title, acc ->
+      maybe_render_title(acc, node, title)
+    end)
+  end
+
   defp maybe_render_title(buffer, %OutputTreeNode{x: x, y: y}, title) do
     {title_text, offset, opts} =
       case title do
