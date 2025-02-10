@@ -356,7 +356,15 @@ defmodule Orange.Macro do
 
     * `:position` - the position of the rect. See [Position](#module-position) section
 
-    * `:background_text` - a string that will be repeated to fill the rect's background. For example:
+    * `:background_text` - fill the rect's background with a text. Takes a string or a map with supported keys are:
+
+      * `:text` - the background text. This field is required
+
+      * `:color` - the background text color. This field is optional
+
+      * `:text_modifiers` - the background text modifiers. See [Text modifiers](#module-text-modifiers) section. This field is optional
+
+        For example:
 
         ```
         rect style: [width: 10, height: 3], background_text: "-" do

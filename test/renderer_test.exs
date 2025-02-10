@@ -633,23 +633,54 @@ defmodule Orange.RendererTest do
     end
   end
 
-  test "background text" do
-    element =
-      rect style: [width: 10, height: 4, border: true], background_text: "|" do
-        "foo"
-      end
+  describe "background text" do
+    test "takes a string" do
+      element =
+        rect style: [width: 10, height: 4, border: true], background_text: "|" do
+          "foo"
+        end
 
-    screen =
-      element
-      |> Orange.Renderer.render(%{width: 15, height: 5})
-      |> Orange.Renderer.Buffer.to_string()
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> Orange.Renderer.Buffer.to_string()
 
-    assert screen == """
-           ┌────────┐-----
-           │foo|||||│-----
-           │||||||||│-----
-           └────────┘-----
-           ---------------\
-           """
+      assert screen == """
+             ┌────────┐-----
+             │foo|||||│-----
+             │||||||||│-----
+             └────────┘-----
+             ---------------\
+             """
+    end
+
+    test "takes a map" do
+      element =
+        rect style: [width: 10, height: 4, border: true],
+             background_text: %{text: "|", color: :red, text_modifiers: [:bold]} do
+          "foo"
+        end
+
+      buffer =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 5})
+
+      Enum.each(1..8, fn col ->
+        Enum.each(1..2, fn row ->
+          if row != 1 or col not in [1, 2, 3] do
+            assert Helper.get_color(buffer, col, row) == :red
+            assert :bold in Helper.get_modifiers(buffer, col, row)
+          end
+        end)
+      end)
+
+      assert Orange.Renderer.Buffer.to_string(buffer) == """
+             ┌────────┐-----
+             │foo|||||│-----
+             │||||||||│-----
+             └────────┘-----
+             ---------------\
+             """
+    end
   end
 end

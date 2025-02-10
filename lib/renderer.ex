@@ -242,11 +242,25 @@ defmodule Orange.Renderer do
       node.height - node.border.top - node.border.bottom - node.padding.top -
         node.padding.bottom
 
+    {render_text, render_opts} =
+      case background_text do
+        text when is_binary(text) ->
+          {text, []}
+
+        text when is_map(text) ->
+          opts =
+            text
+            |> Map.take([:color, :text_modifiers])
+            |> Map.to_list()
+
+          {text[:text], opts}
+      end
+
     Enum.reduce(0..(inner_height - 1), buffer, fn y_offset, acc ->
       background_line =
         String.duplicate(
-          background_text,
-          ceil(inner_width / String.length(background_text))
+          render_text,
+          ceil(inner_width / String.length(render_text))
         )
 
       background_line = String.slice(background_line, 0, inner_width)
@@ -255,7 +269,8 @@ defmodule Orange.Renderer do
         acc,
         {start_x, start_y + y_offset},
         background_line,
-        :horizontal
+        :horizontal,
+        render_opts
       )
     end)
   end
