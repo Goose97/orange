@@ -441,16 +441,24 @@ defmodule Orange.Renderer do
          _node,
          counter \\ :atomics.new(1, []),
          node_map \\ %{},
-         fixed_position_nodes \\ []
+         fixed_position_nodes \\ [],
+         parent_style \\ []
        )
 
   # Convert a component tree to a input tree to pass to the layout binding
   # Traverse the tree and convert recursively. During the traversal:
   # 1. Collect node attributes
   # 2. Collect fixed position nodes
-  defp to_binding_input_tree(%Orange.Rect{} = node, counter, node_map, fixed_position_nodes) do
+  defp to_binding_input_tree(
+         %Orange.Rect{} = node,
+         counter,
+         node_map,
+         fixed_position_nodes,
+         _parent_style
+       ) do
     new_id = :atomics.add_get(counter, 1, 1)
-    style = if(node.attributes[:style], do: to_binding_style(node.attributes[:style]))
+    raw_style = node.attributes[:style]
+    style = if raw_style, do: to_binding_style(node.attributes[:style])
 
     # Collect fixed position nodes
     {new_node, node_map, fixed_position_nodes} =
@@ -459,39 +467,34 @@ defmodule Orange.Renderer do
           {nil, node_map, fixed_position_nodes ++ [node]}
 
         _ ->
-          case node.children do
-            # Special if the node has a single text child
-            # Instead of rect -> rect -> text, we will have rect -> text directly
-            [text] when is_binary(text) ->
-              {%InputTreeNode{
-                 id: new_id,
-                 children: {:text, text},
-                 style: style
-               }, node_map, fixed_position_nodes}
+          {children, updated_node_map, updated_fixed_position_nodes} =
+            Enum.reduce(node.children, {[], node_map, fixed_position_nodes}, fn node,
+                                                                                {result,
+                                                                                 node_map_acc,
+                                                                                 fixed_position_nodes_acc} ->
+              {new_node, new_node_map, new_fixed_position_nodes} =
+                to_binding_input_tree(
+                  node,
+                  counter,
+                  node_map_acc,
+                  fixed_position_nodes_acc,
+                  raw_style
+                )
 
-            nodes ->
-              {children, updated_node_map, updated_fixed_position_nodes} =
-                Enum.reduce(nodes, {[], node_map, fixed_position_nodes}, fn node,
-                                                                            {result, node_map_acc,
-                                                                             fixed_position_nodes_acc} ->
-                  {new_node, new_node_map, new_fixed_position_nodes} =
-                    to_binding_input_tree(node, counter, node_map_acc, fixed_position_nodes_acc)
+              # new_node can be nil if the node is a fixed position node
+              result = if new_node, do: result ++ [new_node], else: result
+              {result, new_node_map, new_fixed_position_nodes}
+            end)
 
-                  # new_node can be nil if the node is a fixed position node
-                  result = if new_node, do: result ++ [new_node], else: result
-                  {result, new_node_map, new_fixed_position_nodes}
-                end)
-
-              {
-                %InputTreeNode{
-                  id: new_id,
-                  children: {:nodes, children},
-                  style: style
-                },
-                updated_node_map,
-                updated_fixed_position_nodes
-              }
-          end
+          {
+            %InputTreeNode{
+              id: new_id,
+              children: {:nodes, children},
+              style: style
+            },
+            updated_node_map,
+            updated_fixed_position_nodes
+          }
       end
 
     # Save node attributes
@@ -500,13 +503,42 @@ defmodule Orange.Renderer do
     {new_node, node_map, fixed_position_nodes}
   end
 
-  defp to_binding_input_tree(string, counter, node_map, fixed_position_nodes) do
+  # A simple text node, like:
+  #
+  # rect do
+  #   "foo"
+  # end
+  #
+  # will be converted to:
+  #
+  # %InputTreeNode{
+  #   id: 1,
+  #   children: {:nodes, [
+  #     %InputTreeNode{
+  #       id: 1,
+  #       children: {:text, "foo"},
+  #       style: nil
+  #     }
+  #   ]},
+  #   style: nil
+  # }
+  #
+  # The inner node should inherit the parent style
+  defp to_binding_input_tree(string, counter, node_map, fixed_position_nodes, parent_style) do
     new_id = :atomics.add_get(counter, 1, 1)
+
+    inherit_style =
+      if parent_style,
+        do: Keyword.take(parent_style, [:color, :text_modifiers, :line_wrap]),
+        else: []
+
+    # Save node attributes
+    node_map = Map.put(node_map, new_id, style: inherit_style)
 
     new_node = %InputTreeNode{
       id: new_id,
       children: {:text, string},
-      style: nil
+      style: if(inherit_style, do: to_binding_style(inherit_style))
     }
 
     {new_node, node_map, fixed_position_nodes}

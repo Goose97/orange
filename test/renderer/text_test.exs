@@ -344,4 +344,33 @@ defmodule Orange.Renderer.TextTest do
            ---------------\
            """
   end
+
+  test "center text" do
+    element =
+      rect style: [
+             width: "100%",
+             height: "100%",
+             border: true,
+             display: :flex,
+             justify_content: :center,
+             align_items: :center
+           ] do
+        "foo"
+      end
+
+    screen =
+      element
+      |> Orange.Renderer.render(%{width: 15, height: 7})
+      |> Orange.Renderer.Buffer.to_string()
+
+    assert screen == """
+           ┌─────────────┐
+           │-------------│
+           │-------------│
+           │-----foo-----│
+           │-------------│
+           │-------------│
+           └─────────────┘\
+           """
+  end
 end
