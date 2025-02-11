@@ -100,7 +100,9 @@ defmodule Orange.Runtime.RenderLoop do
 
     # We perform re-render asynchronously. This way we can potentially batch
     # multiple state updates and avoid redundant re-renders
-    send(self(), {:state_updated, version})
+    # We delay the render at most 100ms
+    now = System.monotonic_time(:millisecond)
+    send(self(), {:state_updated, version, now})
   end
 
   @impl true
@@ -121,9 +123,11 @@ defmodule Orange.Runtime.RenderLoop do
   end
 
   @impl true
-  def handle_info({:state_updated, version}, state) do
+  def handle_info({:state_updated, version, time}, state) do
     latest_version = Runtime.ComponentRegistry.get_state_version()
-    state = if version == latest_version, do: render_tick(state), else: state
+    passed_deadline = System.monotonic_time(:millisecond) - time > 20
+
+    state = if version == latest_version or passed_deadline, do: render_tick(state), else: state
 
     {:noreply, state}
   end
