@@ -10,6 +10,8 @@ defmodule Orange.Runtime do
   # 2. `Orange.Runtime.EventManager`: manages event subscriptions and dispatches events to the subscribed components
   # 3. `Orange.Runtime.EventPoller`: polls for events from the terminal and sends to the render loop
 
+  require Logger
+
   def start(root) do
     children = [
       event_manager_impl(),
@@ -32,15 +34,15 @@ defmodule Orange.Runtime do
   defp event_poller_impl(),
     do: Application.get_env(:orange, :event_poller, __MODULE__.EventPoller)
 
-  def subscribe(component_id), do: find_component_and_apply!(component_id, :subscribe)
-  def unsubscribe(component_id), do: find_component_and_apply!(component_id, :unsubscribe)
-  def focus(component_id), do: find_component_and_apply!(component_id, :focus)
-  def unfocus(component_id), do: find_component_and_apply!(component_id, :unfocus)
+  def subscribe(component_id), do: find_component_and_apply(component_id, :subscribe)
+  def unsubscribe(component_id), do: find_component_and_apply(component_id, :unsubscribe)
+  def focus(component_id), do: find_component_and_apply(component_id, :focus)
+  def unfocus(component_id), do: find_component_and_apply(component_id, :unfocus)
 
-  defp find_component_and_apply!(component_id, function) do
+  defp find_component_and_apply(component_id, function) do
     case __MODULE__.RenderLoop.component_ref_by_id(component_id) do
       nil ->
-        raise("""
+        Logger.warning("""
         #{__MODULE__}.#{function}: component not found
         - component_id: #{inspect(component_id)}
         """)
