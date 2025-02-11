@@ -238,7 +238,7 @@ defmodule Orange.Runtime.FocusTest do
       do: %{state: 0, events_subscription: Keyword.get(attrs, :events_subscription, false)}
 
     @impl true
-    def handle_event(event, state, attrs) do
+    def handle_event(event, state, attrs, _update) do
       case event do
         %Terminal.KeyEvent{code: :up} ->
           state + 1
@@ -281,7 +281,7 @@ defmodule Orange.Runtime.FocusTest do
     def init(_attrs), do: %{state: nil, events_subscription: true}
 
     @impl true
-    def handle_event(event, state, attrs) do
+    def handle_event(event, state, attrs, _update) do
       case event do
         %Terminal.KeyEvent{code: {:char, "x"}} ->
           if attrs[:from_another_process],

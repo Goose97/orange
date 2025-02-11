@@ -59,7 +59,7 @@ defmodule Orange.Runtime.UpdateStateTest do
     def init(_attrs), do: %{state: 0, events_subscription: true}
 
     @impl true
-    def handle_event(event, state, _attrs) do
+    def handle_event(event, state, _attrs, _update) do
       case event do
         %Terminal.KeyEvent{code: :up} ->
           state

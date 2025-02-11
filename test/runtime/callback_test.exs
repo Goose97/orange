@@ -62,7 +62,7 @@ defmodule Orange.Runtime.CallbackTest do
     def init(_attrs), do: %{state: 0, events_subscription: true}
 
     @impl true
-    def handle_event(event, state, _attrs) do
+    def handle_event(event, state, _attrs, _update) do
       case event do
         %Terminal.KeyEvent{code: {:char, "q"}} ->
           Orange.stop()
@@ -102,7 +102,7 @@ defmodule Orange.Runtime.CallbackTest do
     def init(_attrs), do: %{state: %{remove: false}, events_subscription: true}
 
     @impl true
-    def handle_event(event, state, _attrs) do
+    def handle_event(event, state, _attrs, _update) do
       case event do
         %Terminal.KeyEvent{code: {:char, "x"}} ->
           %{state | remove: true}

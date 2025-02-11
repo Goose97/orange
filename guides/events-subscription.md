@@ -16,7 +16,7 @@ defmodule Example do
   def init(_attrs), do: %{state: nil, events_subscription: true}
 
   @impl true
-  def handle_event(event, state, _attrs) do
+  def handle_event(event, state, _attrs, _update) do
     case event do
       %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
         Orange.stop()
@@ -43,7 +43,7 @@ end
 Orange.start(Example)
 ```
 
-Your component can handle events with the `handle_event/3` callback and returns the updated state.
+Your component can handle events with the `handle_event/4` callback and returns the updated state.
 
 ## Orange.subscribe/1
 
@@ -64,7 +64,7 @@ defmodule Example do
   end
 
   @impl true
-  def handle_event(event, state, _attrs) do
+  def handle_event(event, state, _attrs, _update) do
     case event do
       %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
         Orange.stop()

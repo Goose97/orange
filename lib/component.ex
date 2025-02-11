@@ -19,7 +19,7 @@ defmodule Orange.Component do
         def init(_attrs), do: %{state: 0, events_subscription: true}
 
         @impl true
-        def handle_event(event, state, _attrs) do
+        def handle_event(event, state, _attrs, _update) do
           case event do
             %Orange.Terminal.KeyEvent{code: :up} ->
               state + 1
@@ -63,7 +63,7 @@ defmodule Orange.Component do
         def init(_attrs), do: %{state: nil, events_subscription: true}
 
         @impl true
-        def handle_event(event, state, _attrs) do
+        def handle_event(event, state, _attrs, _update) do
           case event do
             %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
               Orange.stop()
@@ -91,7 +91,7 @@ defmodule Orange.Component do
 
   There are two ways to update the component state:
 
-    1. By returning a new state from the `handle_event/3` callback
+    1. By returning a new state from the `handle_event/4` callback
 
     2. By using the update callback
 
@@ -131,7 +131,7 @@ defmodule Orange.Component do
   @doc """
   Receives the event, current state, and attributes and returns the new state.
   """
-  @callback handle_event(event, state, attributes :: map()) :: state
+  @callback handle_event(event, state, attributes :: map(), update_callback) :: state
 
   @doc """
   Lifecycle hook that is called after the component is mounted (first time render to the terminal).
@@ -143,5 +143,5 @@ defmodule Orange.Component do
   """
   @callback after_unmount(state, attributes :: map(), update_callback) :: any()
 
-  @optional_callbacks [handle_event: 3, after_mount: 3, after_unmount: 3]
+  @optional_callbacks [handle_event: 4, after_mount: 3, after_unmount: 3]
 end

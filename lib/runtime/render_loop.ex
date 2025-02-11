@@ -297,6 +297,8 @@ defmodule Orange.Runtime.RenderLoop do
     end
   end
 
+  def make_update_callback(component_ref), do: &update_callback(component_ref, &1)
+
   defp update_callback(component_ref, callback_or_value) do
     # Optimize for the common case where update_callback is called from the render loop
     # In this case, we can avoid the cast and directly call process_update to avoid message passing

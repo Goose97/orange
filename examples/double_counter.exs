@@ -7,7 +7,7 @@ defmodule Counter.Child do
   def init(_attrs), do: %{state: 0}
 
   @impl true
-  def handle_event(event, state, _attrs) do
+  def handle_event(event, state, _attrs, _update) do
     case event do
       %Orange.Terminal.KeyEvent{code: :up} ->
         state + 1
@@ -53,7 +53,7 @@ defmodule Counter.App do
   def init(_attrs), do: %{state: %{focus: nil, count: 2}, events_subscription: true}
 
   @impl true
-  def handle_event(event, state, _attrs) do
+  def handle_event(event, state, _attrs, _update) do
     case event do
       %Orange.Terminal.KeyEvent{code: {:char, "h"}} ->
         old_focus = state.focus

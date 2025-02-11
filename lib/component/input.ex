@@ -63,7 +63,7 @@ defmodule Orange.Component.Input do
   end
 
   @impl true
-  def handle_event(event, state, attrs) do
+  def handle_event(event, state, attrs, _update) do
     submit_key = Keyword.get(attrs, :submit_key, :enter)
     exit_key = Keyword.get(attrs, :exit_key, :esc)
 

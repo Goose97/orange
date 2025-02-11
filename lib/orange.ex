@@ -24,7 +24,7 @@ defmodule Orange do
         end
 
         @impl true
-        def handle_event(event, state, _attrs) do
+        def handle_event(event, state, _attrs, _update) do
           case event do
             %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
               Orange.stop()
