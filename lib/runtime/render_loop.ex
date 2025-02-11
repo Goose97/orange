@@ -63,7 +63,10 @@ defmodule Orange.Runtime.RenderLoop do
         leaf
 
       _ ->
-        %{root | children: Enum.map(root.children, &normalize_custom_component/1)}
+        %{
+          root
+          | children: Enum.map(root.children || [], &normalize_custom_component/1)
+        }
     end
   end
 
