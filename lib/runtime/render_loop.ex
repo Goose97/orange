@@ -357,9 +357,14 @@ defmodule Orange.Runtime.RenderLoop do
   end
 
   defp do_component_ref_by_id(component_id) do
-    Process.get({__MODULE__, :component_tree})
-    |> find_by_id(component_id)
-    |> Map.get(:ref)
+    component =
+      Process.get({__MODULE__, :component_tree})
+      |> find_by_id(component_id)
+
+    case component do
+      %{ref: ref} -> ref
+      _ -> nil
+    end
   end
 
   defp find_by_id(%Rect{} = component, component_id),
