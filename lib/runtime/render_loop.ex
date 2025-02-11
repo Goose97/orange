@@ -5,6 +5,8 @@ defmodule Orange.Runtime.RenderLoop do
 
   use GenServer
 
+  require Logger
+
   alias Orange.{Rect, CustomComponent, Renderer, Terminal, Runtime}
 
   def child_spec([root]) do
@@ -84,10 +86,17 @@ defmodule Orange.Runtime.RenderLoop do
 
   @impl true
   def handle_cast({:update_state, ref, callback_or_value}, state) do
-    process_update(ref, callback_or_value)
+    {duration, _} =
+      :timer.tc(
+        fn -> process_update(ref, callback_or_value) end,
+        :millisecond
+      )
+
+    Logger.debug("State update took #{duration}ms")
     {:noreply, state}
   end
 
+  # TODO: maybe move process_update out of the runtime loop main process
   defp process_update(ref, callback_or_value) do
     %{state: component_state} = Runtime.ComponentRegistry.get(ref)
 
@@ -107,7 +116,14 @@ defmodule Orange.Runtime.RenderLoop do
 
   @impl true
   def handle_info({:event, event}, state) do
+    now = System.monotonic_time(:millisecond)
     event_manager_impl().dispatch_event(event)
+
+    Logger.debug("""
+    Dispatch event:
+    - event: #{inspect(event, pretty: true)}
+    - duration: #{System.monotonic_time(:millisecond) - now}ms
+    """)
 
     state =
       case event do
@@ -133,6 +149,8 @@ defmodule Orange.Runtime.RenderLoop do
   end
 
   defp render_tick(state, opts \\ []) do
+    now = System.monotonic_time(:millisecond)
+
     {current_tree, mounting_components, unmounting_components} =
       to_component_tree(state.root, state.previous_tree)
 
@@ -153,6 +171,8 @@ defmodule Orange.Runtime.RenderLoop do
 
     after_mount(mounting_components)
     after_unmount(unmounting_components)
+
+    Logger.debug("Render pass took #{System.monotonic_time(:millisecond) - now}ms")
 
     %{state | previous_tree: current_tree, previous_buffer: current_buffer}
   end
