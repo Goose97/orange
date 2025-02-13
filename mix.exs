@@ -80,7 +80,6 @@ defmodule Orange.MixProject do
     [
       {:rustler, "~> 0.36.0"},
       {:rustler_precompiled, "~> 0.8"},
-      {:mox, "~> 1.1", only: :test},
       {:eflambe, "~> 0.3.0", only: :dev, runtime: false},
       {:benchee, "~> 1.3.0", only: :dev, runtime: false},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false}
