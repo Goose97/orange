@@ -15,8 +15,8 @@ defmodule Orange.Runtime do
   def start(root) do
     children = [
       event_manager_impl(),
-      {event_poller_impl(), [[event_receiver: __MODULE__.RenderLoop]]},
-      {__MODULE__.RenderLoop, [root]}
+      {__MODULE__.RenderLoop, [root]},
+      {event_poller_impl(), [[event_receiver: __MODULE__.RenderLoop]]}
     ]
 
     Supervisor.start_link(children, strategy: :one_for_all, name: __MODULE__)

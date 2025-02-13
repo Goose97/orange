@@ -1,53 +1,49 @@
 defmodule Orange.Runtime.UpdateStateTest do
   use ExUnit.Case
-  import Mox
 
-  alias Orange.Renderer.Buffer
-  alias Orange.{Terminal, RuntimeTestHelper}
+  import Orange.Test.Assertions
 
-  setup_all do
-    Mox.defmock(Orange.MockTerminal, for: Terminal)
-    Application.put_env(:orange, :terminal, Orange.MockTerminal)
-
-    :ok
-  end
-
-  setup :set_mox_from_context
-  setup :verify_on_exit!
+  alias Orange.{Test, Terminal}
 
   test "update state with callback" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6},
-      events: [
-        # Wait to make sure after_mount fires first
-        {:wait, 20},
-        # Noop event
-        %Terminal.KeyEvent{code: :up},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
+    ref = :atomics.new(1, [])
+
+    [snapshot1, snapshot2 | _] =
+      Test.render({__MODULE__.Counter, atomic: ref},
+        terminal_size: {20, 6},
+        events: [
+          # Wait to make sure after_mount fires first
+          {:wait, 20},
+          # Noop event
+          %Terminal.KeyEvent{code: :up},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
+      )
+
+    assert_content(
+      snapshot1,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
     )
 
-    ref = :atomics.new(1, [])
-    [buffer1, buffer2 | _] = RuntimeTestHelper.dry_render({__MODULE__.Counter, atomic: ref})
-
-    assert Buffer.to_string(buffer1) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
-
-    assert Buffer.to_string(buffer2) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
+    assert_content(
+      snapshot2,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
   end
 
   defmodule Counter do

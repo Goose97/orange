@@ -1,111 +1,101 @@
 defmodule Orange.Component.ModalTest do
   use ExUnit.Case
-  import Mox
 
-  alias Orange.Renderer.Buffer
-  alias Orange.{Terminal, RuntimeTestHelper}
+  import Orange.Test.Assertions
 
-  setup_all do
-    Mox.defmock(Orange.MockTerminal, for: Terminal)
-    Application.put_env(:orange, :terminal, Orange.MockTerminal)
-
-    :ok
-  end
-
-  setup :set_mox_from_context
-  setup :verify_on_exit!
+  alias Orange.Test
 
   test ":open is true" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 15}
+    snapshot = Test.render_once({__MODULE__.Modal, open: true}, terminal_size: {20, 15})
+
+    assert_content(
+      snapshot,
+      """
+      Displaying modal...-
+      --------------------
+      --------------------
+      --------------------
+      ----┌──────────┐----
+      ----│foobar----│----
+      ----│----------│----
+      ----│----------│----
+      ----│----------│----
+      ----│----------│----
+      ----└──────────┘----
+      --------------------
+      --------------------
+      --------------------
+      --------------------\
+      """
     )
-
-    buffer = RuntimeTestHelper.dry_render_once({__MODULE__.Modal, open: true})
-
-    assert Buffer.to_string(buffer) === """
-           Displaying modal...-
-           --------------------
-           --------------------
-           --------------------
-           ----┌──────────┐----
-           ----│foobar----│----
-           ----│----------│----
-           ----│----------│----
-           ----│----------│----
-           ----│----------│----
-           ----└──────────┘----
-           --------------------
-           --------------------
-           --------------------
-           --------------------\
-           """
   end
 
   test ":open is false" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 15}
+    snapshot =
+      Test.render_once({__MODULE__.Modal, open: false}, terminal_size: {20, 15})
+
+    assert_content(
+      snapshot,
+      """
+      Displaying modal...-
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------\
+      """
     )
-
-    buffer = RuntimeTestHelper.dry_render_once({__MODULE__.Modal, open: false})
-
-    assert Buffer.to_string(buffer) === """
-           Displaying modal...-
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------\
-           """
   end
 
   test "offset_x is too big for width" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6}
+    snapshot =
+      Test.render_once({__MODULE__.Modal, open: true, offset_x: 10, offset_y: 1},
+        terminal_size: {20, 6}
+      )
+
+    assert_content(
+      snapshot,
+      """
+      Displaying modal...-
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------\
+      """
     )
-
-    buffer =
-      RuntimeTestHelper.dry_render_once({__MODULE__.Modal, open: true, offset_x: 10, offset_y: 1})
-
-    assert Buffer.to_string(buffer) === """
-           Displaying modal...-
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------\
-           """
   end
 
   test "offset_y is too big for height" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 12}
+    snapshot =
+      Test.render_once({__MODULE__.Modal, open: true, offset_y: 6}, terminal_size: {20, 12})
+
+    assert_content(
+      snapshot,
+      """
+      Displaying modal...-
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------\
+      """
     )
-
-    buffer = RuntimeTestHelper.dry_render_once({__MODULE__.Modal, open: true, offset_y: 6})
-
-    assert Buffer.to_string(buffer) === """
-           Displaying modal...-
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------\
-           """
   end
 
   defmodule Modal do

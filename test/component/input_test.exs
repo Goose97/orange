@@ -1,282 +1,321 @@
 defmodule Orange.Component.InputTest do
   use ExUnit.Case
-  import Mox
 
-  alias Orange.Renderer.Buffer
-  alias Orange.{Terminal, RuntimeTestHelper}
+  import Orange.Test.Assertions
 
-  setup_all do
-    Mox.defmock(Orange.MockTerminal, for: Terminal)
-    Application.put_env(:orange, :terminal, Orange.MockTerminal)
-
-    :ok
-  end
-
-  setup :set_mox_from_context
-  setup :verify_on_exit!
+  alias Orange.{Terminal, Test}
 
   test "receives keyboard events and renders input" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {25, 5},
-      events: [
-        %Terminal.KeyEvent{code: {:char, "f"}},
-        %Terminal.KeyEvent{code: {:char, "o"}},
-        %Terminal.KeyEvent{code: {:char, "o"}},
-        # Submit input
-        %Terminal.KeyEvent{code: :enter},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
+    events = [
+      %Terminal.KeyEvent{code: {:char, "f"}},
+      %Terminal.KeyEvent{code: {:char, "o"}},
+      %Terminal.KeyEvent{code: {:char, "o"}},
+      # Submit input
+      %Terminal.KeyEvent{code: :enter},
+      # Quit
+      %Terminal.KeyEvent{code: {:char, "q"}}
+    ]
+
+    [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5 | _] =
+      Test.render(__MODULE__.Input, terminal_size: {25, 5}, events: events)
+
+    assert_content(
+      snapshot1,
+      """
+      Input: ------------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
     )
 
-    [buffer1, buffer2, buffer3, buffer4, buffer5 | _] =
-      RuntimeTestHelper.dry_render(__MODULE__.Input)
+    assert_content(
+      snapshot2,
+      """
+      Input: f-----------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer1) === """
-           Input: ------------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot3,
+      """
+      Input: fo----------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer2) === """
-           Input: f-----------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot4,
+      """
+      Input: foo---------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer3) === """
-           Input: fo----------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
-
-    assert Buffer.to_string(buffer4) === """
-           Input: foo---------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
-
-    assert Buffer.to_string(buffer5) === """
-           Input: foo---------------
-           Submitted value: foo-----
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot5,
+      """
+      Input: foo---------------
+      Submitted value: foo-----
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
   end
 
   test "backspace deletes characters" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {25, 5},
-      events: [
-        %Terminal.KeyEvent{code: {:char, "f"}},
-        %Terminal.KeyEvent{code: {:char, "o"}},
-        # Delete character
-        %Terminal.KeyEvent{code: :backspace},
-        %Terminal.KeyEvent{code: {:char, "a"}},
-        # Submit input
-        %Terminal.KeyEvent{code: :enter},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
+    events = [
+      %Terminal.KeyEvent{code: {:char, "f"}},
+      %Terminal.KeyEvent{code: {:char, "o"}},
+      # Delete character
+      %Terminal.KeyEvent{code: :backspace},
+      %Terminal.KeyEvent{code: {:char, "a"}},
+      # Submit input
+      %Terminal.KeyEvent{code: :enter},
+      # Quit
+      %Terminal.KeyEvent{code: {:char, "q"}}
+    ]
+
+    [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5, snapshot6 | _] =
+      Test.render(__MODULE__.Input, terminal_size: {25, 5}, events: events)
+
+    assert_content(
+      snapshot1,
+      """
+      Input: ------------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
     )
 
-    [buffer1, buffer2, buffer3, buffer4, buffer5, buffer6 | _] =
-      RuntimeTestHelper.dry_render(__MODULE__.Input)
+    assert_content(
+      snapshot2,
+      """
+      Input: f-----------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer1) === """
-           Input: ------------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot3,
+      """
+      Input: fo----------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer2) === """
-           Input: f-----------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot4,
+      """
+      Input: f-----------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer3) === """
-           Input: fo----------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot5,
+      """
+      Input: fa----------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer4) === """
-           Input: f-----------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
-
-    assert Buffer.to_string(buffer5) === """
-           Input: fa----------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
-
-    assert Buffer.to_string(buffer6) === """
-           Input: fa----------------
-           Submitted value: fa------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot6,
+      """
+      Input: fa----------------
+      Submitted value: fa------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
   end
 
   test "custom submit_key" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {25, 5},
-      events: [
-        %Terminal.KeyEvent{code: {:char, "f"}},
-        # Submit input
-        %Terminal.KeyEvent{code: {:char, "x"}},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
+    events = [
+      %Terminal.KeyEvent{code: {:char, "f"}},
+      # Submit input
+      %Terminal.KeyEvent{code: {:char, "x"}},
+      # Quit
+      %Terminal.KeyEvent{code: {:char, "q"}}
+    ]
+
+    [snapshot1, snapshot2, snapshot3 | _] =
+      Test.render({__MODULE__.Input, submit_key: {:char, "x"}},
+        terminal_size: {25, 5},
+        events: events
+      )
+
+    assert_content(
+      snapshot1,
+      """
+      Input: ------------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
     )
 
-    [buffer1, buffer2, buffer3 | _] =
-      RuntimeTestHelper.dry_render({__MODULE__.Input, submit_key: {:char, "x"}})
+    assert_content(
+      snapshot2,
+      """
+      Input: f-----------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer1) === """
-           Input: ------------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
-
-    assert Buffer.to_string(buffer2) === """
-           Input: f-----------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
-
-    assert Buffer.to_string(buffer3) === """
-           Input: f-----------------
-           Submitted value: f-------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot3,
+      """
+      Input: f-----------------
+      Submitted value: f-------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
   end
 
   test "custom exit_key" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {25, 5},
-      events: [
-        %Terminal.KeyEvent{code: {:char, "f"}},
-        # Exit
-        %Terminal.KeyEvent{code: {:char, "x"}},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
-    )
+    events = [
+      %Terminal.KeyEvent{code: {:char, "f"}},
+      # Exit
+      %Terminal.KeyEvent{code: {:char, "x"}},
+      # Quit
+      %Terminal.KeyEvent{code: {:char, "q"}}
+    ]
 
     counter = :counters.new(1, [])
 
-    [buffer1, buffer2, buffer3 | _] =
-      RuntimeTestHelper.dry_render(
+    [snapshot1, snapshot2, snapshot3 | _] =
+      Test.render(
         {__MODULE__.Input,
-         exit_key: {:char, "x"}, on_exit: fn -> :counters.add(counter, 1, 1) end}
+         exit_key: {:char, "x"}, on_exit: fn -> :counters.add(counter, 1, 1) end},
+        terminal_size: {25, 5},
+        events: events
       )
 
-    assert Buffer.to_string(buffer1) === """
-           Input: ------------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot1,
+      """
+      Input: ------------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer2) === """
-           Input: f-----------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot2,
+      """
+      Input: f-----------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer3) === """
-           Input: f-----------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot3,
+      """
+      Input: f-----------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
     assert :counters.get(counter, 1) == 1
   end
 
   test ":auto_focus false" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {25, 5},
-      events: [
-        # Auto focus is disabled, this event shouldn't be processed
-        %Terminal.KeyEvent{code: {:char, "f"}},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
-    )
+    events = [
+      # Auto focus is disabled, this event shouldn't be processed
+      %Terminal.KeyEvent{code: {:char, "f"}},
+      # Quit
+      %Terminal.KeyEvent{code: {:char, "q"}}
+    ]
 
-    [buffer1, buffer2, buffer3 | _] =
-      RuntimeTestHelper.dry_render(
-        {__MODULE__.Input, submit_key: {:char, "x"}, auto_focus: false}
+    [snapshot1, snapshot2, snapshot3 | _] =
+      Test.render({__MODULE__.Input, submit_key: {:char, "x"}, auto_focus: false},
+        terminal_size: {25, 5},
+        events: events
       )
 
-    assert Buffer.to_string(buffer1) === """
-           Input: ------------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot1,
+      """
+      Input: ------------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer2) === """
-           Input: ------------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot2,
+      """
+      Input: ------------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer3) === """
-           Input: ------------------
-           Submitted value: --------
-           -------------------------
-           -------------------------
-           -------------------------\
-           """
+    assert_content(
+      snapshot3,
+      """
+      Input: ------------------
+      Submitted value: --------
+      -------------------------
+      -------------------------
+      -------------------------\
+      """
+    )
   end
 
   @tag capture_log: true
   test ":auto_focus requires :id" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {25, 5}
-    )
-
     %RuntimeError{message: message} =
-      RuntimeTestHelper.catch_render_error({__MODULE__.Input, submit_key: {:char, "x"}, id: nil})
+      Test.render_catch_error({__MODULE__.Input, submit_key: {:char, "x"}, id: nil},
+        terminal_size: {25, 5}
+      )
 
     assert message =~ "Expected an :id attribute when :auto_focus is true"
   end

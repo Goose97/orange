@@ -1,21 +1,12 @@
 defmodule Orange.Runtime.CallbackTest do
   use ExUnit.Case
-  import Mox
 
-  alias Orange.{Terminal, RuntimeTestHelper}
-
-  setup_all do
-    Mox.defmock(Orange.MockTerminal, for: Terminal)
-    Application.put_env(:orange, :terminal, Orange.MockTerminal)
-
-    :ok
-  end
-
-  setup :set_mox_from_context
-  setup :verify_on_exit!
+  alias Orange.{Test, Terminal}
 
   test "triggers after_mount/3 callback" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
+    ref = :atomics.new(1, [])
+
+    Test.render({__MODULE__.Counter, atomic: ref},
       terminal_size: {5, 5},
       events: [
         # Quit
@@ -23,15 +14,16 @@ defmodule Orange.Runtime.CallbackTest do
       ]
     )
 
-    ref = :atomics.new(1, [])
-    RuntimeTestHelper.dry_render({__MODULE__.Counter, atomic: ref})
-
     value = :atomics.get(ref, 1)
     assert value == 1
   end
 
   test "triggers after_unmount/3 callback" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
+    ref1 = :atomics.new(1, [])
+    ref2 = :atomics.new(1, [])
+    ref3 = :atomics.new(1, [])
+
+    Test.render({__MODULE__.CounterWrapper, atomic1: ref1, atomic2: ref2, atomic3: ref3},
       terminal_size: {5, 5},
       events: [
         # Remove the second counter
@@ -39,14 +31,6 @@ defmodule Orange.Runtime.CallbackTest do
         # Quit
         %Terminal.KeyEvent{code: {:char, "q"}}
       ]
-    )
-
-    ref1 = :atomics.new(1, [])
-    ref2 = :atomics.new(1, [])
-    ref3 = :atomics.new(1, [])
-
-    RuntimeTestHelper.dry_render(
-      {__MODULE__.CounterWrapper, atomic1: ref1, atomic2: ref2, atomic3: ref3}
     )
 
     assert :atomics.get(ref2, 1) == -1

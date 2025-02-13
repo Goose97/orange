@@ -1,50 +1,46 @@
 defmodule Orange.Runtime.RenderLoop.ResizeTest do
   use ExUnit.Case
-  import Mox
 
-  alias Orange.{Terminal, RuntimeTestHelper, Renderer.Buffer}
+  import Orange.Test.Assertions
 
-  setup_all do
-    Mox.defmock(Orange.MockTerminal, for: Terminal)
-    Application.put_env(:orange, :terminal, Orange.MockTerminal)
-
-    :ok
-  end
-
-  setup :set_mox_from_context
-  setup :verify_on_exit!
+  alias Orange.{Test, Terminal}
 
   test "Rerender on resizing" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6},
-      events: [
-        %Terminal.ResizeEvent{width: 14, height: 8},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
+    [snapshot1, snapshot2 | _] =
+      Test.render(__MODULE__.Example,
+        terminal_size: {20, 6},
+        events: [
+          %Terminal.ResizeEvent{width: 14, height: 8},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
+      )
+
+    assert_content(
+      snapshot1,
+      """
+      --------------------
+      -┌────────────────┐-
+      -│Fixed-----------│-
+      -│----------------│-
+      -└────────────────┘-
+      --------------------\
+      """
     )
 
-    [buffer1, buffer2 | _] = RuntimeTestHelper.dry_render(__MODULE__.Example)
-
-    assert Buffer.to_string(buffer1) == """
-           --------------------
-           -┌────────────────┐-
-           -│Fixed-----------│-
-           -│----------------│-
-           -└────────────────┘-
-           --------------------\
-           """
-
-    assert Buffer.to_string(buffer2) == """
-           --------------
-           -┌──────────┐-
-           -│Fixed-----│-
-           -│----------│-
-           -│----------│-
-           -│----------│-
-           -└──────────┘-
-           --------------\
-           """
+    assert_content(
+      snapshot2,
+      """
+      --------------
+      -┌──────────┐-
+      -│Fixed-----│-
+      -│----------│-
+      -│----------│-
+      -│----------│-
+      -└──────────┘-
+      --------------\
+      """
+    )
   end
 
   defmodule Example do

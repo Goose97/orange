@@ -1,231 +1,263 @@
 defmodule Orange.Runtime.FocusTest do
   use ExUnit.Case
-  import Mox
 
-  alias Orange.Renderer.Buffer
-  alias Orange.{Terminal, RuntimeTestHelper}
+  import Orange.Test.Assertions
 
-  setup_all do
-    Mox.defmock(Orange.MockTerminal, for: Terminal)
-    Application.put_env(:orange, :terminal, Orange.MockTerminal)
-
-    :ok
-  end
-
-  setup :set_mox_from_context
-  setup :verify_on_exit!
+  alias Orange.{Test, Terminal}
 
   test "focused components receive events and prevent other components from receiving events" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6},
-      events: [
-        # Increase both counters by one
-        %Terminal.KeyEvent{code: :up},
-        # Focus on the first counter
-        %Terminal.KeyEvent{code: {:char, "x"}},
-        # Decrease only the focused counter by one
-        %Terminal.KeyEvent{code: :down},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
+    [snapshot1, snapshot2, snapshot3, snapshot4 | _] =
+      Test.render(__MODULE__.CounterWrapper,
+        terminal_size: {20, 6},
+        events: [
+          # Increase both counters by one
+          %Terminal.KeyEvent{code: :up},
+          # Focus on the first counter
+          %Terminal.KeyEvent{code: {:char, "x"}},
+          # Decrease only the focused counter by one
+          %Terminal.KeyEvent{code: :down},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
+      )
+
+    assert_content(
+      snapshot1,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----\
+      """
     )
 
-    [buffer1, buffer2, buffer3, buffer4 | _] =
-      RuntimeTestHelper.dry_render(__MODULE__.CounterWrapper)
+    assert_content(
+      snapshot2,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----\
+      """
+    )
 
-    assert Buffer.to_string(buffer1) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----\
-           """
+    assert_content(
+      snapshot3,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----\
+      """
+    )
 
-    assert Buffer.to_string(buffer2) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----\
-           """
-
-    assert Buffer.to_string(buffer3) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----\
-           """
-
-    assert Buffer.to_string(buffer4) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----\
-           """
+    assert_content(
+      snapshot4,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----\
+      """
+    )
   end
 
   test "unfocus the focused component and all previously subscribed components receive events again" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6},
-      events: [
-        # Increase both counters by one
-        %Terminal.KeyEvent{code: :up},
-        # Focus on the first counter
-        %Terminal.KeyEvent{code: {:char, "x"}},
-        # Decrease only the focused counter by one
-        %Terminal.KeyEvent{code: :down},
-        # Unfocus
-        %Terminal.KeyEvent{code: {:char, "y"}},
-        # Decrease both counters by one
-        %Terminal.KeyEvent{code: :down},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
+    [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5, snapshot6 | _] =
+      Test.render(__MODULE__.CounterWrapper,
+        terminal_size: {20, 6},
+        events: [
+          # Increase both counters by one
+          %Terminal.KeyEvent{code: :up},
+          # Focus on the first counter
+          %Terminal.KeyEvent{code: {:char, "x"}},
+          # Decrease only the focused counter by one
+          %Terminal.KeyEvent{code: :down},
+          # Unfocus
+          %Terminal.KeyEvent{code: {:char, "y"}},
+          # Decrease both counters by one
+          %Terminal.KeyEvent{code: :down},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
+      )
+
+    assert_content(
+      snapshot1,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----\
+      """
     )
 
-    [buffer1, buffer2, buffer3, buffer4, buffer5, buffer6 | _] =
-      RuntimeTestHelper.dry_render(__MODULE__.CounterWrapper)
+    assert_content(
+      snapshot2,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----\
+      """
+    )
 
-    assert Buffer.to_string(buffer1) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----\
-           """
+    assert_content(
+      snapshot3,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----\
+      """
+    )
 
-    assert Buffer.to_string(buffer2) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----\
-           """
+    assert_content(
+      snapshot4,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----\
+      """
+    )
 
-    assert Buffer.to_string(buffer3) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----\
-           """
+    assert_content(
+      snapshot5,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----\
+      """
+    )
 
-    assert Buffer.to_string(buffer4) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----\
-           """
-
-    assert Buffer.to_string(buffer5) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----\
-           """
-
-    assert Buffer.to_string(buffer6) == """
-           ┌─────────────┐-----
-           │Counter: -1--│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----\
-           """
+    assert_content(
+      snapshot6,
+      """
+      ┌─────────────┐-----
+      │Counter: -1--│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----\
+      """
+    )
   end
 
   test "call focus and unfocus from another process" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6},
-      events: [
-        # Increase both counters by one
-        %Terminal.KeyEvent{code: :up},
-        # Focus on the first counter
-        %Terminal.KeyEvent{code: {:char, "x"}},
-        # Make sure the focus event is handled
-        {:wait, 20},
-        # Decrease only the focused counter by one
-        %Terminal.KeyEvent{code: :down},
-        # Unfocus
-        %Terminal.KeyEvent{code: {:char, "y"}},
-        # Make sure the unfocus event is handled
-        {:wait, 20},
-        # Decrease both counters by one
-        %Terminal.KeyEvent{code: :down},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
+    [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5, snapshot6 | _] =
+      Test.render({__MODULE__.CounterWrapper, from_another_process: true},
+        terminal_size: {20, 6},
+        events: [
+          # Increase both counters by one
+          %Terminal.KeyEvent{code: :up},
+          # Focus on the first counter
+          %Terminal.KeyEvent{code: {:char, "x"}},
+          # Make sure the focus event is handled
+          {:wait, 20},
+          # Decrease only the focused counter by one
+          %Terminal.KeyEvent{code: :down},
+          # Unfocus
+          %Terminal.KeyEvent{code: {:char, "y"}},
+          # Make sure the unfocus event is handled
+          {:wait, 20},
+          # Decrease both counters by one
+          %Terminal.KeyEvent{code: :down},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
+      )
+
+    assert_content(
+      snapshot1,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----\
+      """
     )
 
-    [buffer1, buffer2, buffer3, buffer4, buffer5, buffer6 | _] =
-      RuntimeTestHelper.dry_render({__MODULE__.CounterWrapper, from_another_process: true})
+    assert_content(
+      snapshot2,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----\
+      """
+    )
 
-    assert Buffer.to_string(buffer1) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----\
-           """
+    assert_content(
+      snapshot3,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----\
+      """
+    )
 
-    assert Buffer.to_string(buffer2) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----\
-           """
+    assert_content(
+      snapshot4,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----\
+      """
+    )
 
-    assert Buffer.to_string(buffer3) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----\
-           """
+    assert_content(
+      snapshot5,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----\
+      """
+    )
 
-    assert Buffer.to_string(buffer4) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----\
-           """
-
-    assert Buffer.to_string(buffer5) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----\
-           """
-
-    assert Buffer.to_string(buffer6) == """
-           ┌─────────────┐-----
-           │Counter: -1--│-----
-           └─────────────┘-----
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----\
-           """
+    assert_content(
+      snapshot6,
+      """
+      ┌─────────────┐-----
+      │Counter: -1--│-----
+      └─────────────┘-----
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----\
+      """
+    )
   end
 
   defmodule Counter do

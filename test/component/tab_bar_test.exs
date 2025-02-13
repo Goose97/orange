@@ -1,97 +1,88 @@
 defmodule Orange.Component.TabBarTest do
   use ExUnit.Case
-  import Mox
 
-  alias Orange.Renderer.Buffer
-  alias Orange.{Terminal, RuntimeTestHelper}
-  alias Orange.RendererTestHelper
+  import Orange.Test.Assertions
 
-  setup_all do
-    Mox.defmock(Orange.MockTerminal, for: Terminal)
-    Application.put_env(:orange, :terminal, Orange.MockTerminal)
-
-    :ok
-  end
-
-  setup :set_mox_from_context
-  setup :verify_on_exit!
+  alias Orange.Test
 
   test "no tabs" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 5}
+    snapshot =
+      Test.render_once({Orange.Component.TabBar, tabs: [], active_tab: :foo},
+        terminal_size: {20, 5}
+      )
+
+    assert_content(
+      snapshot,
+      """
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------\
+      """
     )
-
-    buffer =
-      RuntimeTestHelper.dry_render_once({Orange.Component.TabBar, tabs: [], active_tab: :foo})
-
-    assert Buffer.to_string(buffer) === """
-           --------------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------\
-           """
   end
 
   test "one tab" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 5}
-    )
-
-    buffer =
-      RuntimeTestHelper.dry_render_once(
-        {Orange.Component.TabBar, tabs: [%{id: :foo, name: "Foo"}], active_tab: :foo}
+    snapshot =
+      Test.render_once(
+        {Orange.Component.TabBar, tabs: [%{id: :foo, name: "Foo"}], active_tab: :foo},
+        terminal_size: {20, 5}
       )
 
-    assert Buffer.to_string(buffer) === """
-            Foo 🭬--------------
-           --------------------
-           --------------------
-           --------------------
-           --------------------\
-           """
+    assert_content(
+      snapshot,
+      """
+       Foo 🭬--------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
   end
 
   test "with active tab" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 5}
-    )
-
-    buffer =
-      RuntimeTestHelper.dry_render_once(
-        {Orange.Component.TabBar,
-         tabs: [%{id: :foo, name: "Foo"}, %{id: :bar, name: "Bar"}, %{id: :baz, name: "Baz"}],
-         active_tab: :bar,
-         active_color: :yellow}
+    snapshot =
+      Test.render_once(
+        {
+          Orange.Component.TabBar,
+          tabs: [%{id: :foo, name: "Foo"}, %{id: :bar, name: "Bar"}, %{id: :baz, name: "Baz"}],
+          active_tab: :bar,
+          active_color: :yellow
+        },
+        terminal_size: {20, 5}
       )
 
     Enum.each(6..10, fn x ->
-      assert RendererTestHelper.get_background_color(buffer, x, 0) == :yellow
+      assert_background_color(snapshot, x, 0, :yellow)
     end)
 
-    assert RendererTestHelper.get_color(buffer, 5, 0) == :yellow
-    assert RendererTestHelper.get_color(buffer, 11, 0) == :yellow
+    assert_color(snapshot, 5, 0, :yellow)
+    assert_color(snapshot, 11, 0, :yellow)
 
-    assert Buffer.to_string(buffer) === """
-           -Foo-🭨 Bar 🭬-Baz-🯛--
-           --------------------
-           --------------------
-           --------------------
-           --------------------\
-           """
+    assert_content(
+      snapshot,
+      """
+      -Foo-🭨 Bar 🭬-Baz-🯛--
+      --------------------
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
   end
 
   defmodule TabBar do
     @behaviour Orange.Component
 
     import Orange.Macro
-    alias Orange.Component
 
     @impl true
     def init(_attrs), do: %{state: nil}
 
     @impl true
-    def render(_state, attrs, _update) do
+    def render(_state, _attrs, _update) do
       tabs = []
 
       rect style: [padding: 1] do

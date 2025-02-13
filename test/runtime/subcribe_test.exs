@@ -1,176 +1,191 @@
 defmodule Orange.Runtime.SubscribeTest do
   use ExUnit.Case
-  import Mox
 
-  alias Orange.Renderer.Buffer
-  alias Orange.{Terminal, RuntimeTestHelper}
+  import Orange.Test.Assertions
 
-  setup_all do
-    Mox.defmock(Orange.MockTerminal, for: Terminal)
-    Application.put_env(:orange, :terminal, Orange.MockTerminal)
-
-    :ok
-  end
-
-  setup :set_mox_from_context
-  setup :verify_on_exit!
+  alias Orange.{Test, Terminal}
 
   test "render components and subscribe to events" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6},
-      events: [
-        # Increase by one
-        %Terminal.KeyEvent{code: :up},
-        # Decrease by one
-        %Terminal.KeyEvent{code: :down},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
-    )
-
-    [buffer1, buffer2, buffer3 | _] =
-      RuntimeTestHelper.dry_render(
-        {__MODULE__.Counter, highlighted: true, events_subscription: true}
+    [snapshot1, snapshot2, snapshot3 | _] =
+      Test.render({__MODULE__.Counter, highlighted: true, events_subscription: true},
+        terminal_size: {20, 6},
+        events: [
+          # Increase by one
+          %Terminal.KeyEvent{code: :up},
+          # Decrease by one
+          %Terminal.KeyEvent{code: :down},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
       )
 
-    assert Buffer.to_string(buffer1) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
+    assert_content(
+      snapshot1,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer2) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
+    assert_content(
+      snapshot2,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer3) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
+    assert_content(
+      snapshot3,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
   end
 
   test "unsubcribed components don't receive events" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6},
-      events: [
-        # Increase by one
-        %Terminal.KeyEvent{code: :up},
-        # Unsuscribe counter
-        %Terminal.KeyEvent{code: {:char, "x"}},
-        # Decrease by one but the event is not handled
-        %Terminal.KeyEvent{code: :down},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
+    [snapshot1, snapshot2, snapshot3, snapshot4 | _] =
+      Test.render(__MODULE__.CounterWrapper,
+        terminal_size: {20, 6},
+        events: [
+          # Increase by one
+          %Terminal.KeyEvent{code: :up},
+          # Unsuscribe counter
+          %Terminal.KeyEvent{code: {:char, "x"}},
+          # Decrease by one but the event is not handled
+          %Terminal.KeyEvent{code: :down},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
+      )
+
+    assert_content(
+      snapshot1,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
     )
 
-    [buffer1, buffer2, buffer3, buffer4 | _] =
-      RuntimeTestHelper.dry_render(__MODULE__.CounterWrapper)
+    assert_content(
+      snapshot2,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer1) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
+    assert_content(
+      snapshot3,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer2) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
-
-    assert Buffer.to_string(buffer3) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
-
-    assert Buffer.to_string(buffer4) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
+    assert_content(
+      snapshot4,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
   end
 
   test "call unsubcribed from another process" do
-    RuntimeTestHelper.setup_mock_terminal(Orange.MockTerminal,
-      terminal_size: {20, 6},
-      events: [
-        # Increase by one
-        %Terminal.KeyEvent{code: :up},
-        # Unsuscribe counter
-        %Terminal.KeyEvent{code: {:char, "x"}},
-        # Make sure unsubscribe event is handled
-        {:wait, 20},
-        # Decrease by one but the event is not handled
-        %Terminal.KeyEvent{code: :down},
-        # Quit
-        %Terminal.KeyEvent{code: {:char, "q"}}
-      ]
+    [snapshot1, snapshot2, snapshot3, snapshot4 | _] =
+      Test.render({__MODULE__.CounterWrapper, from_other_process: true},
+        terminal_size: {20, 6},
+        events: [
+          # Increase by one
+          %Terminal.KeyEvent{code: :up},
+          # Unsuscribe counter
+          %Terminal.KeyEvent{code: {:char, "x"}},
+          # Make sure unsubscribe event is handled
+          {:wait, 20},
+          # Decrease by one but the event is not handled
+          %Terminal.KeyEvent{code: :down},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
+      )
+
+    assert_content(
+      snapshot1,
+      """
+      ┌─────────────┐-----
+      │Counter: 0---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
     )
 
-    [buffer1, buffer2, buffer3, buffer4 | _] =
-      RuntimeTestHelper.dry_render({__MODULE__.CounterWrapper, from_other_process: true})
+    assert_content(
+      snapshot2,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer1) == """
-           ┌─────────────┐-----
-           │Counter: 0---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
+    assert_content(
+      snapshot3,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
 
-    assert Buffer.to_string(buffer2) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
-
-    assert Buffer.to_string(buffer3) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
-
-    assert Buffer.to_string(buffer4) == """
-           ┌─────────────┐-----
-           │Counter: 1---│-----
-           └─────────────┘-----
-           --------------------
-           --------------------
-           --------------------\
-           """
+    assert_content(
+      snapshot4,
+      """
+      ┌─────────────┐-----
+      │Counter: 1---│-----
+      └─────────────┘-----
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
   end
 
   defmodule Counter do
