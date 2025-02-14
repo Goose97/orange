@@ -47,6 +47,11 @@ defmodule Orange.MixProject do
         Events: [
           Orange.Terminal.KeyEvent,
           Orange.Terminal.ResizeEvent
+        ],
+        Test: [
+          Orange.Test,
+          Orange.Test.Assertions,
+          Orange.Test.Snapshot
         ]
       ]
     ]
