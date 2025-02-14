@@ -16,7 +16,14 @@ defmodule Orange.Test.MockTerminal do
     if terminal_size, do: :ets.insert(__MODULE__.Storage, {:terminal_size, terminal_size})
 
     events = Keyword.get(opts, :events)
-    if events, do: :ets.insert(__MODULE__.Storage, {:events, events, :counters.new(1, [])})
+    stop_after_last_event = Keyword.get(opts, :stop_after_last_event, true)
+
+    if events,
+      do:
+        :ets.insert(
+          __MODULE__.Storage,
+          {:events, events, :counters.new(1, []), stop_after_last_event}
+        )
   end
 
   def get_drawn_buffers() do
@@ -33,12 +40,15 @@ defmodule Orange.Test.MockTerminal do
   @impl true
   def poll_event() do
     case :ets.lookup(__MODULE__.Storage, :events) do
-      [{_, events, counter}] -> next_event(events, counter)
-      _ -> Process.sleep(:infinity)
+      [{_, events, counter, stop_after_last_event}] ->
+        next_event(events, counter, stop_after_last_event)
+
+      _ ->
+        Process.sleep(:infinity)
     end
   end
 
-  defp next_event(events, counter) do
+  defp next_event(events, counter, stop_after_last_event) do
     index = :counters.get(counter, 1)
     :counters.add(counter, 1, 1)
     event = Enum.at(events, index)
@@ -46,10 +56,10 @@ defmodule Orange.Test.MockTerminal do
     case event do
       {:wait, ms} ->
         Process.sleep(ms)
-        next_event(events, counter)
+        next_event(events, counter, stop_after_last_event)
 
-      # If there are no more events, mimic the blocking behavior of `poll_event/0`
       nil ->
+        if stop_after_last_event, do: Orange.stop()
         Process.sleep(:infinity)
 
       _ ->

@@ -20,6 +20,8 @@ defmodule Orange.Test do
       * `Orange.Terminal.ResizeEvent` - simulates a terminal resize event
       * `{:wait, ms}` - wait for `ms` milliseconds
 
+    * `:stop_after_last_event` - whether to stop the runtime after the last event is consumed. This option is optional. Defaults to `true`.
+
   ## Examples
 
       [snapshot1, snapshot2, snapshot3 | _] = Test.render({MyComponent, open: true},
