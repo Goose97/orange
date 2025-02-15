@@ -138,7 +138,7 @@ defmodule Orange.Terminal do
       otp_app: :orange,
       crate: "orange_terminal_binding",
       base_url: "https://github.com/Goose97/orange/releases/download/v0.5.0",
-      version: "0.5.0",
+      version: "0.5.0-dev",
       targets: [
         "arm-unknown-linux-gnueabihf",
         "aarch64-unknown-linux-gnu",
