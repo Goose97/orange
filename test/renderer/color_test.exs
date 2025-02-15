@@ -2,7 +2,7 @@ defmodule Orange.Renderer.ColorTest do
   use ExUnit.Case
   import Orange.Macro
 
-  alias Orange.RendererTestHelper, as: Helper
+  alias Orange.Renderer.Buffer
 
   describe "color" do
     test "renders cells with color" do
@@ -12,7 +12,7 @@ defmodule Orange.Renderer.ColorTest do
         end
 
       buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
-      screen = Orange.Renderer.Buffer.to_string(buffer)
+      screen = Buffer.to_string(buffer)
 
       assert screen == """
              ┌────────┐-----
@@ -24,7 +24,7 @@ defmodule Orange.Renderer.ColorTest do
              """
 
       Enum.each(1..3, fn x ->
-        assert Helper.get_color(buffer, x, 1) == :red
+        assert Buffer.get_color(buffer, x, 1) == :red
       end)
     end
   end
@@ -37,7 +37,7 @@ defmodule Orange.Renderer.ColorTest do
         end
 
       buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
-      screen = Orange.Renderer.Buffer.to_string(buffer)
+      screen = Buffer.to_string(buffer)
 
       assert screen == """
              ┌────────┐-----
@@ -50,7 +50,7 @@ defmodule Orange.Renderer.ColorTest do
 
       Enum.each(0..2, fn y ->
         Enum.each(0..9, fn x ->
-          assert Helper.get_background_color(buffer, x, y) == :red
+          assert Buffer.get_background_color(buffer, x, y) == :red
         end)
       end)
     end

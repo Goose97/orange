@@ -2,7 +2,7 @@ defmodule Orange.Renderer.BorderTest do
   use ExUnit.Case
   import Orange.Macro
 
-  alias Orange.RendererTestHelper, as: Helper
+  alias Orange.Renderer.Buffer
 
   describe "border" do
     test "with borders" do
@@ -14,7 +14,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌─────────────┐
@@ -38,7 +38,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              │foo----------│
@@ -62,7 +62,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌─────────────┐
@@ -86,7 +86,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ──────────────┐
@@ -110,7 +110,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────
@@ -130,7 +130,7 @@ defmodule Orange.Renderer.BorderTest do
       buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
 
       Enum.each(0..11, fn x ->
-        assert Helper.get_color(buffer, x, 0) == :red
+        assert Buffer.get_color(buffer, x, 0) == :red
       end)
     end
 
@@ -148,7 +148,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌┄┄┄┄┄┄┄┄┄┄┐---
@@ -173,7 +173,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ╭──────────╮---
@@ -198,7 +198,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ╔══════════╗---

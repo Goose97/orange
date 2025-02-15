@@ -2,7 +2,7 @@ defmodule Orange.RendererTest do
   use ExUnit.Case
   import Orange.Macro
 
-  alias Orange.RendererTestHelper, as: Helper
+  alias Orange.Renderer.Buffer
 
   describe "rect element" do
     test "renders a plain rect" do
@@ -14,7 +14,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              foo------------
@@ -35,7 +35,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────┐-------
@@ -54,7 +54,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌───┐----------
@@ -80,7 +80,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 10})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌───────────────┐---
@@ -115,7 +115,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 35, height: 12})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌───────────────────────────────┐--
@@ -146,8 +146,8 @@ defmodule Orange.RendererTest do
       buffer = Orange.Renderer.render(element, %{width: 10, height: 3})
 
       Enum.each([{0, 0}, {1, 0}, {2, 0}], fn {x, y} ->
-        assert Helper.get_color(buffer, x, y) == :red
-        assert :bold in Helper.get_modifiers(buffer, x, y)
+        assert Buffer.get_color(buffer, x, y) == :red
+        assert :bold in Buffer.get_modifiers(buffer, x, y)
       end)
     end
 
@@ -162,8 +162,8 @@ defmodule Orange.RendererTest do
       buffer = Orange.Renderer.render(element, %{width: 10, height: 3})
 
       Enum.each([{0, 0}, {1, 0}, {2, 0}], fn {x, y} ->
-        assert Helper.get_color(buffer, x, y) == :blue
-        assert :italic in Helper.get_modifiers(buffer, x, y)
+        assert Buffer.get_color(buffer, x, y) == :blue
+        assert :italic in Buffer.get_modifiers(buffer, x, y)
       end)
     end
   end
@@ -178,7 +178,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌────┐---------
@@ -198,7 +198,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 7})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌────┐---------
@@ -222,7 +222,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 7})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌───┐----------
@@ -252,7 +252,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              bar------------
@@ -283,7 +283,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌─────────────┐
@@ -315,7 +315,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 7})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌─────────────┐
@@ -343,7 +343,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ---------------
@@ -369,7 +369,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              oo-------------
@@ -400,7 +400,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 7})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌────────┐-----
@@ -434,7 +434,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 9})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌────────┐-----
@@ -464,7 +464,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ---------------
@@ -493,7 +493,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 10})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              foobar---------
@@ -532,7 +532,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 10})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              foobar---------
@@ -560,7 +560,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 10})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ---------------
@@ -588,7 +588,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 10})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ---------------
@@ -621,7 +621,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              111------------
@@ -643,7 +643,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
-        |> Orange.Renderer.Buffer.to_string()
+        |> Buffer.to_string()
 
       assert screen == """
              ┌────────┐-----
@@ -668,13 +668,13 @@ defmodule Orange.RendererTest do
       Enum.each(1..8, fn col ->
         Enum.each(1..2, fn row ->
           if row != 1 or col not in [1, 2, 3] do
-            assert Helper.get_color(buffer, col, row) == :red
-            assert :bold in Helper.get_modifiers(buffer, col, row)
+            assert Buffer.get_color(buffer, col, row) == :red
+            assert :bold in Buffer.get_modifiers(buffer, col, row)
           end
         end)
       end)
 
-      assert Orange.Renderer.Buffer.to_string(buffer) == """
+      assert Buffer.to_string(buffer) == """
              ┌────────┐-----
              │foo|||||│-----
              │||||||||│-----
