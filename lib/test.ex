@@ -19,6 +19,7 @@ defmodule Orange.Test do
       * `Orange.Terminal.KeyEvent` - simulates a key event
       * `Orange.Terminal.ResizeEvent` - simulates a terminal resize event
       * `{:wait, ms}` - wait for `ms` milliseconds
+      * `{:function, fun}` - execute the given function
 
     * `:stop_after_last_event` - whether to stop the runtime after the last event is consumed. This option is optional. Defaults to `true`.
 

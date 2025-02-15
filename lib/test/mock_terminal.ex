@@ -1,3 +1,4 @@
+require Logger
 defmodule Orange.Test.MockTerminal do
   @moduledoc false
 
@@ -56,6 +57,10 @@ defmodule Orange.Test.MockTerminal do
     case event do
       {:wait, ms} ->
         Process.sleep(ms)
+        next_event(events, counter, stop_after_last_event)
+
+      {:function, fun} ->
+        fun.()
         next_event(events, counter, stop_after_last_event)
 
       nil ->
