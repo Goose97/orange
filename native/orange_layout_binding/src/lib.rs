@@ -95,12 +95,12 @@ impl From<Rect<f32>> for OutputTreeNodeFourValues {
 #[module = "Orange.Layout.OutputTreeNode"]
 struct OutputTreeNode {
     id: usize,
-    width: usize,
-    height: usize,
-    x: usize,
-    y: usize,
+    width: f32,
+    height: f32,
+    x: f32,
+    y: f32,
     content_text_lines: Option<Vec<String>>,
-    content_size: (usize, usize),
+    content_size: (f32, f32),
     border: OutputTreeNodeFourValues,
     padding: OutputTreeNodeFourValues,
     margin: OutputTreeNodeFourValues,
@@ -128,6 +128,7 @@ impl NodeContext {
 #[rustler::nif]
 fn layout(env: Env, root: InputTreeNode, window_size: (usize, usize)) -> OutputTreeNode {
     let mut tree: TaffyTree<NodeContext> = TaffyTree::new();
+    tree.disable_rounding();
 
     let mut node_id_mapping = HashMap::<NodeId, &InputTreeNode>::new();
     let mut node_output_lines = HashMap::<NodeId, Vec<String>>::new();
@@ -425,14 +426,14 @@ fn collect_nodes(
 
     let root = OutputTreeNode {
         id: node_id_mapping.get(&node_id).map(|v| v.id).unwrap(),
-        width: tree_layout.size.width as usize,
-        height: tree_layout.size.height as usize,
-        x: tree_layout.location.x as usize,
-        y: tree_layout.location.y as usize,
+        width: tree_layout.size.width,
+        height: tree_layout.size.height,
+        x: tree_layout.location.x,
+        y: tree_layout.location.y,
         content_text_lines: node_output_lines.remove(&node_id),
         content_size: (
-            tree_layout.content_size.width as usize,
-            tree_layout.content_size.height as usize,
+            tree_layout.content_size.width,
+            tree_layout.content_size.height,
         ),
         border: OutputTreeNodeFourValues::from(tree_layout.border),
         padding: OutputTreeNodeFourValues::from(tree_layout.padding),

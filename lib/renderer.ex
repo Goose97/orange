@@ -21,7 +21,11 @@ defmodule Orange.Renderer do
     # The tree can be nil if the root element is a fixed position node
     buffer =
       if tree do
-        output_tree = Orange.Layout.layout(tree, {width, height})
+        output_tree =
+          tree
+          |> Orange.Layout.layout({width, height})
+          |> perform_rounding()
+
         render_node(output_tree, buffer, {0, 0}, node_attributes_map, [])
       else
         buffer
@@ -30,6 +34,49 @@ defmodule Orange.Renderer do
     Enum.reduce(fixed_position_nodes, buffer, fn node, acc ->
       render_fixed(node, acc, window)
     end)
+  end
+
+  # The layout algorithm returns float values for positions and sizes.
+  # We need to round these values to integers so that we can render them to the screen.
+  # Adapt from taffy: https://github.com/DioxusLabs/taffy/blob/0386dc966a41b6b10e4089018fcbeada72504df6/src/compute/mod.rs#L205-L260
+  defp perform_rounding(
+         %OutputTreeNode{} = node,
+         {acc_x, acc_y} \\ {0, 0},
+         {scale_x, scale_y} \\ {1, 1}
+       ) do
+    node = %{node | x: node.x * scale_x, y: node.y * scale_y}
+
+    acc_x = acc_x + node.x
+    acc_y = acc_y + node.y
+
+    new_width = round(round(acc_x + node.width) - round(acc_x))
+    new_height = round(round(acc_y + node.height) - round(acc_y))
+
+    children =
+      case node.children do
+        {:text, _text} = child ->
+          child
+
+        {:nodes, nodes} ->
+          scale_x = if node.width == 0, do: 1, else: new_width / node.width
+          scale_y = if node.height == 0, do: 1, else: new_height / node.height
+          rounded = Enum.map(nodes, &perform_rounding(&1, {acc_x, acc_y}, {scale_x, scale_y}))
+          {:nodes, rounded}
+      end
+
+    %OutputTreeNode{
+      id: node.id,
+      x: round(node.x),
+      y: round(node.y),
+      width: new_width,
+      height: new_height,
+      border: node.border,
+      padding: node.padding,
+      margin: node.margin,
+      content_text_lines: node.content_text_lines,
+      content_size: node.content_size,
+      children: children
+    }
   end
 
   defp render_node(
@@ -430,7 +477,11 @@ defmodule Orange.Renderer do
     # If fixed position node has nested fixed position children, ignore them for now
     {tree, node_attributes_map, _fixed_position_nodes} = to_binding_input_tree(rect)
 
-    output_tree = Orange.Layout.layout(tree, {width, height})
+    output_tree =
+      tree
+      |> Orange.Layout.layout({width, height})
+      |> perform_rounding()
+
     render_node(output_tree, buffer, {left, top}, node_attributes_map, [])
   end
 
