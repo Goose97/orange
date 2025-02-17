@@ -299,6 +299,22 @@ defmodule Orange.Macro do
       will render:
 
       ![rendered result](assets/fixed-position-example.png)
+
+    * `{:absolute, top, right, bottom, left}` - positions the rect at absolute coordinates relative to its parent element's edges. For example:
+
+      ```
+      rect position: {:absolute, 1, 2, 1, 2} do
+        "Absolute position"
+      end
+      ```
+
+      This will position the rect 1 cell from the parent's top edge, 2 cells from its right edge, 1 cell from its bottom edge, and 2 cells from its left edge.
+
+      > #### Warning {: .warning}
+      >
+      > At least left or right must be specified, and at least top or bottom must be specified.
+      >
+      > Absolute position can't be used on root element.
   """
 
   @doc """

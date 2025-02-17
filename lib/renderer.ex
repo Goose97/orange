@@ -12,27 +12,33 @@ defmodule Orange.Renderer do
   # A buffer is a m×n matrix of cells
   @spec render(ui_element, window) :: Buffer.t()
   def render(tree, window) do
-    {tree, node_attributes_map, fixed_position_nodes} = to_binding_input_tree(tree)
+    {tree, node_attributes_map, out_of_flow_nodes} = to_binding_input_tree(tree)
 
     width = window[:width]
     height = window[:height]
     buffer = Buffer.new({width, height})
 
     # The tree can be nil if the root element is a fixed position node
-    buffer =
+    {buffer, output_tree} =
       if tree do
         output_tree =
           tree
-          |> Orange.Layout.layout({width, height})
+          |> Orange.Layout.layout({{:fixed, width}, {:fixed, height}})
           |> perform_rounding()
+          |> caculate_absolute_position()
 
-        render_node(output_tree, buffer, {0, 0}, node_attributes_map, [])
+        {render_node(output_tree, buffer, node_attributes_map, []), output_tree}
       else
-        buffer
+        {buffer, nil}
       end
 
-    Enum.reduce(fixed_position_nodes, buffer, fn node, acc ->
-      render_fixed(node, acc, window)
+    Enum.reduce(out_of_flow_nodes, buffer, fn
+      {:fixed, node}, acc ->
+        render_fixed(node, acc, window)
+
+      {:absolute, node, parent_id}, acc ->
+        output_tree_map = build_output_tree_map(output_tree)
+        render_absolute(node, acc, parent_id, node_attributes_map, output_tree_map)
     end)
   end
 
@@ -79,18 +85,32 @@ defmodule Orange.Renderer do
     }
   end
 
+  defp caculate_absolute_position(%OutputTreeNode{} = node, {acc_x, acc_y} \\ {0, 0}) do
+    node_x = acc_x + node.x
+    node_y = acc_y + node.y
+
+    children =
+      case node.children do
+        {:text, _text} = child ->
+          child
+
+        {:nodes, nodes} ->
+          {:nodes, Enum.map(nodes, &caculate_absolute_position(&1, {node_x, node_y}))}
+      end
+
+    Map.merge(node, %{
+      abs_x: node_x,
+      abs_y: node_y,
+      children: children
+    })
+  end
+
   defp render_node(
          %OutputTreeNode{} = node,
          buffer,
-         origin,
          node_attributes_map,
          style_chain
        ) do
-    node =
-      node
-      |> Map.update!(:x, &(&1 + elem(origin, 0)))
-      |> Map.update!(:y, &(&1 + elem(origin, 1)))
-
     attributes = Map.get(node_attributes_map, node.id, [])
 
     buffer
@@ -102,7 +122,7 @@ defmodule Orange.Renderer do
 
   defp render_border(
          buffer,
-         %OutputTreeNode{border: border, x: x, y: y, width: w, height: h},
+         %OutputTreeNode{border: border, abs_x: x, abs_y: y, width: w, height: h},
          attributes
        ) do
     %{top: top, right: right, bottom: bottom, left: left} = border
@@ -194,7 +214,7 @@ defmodule Orange.Renderer do
     end)
   end
 
-  defp maybe_render_title(buffer, %OutputTreeNode{x: x, y: y}, title) do
+  defp maybe_render_title(buffer, %OutputTreeNode{abs_x: x, abs_y: y}, title) do
     {title_text, offset, opts} =
       case title do
         title when is_binary(title) ->
@@ -221,8 +241,8 @@ defmodule Orange.Renderer do
   defp maybe_set_background_color(
          buffer,
          %OutputTreeNode{
-           x: x,
-           y: y,
+           abs_x: x,
+           abs_y: y,
            width: w,
            height: h
          },
@@ -265,8 +285,8 @@ defmodule Orange.Renderer do
 
     case node.children do
       {:text, _text} ->
-        start_x = node.x + if(node.border.left > 0, do: 1, else: 0) + node.padding.left
-        start_y = node.y + if(node.border.top > 0, do: 1, else: 0) + node.padding.top
+        start_x = node.abs_x + if(node.border.left > 0, do: 1, else: 0) + node.padding.left
+        start_y = node.abs_y + if(node.border.top > 0, do: 1, else: 0) + node.padding.top
 
         opts = [
           color: get_style_from_chain(style_chain, :color),
@@ -287,19 +307,15 @@ defmodule Orange.Renderer do
         buffer
 
       {:nodes, nodes} ->
-        # The position of each child is relative to the parent
-        # We need to keep track of the origin of the parent. The new origin is the parent's position
-        new_origin = {node.x, node.y}
-
         Enum.reduce(nodes, buffer, fn node, buffer ->
-          render_node(node, buffer, new_origin, node_attributes_map, style_chain)
+          render_node(node, buffer, node_attributes_map, style_chain)
         end)
     end
   end
 
   defp render_background_text(buffer, node, background_text) do
-    start_x = node.x + if(node.border.left > 0, do: 1, else: 0) + node.padding.left
-    start_y = node.y + if(node.border.top > 0, do: 1, else: 0) + node.padding.top
+    start_x = node.abs_x + if(node.border.left > 0, do: 1, else: 0) + node.padding.left
+    start_y = node.abs_y + if(node.border.top > 0, do: 1, else: 0) + node.padding.top
 
     inner_width =
       node.width - node.border.left - node.border.right - node.padding.left -
@@ -380,8 +396,8 @@ defmodule Orange.Renderer do
     scroll_buffer =
       do_render_children(
         scroll_buffer,
-        # Reset the parent container
-        %{node | x: 0, y: 0, border: {0, 0, 0, 0}, padding: {0, 0, 0, 0}},
+        # Reset the parent container origin to zero
+        caculate_absolute_position(%{node | x: 0, y: 0}),
         node_attributes_map,
         style_chain
       )
@@ -427,7 +443,7 @@ defmodule Orange.Renderer do
         if cell != :undefined do
           Buffer.write_cell(
             acc,
-            {node.x + offset_x + col_index, node.y + offset_y + row_index},
+            {node.abs_x + offset_x + col_index, node.abs_y + offset_y + row_index},
             cell
           )
         else
@@ -446,9 +462,106 @@ defmodule Orange.Renderer do
     end)
   end
 
+  defp build_output_tree_map(output_tree, map \\ %{}) do
+    map = Map.put(map, output_tree.id, Map.delete(output_tree, :children))
+
+    case output_tree.children do
+      {:nodes, nodes} ->
+        Enum.reduce(nodes, map, fn node, acc ->
+          build_output_tree_map(node, acc)
+        end)
+
+      {:text, _text} ->
+        map
+    end
+  end
+
   # Fixed position render algorithm:
   # 1. In the first render pass, all fixed position boxes will be collected and removed from the tree
   # 2. After the first pass, render each fixed position box, according to the order of appearance
+  defp render_absolute(
+         %Orange.Rect{} = rect,
+         buffer,
+         parent_id,
+         node_attributes_map,
+         output_tree_map
+       ) do
+    # Absolute layer will overshadow the layer behind it
+    {:absolute, top, right, bottom, left} = rect.attributes[:position]
+
+    # Render as non-absolute position node
+    rect = %{rect | attributes: Keyword.delete(rect.attributes, :position)}
+
+    # If width/height is not specified, use 100% as default
+    style =
+      rect.attributes
+      |> Keyword.get(:style, [])
+      |> Keyword.put_new(:width, "100%")
+      |> Keyword.put_new(:height, "100%")
+
+    rect = %{rect | attributes: Keyword.put(rect.attributes, :style, style)}
+
+    {tree, _node_attributes_map, _out_of_flow_nodes} = to_binding_input_tree(rect)
+
+    output_parent = Map.get(output_tree_map, parent_id)
+
+    width =
+      cond do
+        left != nil and right != nil ->
+          # It's possible that the left/right makes the width negative
+          width = max(0, output_parent.width - left - right)
+          {:fixed, width}
+
+        left == nil or right == nil ->
+          :max_content
+      end
+
+    height =
+      cond do
+        top != nil and bottom != nil ->
+          # It's possible that the top/bottom makes the height negative
+          height = max(0, output_parent.height - top - bottom)
+          {:fixed, height}
+
+        top == nil or bottom == nil ->
+          :max_content
+      end
+
+    output_tree =
+      tree
+      |> Orange.Layout.layout({width, height})
+      |> perform_rounding()
+
+    area = absolute_child_render_area({top, right, bottom, left}, output_tree, output_parent)
+    buffer = Buffer.clear_area(buffer, area)
+
+    output_tree =
+      caculate_absolute_position(output_tree, {area.x, area.y})
+
+    render_node(
+      output_tree,
+      buffer,
+      node_attributes_map,
+      []
+    )
+  end
+
+  defp absolute_child_render_area(
+         {top, right, bottom, left},
+         %OutputTreeNode{} = output_node,
+         %OutputTreeNode{} = output_parent_node
+       ) do
+    left = if left, do: left, else: output_parent_node.width - right - output_node.width
+    top = if top, do: top, else: output_parent_node.height - bottom - output_node.height
+
+    %__MODULE__.Area{
+      x: output_parent_node.abs_x + left,
+      y: output_parent_node.abs_y + top,
+      width: output_node.width,
+      height: output_node.height
+    }
+  end
+
   defp render_fixed(%Orange.Rect{} = rect, buffer, window) do
     # Fixed layer will overshadow the layer behind it
     {:fixed, top, right, bottom, left} = rect.attributes[:position]
@@ -475,14 +588,15 @@ defmodule Orange.Renderer do
     rect = %{rect | attributes: Keyword.put(rect.attributes, :style, style)}
 
     # If fixed position node has nested fixed position children, ignore them for now
-    {tree, node_attributes_map, _fixed_position_nodes} = to_binding_input_tree(rect)
+    {tree, node_attributes_map, _out_of_flow_nodes} = to_binding_input_tree(rect)
 
     output_tree =
       tree
-      |> Orange.Layout.layout({width, height})
+      |> Orange.Layout.layout({{:fixed, width}, {:fixed, height}})
       |> perform_rounding()
+      |> caculate_absolute_position({left, top})
 
-    render_node(output_tree, buffer, {left, top}, node_attributes_map, [])
+    render_node(output_tree, buffer, node_attributes_map, [])
   end
 
   defp get_style_from_chain(style_chain, attribute),
@@ -492,8 +606,9 @@ defmodule Orange.Renderer do
          _node,
          counter \\ :atomics.new(1, []),
          node_map \\ %{},
-         fixed_position_nodes \\ [],
-         parent_style \\ []
+         out_of_flow_nodes \\ [],
+         parent_style \\ nil,
+         parent_id \\ nil
        )
 
   # Convert a component tree to a input tree to pass to the layout binding
@@ -504,37 +619,45 @@ defmodule Orange.Renderer do
          %Orange.Rect{} = node,
          counter,
          node_map,
-         fixed_position_nodes,
-         _parent_style
+         out_of_flow_nodes,
+         _parent_style,
+         parent_id
        ) do
     new_id = :atomics.add_get(counter, 1, 1)
     raw_style = node.attributes[:style]
     style = if raw_style, do: to_binding_style(node.attributes[:style])
 
-    # Collect fixed position nodes
-    {new_node, node_map, fixed_position_nodes} =
+    # Collect fixed and absolute position nodes
+    {new_node, node_map, out_of_flow_nodes} =
       case node.attributes[:position] do
-        {:fixed, _, _, _, _} ->
-          {nil, node_map, fixed_position_nodes ++ [node]}
+        {:fixed, _, _, _, _} = position ->
+          validate_position!(position)
+          {nil, node_map, out_of_flow_nodes ++ [{:fixed, node}]}
+
+        {:absolute, _, _, _, _} = position ->
+          if !parent_id, do: raise("Absolute position can't be used on root element")
+          validate_position!(position)
+          {nil, node_map, out_of_flow_nodes ++ [{:absolute, node, parent_id}]}
 
         _ ->
-          {children, updated_node_map, updated_fixed_position_nodes} =
-            Enum.reduce(node.children, {[], node_map, fixed_position_nodes}, fn node,
-                                                                                {result,
-                                                                                 node_map_acc,
-                                                                                 fixed_position_nodes_acc} ->
-              {new_node, new_node_map, new_fixed_position_nodes} =
+          {children, updated_node_map, updated_out_of_flow_nodes} =
+            Enum.reduce(node.children, {[], node_map, out_of_flow_nodes}, fn node,
+                                                                             {result,
+                                                                              node_map_acc,
+                                                                              out_of_flow_nodes_acc} ->
+              {new_node, new_node_map, new_out_of_flow_nodes} =
                 to_binding_input_tree(
                   node,
                   counter,
                   node_map_acc,
-                  fixed_position_nodes_acc,
-                  raw_style
+                  out_of_flow_nodes_acc,
+                  raw_style,
+                  new_id
                 )
 
               # new_node can be nil if the node is a fixed position node
               result = if new_node, do: result ++ [new_node], else: result
-              {result, new_node_map, new_fixed_position_nodes}
+              {result, new_node_map, new_out_of_flow_nodes}
             end)
 
           {
@@ -544,14 +667,14 @@ defmodule Orange.Renderer do
               style: style
             },
             updated_node_map,
-            updated_fixed_position_nodes
+            updated_out_of_flow_nodes
           }
       end
 
     # Save node attributes
     node_map = Map.put(node_map, new_id, node.attributes)
 
-    {new_node, node_map, fixed_position_nodes}
+    {new_node, node_map, out_of_flow_nodes}
   end
 
   # A simple text node, like:
@@ -575,7 +698,14 @@ defmodule Orange.Renderer do
   # }
   #
   # The inner node should inherit the parent style
-  defp to_binding_input_tree(string, counter, node_map, fixed_position_nodes, parent_style) do
+  defp to_binding_input_tree(
+         string,
+         counter,
+         node_map,
+         out_of_flow_nodes,
+         parent_style,
+         _parent_id
+       ) do
     new_id = :atomics.add_get(counter, 1, 1)
 
     inherit_style =
@@ -592,7 +722,7 @@ defmodule Orange.Renderer do
       style: if(inherit_style, do: to_binding_style(inherit_style))
     }
 
-    {new_node, node_map, fixed_position_nodes}
+    {new_node, node_map, out_of_flow_nodes}
   end
 
   defp to_binding_style(style) do
@@ -695,4 +825,19 @@ defmodule Orange.Renderer do
   defp parse_grid_line(line) when is_integer(line), do: {:fixed, line}
   defp parse_grid_line({:span, span}) when is_integer(span), do: {:span, span}
   defp parse_grid_line(:auto), do: :auto
+
+  defp validate_position!({:fixed, top, right, bottom, left}) do
+    if !top, do: raise("Fixed position element must specify top")
+    if !bottom, do: raise("Fixed position element must specify bottom")
+    if !left, do: raise("Fixed position element must specify left")
+    if !right, do: raise("Fixed position element must specify right")
+  end
+
+  defp validate_position!({:absolute, top, right, bottom, left}) do
+    if !top and !bottom,
+      do: raise("Absolute position element must specify either top or bottom")
+
+    if !left and !right,
+      do: raise("Absolute position element must specify either left or right")
+  end
 end

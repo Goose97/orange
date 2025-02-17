@@ -5,6 +5,12 @@ use std::collections::HashMap;
 use rustler::{Atom, Env, NifStruct, NifTaggedEnum};
 use taffy::prelude::*;
 
+#[derive(Debug, Clone, NifTaggedEnum)]
+enum WindowDimension {
+    Fixed(usize),
+    MaxContent,
+}
+
 #[derive(Debug, NifStruct)]
 #[module = "Orange.Layout.InputTreeNode"]
 struct InputTreeNode {
@@ -126,7 +132,11 @@ impl NodeContext {
 }
 
 #[rustler::nif]
-fn layout(env: Env, root: InputTreeNode, window_size: (usize, usize)) -> OutputTreeNode {
+fn layout(
+    env: Env,
+    root: InputTreeNode,
+    window_size: (WindowDimension, WindowDimension),
+) -> OutputTreeNode {
     let mut tree: TaffyTree<NodeContext> = TaffyTree::new();
     tree.disable_rounding();
 
@@ -138,8 +148,8 @@ fn layout(env: Env, root: InputTreeNode, window_size: (usize, usize)) -> OutputT
     tree.compute_layout_with_measure(
         taffy_root,
         Size {
-            width: AvailableSpace::Definite(window_size.0 as f32),
-            height: AvailableSpace::Definite(window_size.1 as f32),
+            width: window_dimension(window_size.0),
+            height: window_dimension(window_size.1),
         },
         |known_dimensions, available_space, node_id, node_context, _style| {
             return match node_context {
@@ -169,6 +179,13 @@ fn layout(env: Env, root: InputTreeNode, window_size: (usize, usize)) -> OutputT
     .unwrap();
 
     collect_nodes(&tree, taffy_root, &node_id_mapping, &mut node_output_lines)
+}
+
+fn window_dimension(size: WindowDimension) -> AvailableSpace {
+    match size {
+        WindowDimension::Fixed(v) => AvailableSpace::Definite(v as f32),
+        WindowDimension::MaxContent => AvailableSpace::MaxContent,
+    }
 }
 
 fn create_node<'a>(
