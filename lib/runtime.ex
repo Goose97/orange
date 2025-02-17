@@ -34,6 +34,7 @@ defmodule Orange.Runtime do
   defp event_poller_impl(),
     do: Application.get_env(:orange, :event_poller, __MODULE__.EventPoller)
 
+  # Only accept id of custom components. Apply for functions: subscribe/1, unsubscribe/1, focus/1, unfocus/1
   def subscribe(component_id), do: find_component_and_apply(component_id, :subscribe)
   def unsubscribe(component_id), do: find_component_and_apply(component_id, :unsubscribe)
   def focus(component_id), do: find_component_and_apply(component_id, :focus)
@@ -50,5 +51,11 @@ defmodule Orange.Runtime do
       component_ref when is_reference(component_ref) ->
         apply(event_manager_impl(), function, [component_ref])
     end
+  end
+
+  # Only accept id of primitive components, like rect
+  def get_layout_size(component_id) do
+    layout_node = __MODULE__.RenderLoop.layout_node_by_id(component_id)
+    if layout_node, do: %{width: layout_node.width, height: layout_node.height}
   end
 end

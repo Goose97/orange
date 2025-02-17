@@ -10,7 +10,7 @@ defmodule Orange.Renderer do
 
   # Render the elements to a buffer before painting them to the screen
   # A buffer is a m×n matrix of cells
-  @spec render(ui_element, window) :: Buffer.t()
+  @spec render(ui_element, window) :: {Buffer.t(), %{any() => OutputTreeNode.t()}}
   def render(tree, window) do
     {tree, node_attributes_map, out_of_flow_nodes} = to_binding_input_tree(tree)
 
@@ -32,14 +32,18 @@ defmodule Orange.Renderer do
         {buffer, nil}
       end
 
-    Enum.reduce(out_of_flow_nodes, buffer, fn
-      {:fixed, node}, acc ->
-        render_fixed(node, acc, window)
+    buffer =
+      Enum.reduce(out_of_flow_nodes, buffer, fn
+        {:fixed, node}, acc ->
+          render_fixed(node, acc, window)
 
-      {:absolute, node, parent_id}, acc ->
-        output_tree_map = build_output_tree_map(output_tree)
-        render_absolute(node, acc, parent_id, node_attributes_map, output_tree_map)
-    end)
+        {:absolute, node, parent_id}, acc ->
+          # TODO: only fetch the node that needs for the absolute render instead of the whole tree
+          output_tree_map = build_output_tree_map(output_tree)
+          render_absolute(node, acc, parent_id, node_attributes_map, output_tree_map)
+      end)
+
+    {buffer, build_output_tree_id_map(output_tree, node_attributes_map)}
   end
 
   # The layout algorithm returns float values for positions and sizes.
@@ -839,5 +843,28 @@ defmodule Orange.Renderer do
 
     if !left and !right,
       do: raise("Absolute position element must specify either left or right")
+  end
+
+  # Build a look up table for the output tree nodes
+  # Only include the nodes that have a id attribute
+  defp build_output_tree_id_map(%OutputTreeNode{} = node, node_attributes_map, result \\ %{}) do
+    id = Map.get(node_attributes_map, node.id, []) |> Keyword.get(:id)
+
+    result =
+      if id do
+        Map.put(result, id, %{node | children: nil})
+      else
+        result
+      end
+
+    case node.children do
+      {:text, _text} ->
+        result
+
+      {:nodes, nodes} ->
+        Enum.reduce(nodes, result, fn child_node, acc ->
+          build_output_tree_id_map(child_node, node_attributes_map, acc)
+        end)
+    end
   end
 end

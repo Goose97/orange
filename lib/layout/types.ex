@@ -84,7 +84,7 @@ defmodule Orange.Layout.OutputTreeNode do
   # The layout tree uses as the output of the layout API.
   # This tree includes the layout information (position, sizes, ...) of the tree.
 
-  @type child :: {:text, binary()} | {:node, __MODULE__.t()}
+  @type children :: {:text, binary()} | {:nodes, list(__MODULE__.t())} | nil
 
   @type t :: %__MODULE__{
           id: integer(),
@@ -99,7 +99,7 @@ defmodule Orange.Layout.OutputTreeNode do
           border: __MODULE__.FourValues.t(),
           padding: __MODULE__.FourValues.t(),
           margin: __MODULE__.FourValues.t(),
-          children: list(child())
+          children: children()
         }
 
   defstruct [

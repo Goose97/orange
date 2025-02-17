@@ -119,4 +119,24 @@ defmodule Orange do
   Unfocus a component by component_id.
   """
   defdelegate unfocus(component_id), to: Orange.Runtime
+
+  @doc """
+  Get the layout size of an element by component_id.
+
+  Contrary to the `subscribe/1`, `unsubscribe/1`, `focus/1` and `unfocus/1` functions, which can only
+  applied to custom components, this function can be only applied on primitive components, e.g. rect.
+
+  This function returns the size of the component rendered in the terminal. It is useful when you want to
+  know the size of a component before rendering it, e.g. making dynamic layout.
+
+  > #### Note {: .info}
+  >
+  > During the first render, this function will return `nil` because the layout information is not available yet.
+
+  ## Example
+
+      iex> Orange.get_layout_size(Orange.rect(id: :my_rect))
+      %{width: 10, height: 10}
+  """
+  defdelegate get_layout_size(component_id), to: Orange.Runtime
 end

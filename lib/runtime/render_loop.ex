@@ -158,9 +158,12 @@ defmodule Orange.Runtime.RenderLoop do
 
     {width, height} = state.terminal_size
 
-    current_buffer =
-      to_render_tree(current_tree)
+    {current_buffer, layout_tree_id_map} =
+      current_tree
+      |> to_render_tree()
       |> Renderer.render(%{width: width, height: height})
+
+    Process.put({__MODULE__, :layout_tree_id_map}, layout_tree_id_map)
 
     if opts[:clean_buffer] do
       terminal_impl().clear()
@@ -364,9 +367,12 @@ defmodule Orange.Runtime.RenderLoop do
     {:reply, do_component_ref_by_id(component_id), state}
   end
 
-  @doc """
-  Given a component_id, returns the component ref
-  """
+  @impl true
+  def handle_call({:layout_node_by_id, component_id}, _from, state) do
+    {:reply, do_layout_node_by_id(component_id), state}
+  end
+
+  # Given a component_id, returns the component ref
   def component_ref_by_id(component_id) do
     render_loop_pid = GenServer.whereis(__MODULE__)
 
@@ -408,5 +414,21 @@ defmodule Orange.Runtime.RenderLoop do
       nil -> find_in_children(remain, component_id)
       component -> component
     end
+  end
+
+  # Given a component_id, returns the layout node. The layout node contains the layout information of the element: size,
+  # padding, border, margin, etc.
+  def layout_node_by_id(component_id) do
+    render_loop_pid = GenServer.whereis(__MODULE__)
+
+    # In case the caller is the render loop, don't GenServer.call cause we will be blocked indefinitely
+    if self() == render_loop_pid,
+      do: do_layout_node_by_id(component_id),
+      else: GenServer.call(__MODULE__, {:layout_node_by_id, component_id})
+  end
+
+  defp do_layout_node_by_id(component_id) do
+    map = Process.get({__MODULE__, :layout_tree_id_map})
+    if map, do: Map.get(map, component_id)
   end
 end
