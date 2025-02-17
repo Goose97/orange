@@ -31,3 +31,5 @@ priv/native
 checksum-Elixir.Orange.Terminal.Binding.exs
 checksum-Elixir.Orange.Layout.Binding.exs
 .aider*
+
+/log/
