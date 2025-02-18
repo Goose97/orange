@@ -569,25 +569,38 @@ defmodule Orange.Renderer do
     # Fixed layer will overshadow the layer behind it
     {:fixed, top, right, bottom, left} = rect.attributes[:position]
 
-    width = window[:width] - left - right
-    height = window[:height] - top - bottom
+    width =
+      cond do
+        left != nil and right != nil ->
+          # It's possible that the left/right makes the width negative
+          width = max(0, window[:width] - left - right)
+          {:fixed, width}
 
-    area = %__MODULE__.Area{
-      x: left,
-      y: top,
-      width: width,
-      height: height
-    }
+        left == nil or right == nil ->
+          :max_content
+      end
 
-    buffer = Buffer.clear_area(buffer, area)
+    height =
+      cond do
+        top != nil and bottom != nil ->
+          # It's possible that the top/bottom makes the height negative
+          height = max(0, window[:height] - top - bottom)
+          {:fixed, height}
+
+        top == nil or bottom == nil ->
+          :max_content
+      end
 
     # Render as non-fixed position node
     rect = %{rect | attributes: Keyword.delete(rect.attributes, :position)}
 
-    # The fixed node should have width/height defined by the fixed coordinates
-    # The sizes should fill the available space
-    style = rect.attributes[:style] || []
-    style = Keyword.merge(style, width: "100%", height: "100%")
+    # If width/height is not specified, use 100% as default
+    style =
+      rect.attributes
+      |> Keyword.get(:style, [])
+      |> Keyword.put_new(:width, "100%")
+      |> Keyword.put_new(:height, "100%")
+
     rect = %{rect | attributes: Keyword.put(rect.attributes, :style, style)}
 
     # If fixed position node has nested fixed position children, ignore them for now
@@ -595,11 +608,30 @@ defmodule Orange.Renderer do
 
     output_tree =
       tree
-      |> Orange.Layout.layout({{:fixed, width}, {:fixed, height}})
+      |> Orange.Layout.layout({width, height})
       |> perform_rounding()
-      |> caculate_absolute_position({left, top})
 
+    area = fixed_child_render_area({top, right, bottom, left}, output_tree, window)
+    buffer = Buffer.clear_area(buffer, area)
+
+    output_tree = caculate_absolute_position(output_tree, {area.x, area.y})
     render_node(output_tree, buffer, node_attributes_map, [])
+  end
+
+  defp fixed_child_render_area(
+         {top, right, bottom, left},
+         %OutputTreeNode{} = output_node,
+         window
+       ) do
+    left = if left, do: left, else: window[:width] - right - output_node.width
+    top = if top, do: top, else: window[:height] - bottom - output_node.height
+
+    %__MODULE__.Area{
+      x: left,
+      y: top,
+      width: output_node.width,
+      height: output_node.height
+    }
   end
 
   defp get_style_from_chain(style_chain, attribute),
@@ -829,24 +861,25 @@ defmodule Orange.Renderer do
   defp parse_grid_line({:span, span}) when is_integer(span), do: {:span, span}
   defp parse_grid_line(:auto), do: :auto
 
-  defp validate_position!({:fixed, top, right, bottom, left}) do
-    if !top, do: raise("Fixed position element must specify top")
-    if !bottom, do: raise("Fixed position element must specify bottom")
-    if !left, do: raise("Fixed position element must specify left")
-    if !right, do: raise("Fixed position element must specify right")
-  end
+  defp validate_position!({type, top, right, bottom, left}) when type in [:absolute, :fixed] do
+    type_text =
+      case type do
+        :absolute -> "Absolute"
+        :fixed -> "Fixed"
+      end
 
-  defp validate_position!({:absolute, top, right, bottom, left}) do
     if !top and !bottom,
-      do: raise("Absolute position element must specify either top or bottom")
+      do: raise("#{type_text} position element must specify either top or bottom")
 
     if !left and !right,
-      do: raise("Absolute position element must specify either left or right")
+      do: raise("#{type_text} position element must specify either left or right")
   end
+
+  defp build_output_tree_id_map(_, _, result \\ %{})
 
   # Build a look up table for the output tree nodes
   # Only include the nodes that have a id attribute
-  defp build_output_tree_id_map(%OutputTreeNode{} = node, node_attributes_map, result \\ %{}) do
+  defp build_output_tree_id_map(%OutputTreeNode{} = node, node_attributes_map, result) do
     id = Map.get(node_attributes_map, node.id, []) |> Keyword.get(:id)
 
     result =
@@ -866,4 +899,6 @@ defmodule Orange.Renderer do
         end)
     end
   end
+
+  defp build_output_tree_id_map(nil, _, _), do: %{}
 end
