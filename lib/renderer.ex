@@ -32,15 +32,25 @@ defmodule Orange.Renderer do
         {buffer, nil}
       end
 
+    absolute_parent_nodes =
+      for {:absolute, _node, parent_id} <- out_of_flow_nodes, do: parent_id
+
+    parent_nodes = get_nodes_from_tree(output_tree, Enum.uniq(absolute_parent_nodes))
+
     buffer =
       Enum.reduce(out_of_flow_nodes, buffer, fn
         {:fixed, node}, acc ->
-          render_fixed(node, acc, window)
+          render_out_of_flow_node(node, acc, {window[:width], window[:height]}, {0, 0})
 
         {:absolute, node, parent_id}, acc ->
-          # TODO: only fetch the node that needs for the absolute render instead of the whole tree
-          output_tree_map = build_output_tree_map(output_tree)
-          render_absolute(node, acc, parent_id, output_tree_map)
+          parent_node = Map.get(parent_nodes, parent_id)
+
+          render_out_of_flow_node(
+            node,
+            acc,
+            {parent_node.width, parent_node.height},
+            {parent_node.abs_x, parent_node.abs_y}
+          )
       end)
 
     {buffer, build_output_tree_id_map(output_tree, node_attributes_map)}
@@ -466,36 +476,43 @@ defmodule Orange.Renderer do
     end)
   end
 
-  defp build_output_tree_map(output_tree, map \\ %{}) do
-    map = Map.put(map, output_tree.id, Map.delete(output_tree, :children))
+  defp get_nodes_from_tree(_, _, result \\ %{})
+  defp get_nodes_from_tree(nil, _, result), do: result
+
+  defp get_nodes_from_tree(output_tree, ids, result) do
+    id = output_tree.id
+
+    result =
+      if id in ids do
+        Map.put(result, output_tree.id, Map.delete(output_tree, :children))
+      else
+        result
+      end
 
     case output_tree.children do
       {:nodes, nodes} ->
-        Enum.reduce(nodes, map, fn node, acc ->
-          build_output_tree_map(node, acc)
+        Enum.reduce(nodes, result, fn node, acc ->
+          get_nodes_from_tree(node, ids, acc)
         end)
 
       {:text, _text} ->
-        map
+        result
     end
   end
 
-  # Fixed position render algorithm:
-  # 1. In the first render pass, all fixed position boxes will be collected and removed from the tree
-  # 2. After the first pass, render each fixed position box, according to the order of appearance
-  defp render_absolute(
+  # Out-of-flow node render algorithm:
+  # 1. In the first render pass, all out-of-flow elements will be collected and removed from the tree
+  # 2. After the first pass, render each according to the order of appearance
+  defp render_out_of_flow_node(
          %Orange.Rect{} = rect,
          buffer,
-         parent_id,
-         output_tree_map
+         {parent_width, parent_height},
+         {origin_x, origin_y}
        ) do
-    # Absolute layer will overshadow the layer behind it
-    {:absolute, top, right, bottom, left} = rect.attributes[:position]
+    {_, top, right, bottom, left} = rect.attributes[:position]
 
-    # Render as non-absolute position node
     rect = %{rect | attributes: Keyword.delete(rect.attributes, :position)}
 
-    # If width/height is not specified, use 100% as default
     style =
       rect.attributes
       |> Keyword.get(:style, [])
@@ -506,13 +523,11 @@ defmodule Orange.Renderer do
 
     {tree, node_attributes_map, _out_of_flow_nodes} = to_binding_input_tree(rect)
 
-    output_parent = Map.get(output_tree_map, parent_id)
-
     width =
       cond do
         left != nil and right != nil ->
           # It's possible that the left/right makes the width negative
-          width = max(0, output_parent.width - left - right)
+          width = max(0, parent_width - left - right)
           {:fixed, width}
 
         left == nil or right == nil ->
@@ -523,7 +538,7 @@ defmodule Orange.Renderer do
       cond do
         top != nil and bottom != nil ->
           # It's possible that the top/bottom makes the height negative
-          height = max(0, output_parent.height - top - bottom)
+          height = max(0, parent_height - top - bottom)
           {:fixed, height}
 
         top == nil or bottom == nil ->
@@ -535,7 +550,18 @@ defmodule Orange.Renderer do
       |> Orange.Layout.layout({width, height})
       |> perform_rounding()
 
-    area = absolute_child_render_area({top, right, bottom, left}, output_tree, output_parent)
+    # The out-of-flow now will overshadow the layer behind it
+    # So we need to clear the render area first
+    left = if left, do: left, else: parent_width - right - output_tree.width
+    top = if top, do: top, else: parent_height - bottom - output_tree.height
+
+    area = %__MODULE__.Area{
+      x: origin_x + left,
+      y: origin_y + top,
+      width: output_tree.width,
+      height: output_tree.height
+    }
+
     buffer = Buffer.clear_area(buffer, area)
 
     output_tree =
@@ -547,91 +573,6 @@ defmodule Orange.Renderer do
       node_attributes_map,
       []
     )
-  end
-
-  defp absolute_child_render_area(
-         {top, right, bottom, left},
-         %OutputTreeNode{} = output_node,
-         %OutputTreeNode{} = output_parent_node
-       ) do
-    left = if left, do: left, else: output_parent_node.width - right - output_node.width
-    top = if top, do: top, else: output_parent_node.height - bottom - output_node.height
-
-    %__MODULE__.Area{
-      x: output_parent_node.abs_x + left,
-      y: output_parent_node.abs_y + top,
-      width: output_node.width,
-      height: output_node.height
-    }
-  end
-
-  defp render_fixed(%Orange.Rect{} = rect, buffer, window) do
-    # Fixed layer will overshadow the layer behind it
-    {:fixed, top, right, bottom, left} = rect.attributes[:position]
-
-    width =
-      cond do
-        left != nil and right != nil ->
-          # It's possible that the left/right makes the width negative
-          width = max(0, window[:width] - left - right)
-          {:fixed, width}
-
-        left == nil or right == nil ->
-          :max_content
-      end
-
-    height =
-      cond do
-        top != nil and bottom != nil ->
-          # It's possible that the top/bottom makes the height negative
-          height = max(0, window[:height] - top - bottom)
-          {:fixed, height}
-
-        top == nil or bottom == nil ->
-          :max_content
-      end
-
-    # Render as non-fixed position node
-    rect = %{rect | attributes: Keyword.delete(rect.attributes, :position)}
-
-    # If width/height is not specified, use 100% as default
-    style =
-      rect.attributes
-      |> Keyword.get(:style, [])
-      |> Keyword.put_new(:width, "100%")
-      |> Keyword.put_new(:height, "100%")
-
-    rect = %{rect | attributes: Keyword.put(rect.attributes, :style, style)}
-
-    # If fixed position node has nested fixed position children, ignore them for now
-    {tree, node_attributes_map, _out_of_flow_nodes} = to_binding_input_tree(rect)
-
-    output_tree =
-      tree
-      |> Orange.Layout.layout({width, height})
-      |> perform_rounding()
-
-    area = fixed_child_render_area({top, right, bottom, left}, output_tree, window)
-    buffer = Buffer.clear_area(buffer, area)
-
-    output_tree = caculate_absolute_position(output_tree, {area.x, area.y})
-    render_node(output_tree, buffer, node_attributes_map, [])
-  end
-
-  defp fixed_child_render_area(
-         {top, right, bottom, left},
-         %OutputTreeNode{} = output_node,
-         window
-       ) do
-    left = if left, do: left, else: window[:width] - right - output_node.width
-    top = if top, do: top, else: window[:height] - bottom - output_node.height
-
-    %__MODULE__.Area{
-      x: left,
-      y: top,
-      width: output_node.width,
-      height: output_node.height
-    }
   end
 
   defp get_style_from_chain(style_chain, attribute),
