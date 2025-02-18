@@ -40,7 +40,7 @@ defmodule Orange.Renderer do
         {:absolute, node, parent_id}, acc ->
           # TODO: only fetch the node that needs for the absolute render instead of the whole tree
           output_tree_map = build_output_tree_map(output_tree)
-          render_absolute(node, acc, parent_id, node_attributes_map, output_tree_map)
+          render_absolute(node, acc, parent_id, output_tree_map)
       end)
 
     {buffer, build_output_tree_id_map(output_tree, node_attributes_map)}
@@ -487,7 +487,6 @@ defmodule Orange.Renderer do
          %Orange.Rect{} = rect,
          buffer,
          parent_id,
-         node_attributes_map,
          output_tree_map
        ) do
     # Absolute layer will overshadow the layer behind it
@@ -505,7 +504,7 @@ defmodule Orange.Renderer do
 
     rect = %{rect | attributes: Keyword.put(rect.attributes, :style, style)}
 
-    {tree, _node_attributes_map, _out_of_flow_nodes} = to_binding_input_tree(rect)
+    {tree, node_attributes_map, _out_of_flow_nodes} = to_binding_input_tree(rect)
 
     output_parent = Map.get(output_tree_map, parent_id)
 
