@@ -2,6 +2,8 @@ defmodule Orange.Renderer.FlexLayoutTest do
   use ExUnit.Case
   import Orange.Macro
 
+  alias Orange.Renderer.Buffer
+
   describe "flex_direction" do
     test "renders elements in the horizontal direction if flex_direction is :row" do
       element =
@@ -13,7 +15,8 @@ defmodule Orange.Renderer.FlexLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 6})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────┐---
@@ -35,6 +38,7 @@ defmodule Orange.Renderer.FlexLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> elem(0)
         |> Orange.Renderer.Buffer.to_string()
 
       assert screen == """
@@ -64,7 +68,8 @@ defmodule Orange.Renderer.FlexLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 6})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -97,7 +102,8 @@ defmodule Orange.Renderer.FlexLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 6})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -127,7 +133,8 @@ defmodule Orange.Renderer.FlexLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 6})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -157,7 +164,8 @@ defmodule Orange.Renderer.FlexLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 7})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -183,7 +191,8 @@ defmodule Orange.Renderer.FlexLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 10})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────┐---
@@ -208,7 +217,8 @@ defmodule Orange.Renderer.FlexLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 25, height: 6})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐-----
@@ -231,7 +241,8 @@ defmodule Orange.Renderer.FlexLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 10})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────┐---
@@ -258,7 +269,8 @@ defmodule Orange.Renderer.FlexLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 25, height: 6})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐-----
@@ -288,7 +300,8 @@ defmodule Orange.Renderer.FlexLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 10})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────┐---
@@ -322,7 +335,8 @@ defmodule Orange.Renderer.FlexLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 25, height: 6})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐-----

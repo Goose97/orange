@@ -2,6 +2,8 @@ defmodule Orange.Renderer.GridLayoutTest do
   use ExUnit.Case
   import Orange.Macro
 
+  alias Orange.Renderer.Buffer
+
   describe "display grid" do
     test "renders elements with grid display" do
       element =
@@ -25,7 +27,8 @@ defmodule Orange.Renderer.GridLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 8})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -63,7 +66,8 @@ defmodule Orange.Renderer.GridLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 15})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -106,7 +110,8 @@ defmodule Orange.Renderer.GridLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 22, height: 12})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌────────────────────┐
@@ -146,7 +151,8 @@ defmodule Orange.Renderer.GridLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 10})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -188,7 +194,8 @@ defmodule Orange.Renderer.GridLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 15})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -235,7 +242,8 @@ defmodule Orange.Renderer.GridLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 17})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -282,7 +290,8 @@ defmodule Orange.Renderer.GridLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 15})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -321,7 +330,8 @@ defmodule Orange.Renderer.GridLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 15})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -360,7 +370,8 @@ defmodule Orange.Renderer.GridLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 15})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -399,7 +410,8 @@ defmodule Orange.Renderer.GridLayoutTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 15})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐

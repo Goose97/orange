@@ -2,6 +2,8 @@ defmodule Orange.Renderer.SizingTest do
   use ExUnit.Case
   import Orange.Macro
 
+  alias Orange.Renderer.Buffer
+
   describe "sizing" do
     test "renders with height and width" do
       element =
@@ -12,7 +14,8 @@ defmodule Orange.Renderer.SizingTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 6})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────┐---
@@ -33,7 +36,8 @@ defmodule Orange.Renderer.SizingTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 8})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌────────┐----------
@@ -56,7 +60,8 @@ defmodule Orange.Renderer.SizingTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 8})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌────────────┐------
@@ -83,7 +88,8 @@ defmodule Orange.Renderer.SizingTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 12})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌─────────────┐
@@ -112,7 +118,8 @@ defmodule Orange.Renderer.SizingTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 10})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌─────────────┐
@@ -139,7 +146,8 @@ defmodule Orange.Renderer.SizingTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 12})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌─────────────┐
@@ -174,7 +182,8 @@ defmodule Orange.Renderer.SizingTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 12})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐
@@ -207,7 +216,8 @@ defmodule Orange.Renderer.SizingTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 10})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌─────────────┐
@@ -238,7 +248,8 @@ defmodule Orange.Renderer.SizingTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 12})
-        |> Orange.Renderer.Buffer.to_string()
+        |> elem(0)
+        |> Buffer.to_string()
 
       assert screen == """
              ┌──────────────────┐

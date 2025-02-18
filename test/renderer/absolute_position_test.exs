@@ -21,6 +21,7 @@ defmodule Orange.Renderer.AbsolutePositionTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 10})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -53,6 +54,7 @@ defmodule Orange.Renderer.AbsolutePositionTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 25, height: 13})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -88,6 +90,7 @@ defmodule Orange.Renderer.AbsolutePositionTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 25, height: 13})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -123,6 +126,7 @@ defmodule Orange.Renderer.AbsolutePositionTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 25, height: 13})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -158,6 +162,7 @@ defmodule Orange.Renderer.AbsolutePositionTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 25, height: 13})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -193,6 +198,7 @@ defmodule Orange.Renderer.AbsolutePositionTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 25, height: 13})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -228,6 +234,7 @@ defmodule Orange.Renderer.AbsolutePositionTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 25, height: 13})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -263,6 +270,7 @@ defmodule Orange.Renderer.AbsolutePositionTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 25, height: 13})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """

@@ -11,7 +11,7 @@ defmodule Orange.Renderer.ColorTest do
           "foo"
         end
 
-      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      {buffer, _} = Orange.Renderer.render(element, %{width: 15, height: 6})
       screen = Buffer.to_string(buffer)
 
       assert screen == """
@@ -36,7 +36,7 @@ defmodule Orange.Renderer.ColorTest do
           "foo"
         end
 
-      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      {buffer, _} = Orange.Renderer.render(element, %{width: 15, height: 6})
       screen = Buffer.to_string(buffer)
 
       assert screen == """

@@ -14,6 +14,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -38,6 +39,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -62,6 +64,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -86,6 +89,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -110,6 +114,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -127,7 +132,7 @@ defmodule Orange.Renderer.BorderTest do
           "foo"
         end
 
-      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      {buffer, _} = Orange.Renderer.render(element, %{width: 15, height: 6})
 
       Enum.each(0..11, fn x ->
         assert Buffer.get_color(buffer, x, 0) == :red
@@ -148,6 +153,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -173,6 +179,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -198,6 +205,7 @@ defmodule Orange.Renderer.BorderTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """

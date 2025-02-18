@@ -15,6 +15,7 @@ defmodule Orange.Renderer.TextTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -35,7 +36,7 @@ defmodule Orange.Renderer.TextTest do
           "bar"
         end
 
-      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      {buffer, _} = Orange.Renderer.render(element, %{width: 15, height: 6})
       screen = Buffer.to_string(buffer)
 
       assert screen == """
@@ -64,6 +65,7 @@ defmodule Orange.Renderer.TextTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -84,7 +86,7 @@ defmodule Orange.Renderer.TextTest do
           "bar"
         end
 
-      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      {buffer, _} = Orange.Renderer.render(element, %{width: 15, height: 6})
       screen = Buffer.to_string(buffer)
 
       Enum.each(1..6, fn x ->
@@ -113,7 +115,7 @@ defmodule Orange.Renderer.TextTest do
           "bar"
         end
 
-      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      {buffer, _} = Orange.Renderer.render(element, %{width: 15, height: 6})
       screen = Buffer.to_string(buffer)
 
       Enum.each(1..6, fn x ->
@@ -138,7 +140,7 @@ defmodule Orange.Renderer.TextTest do
           "foo"
         end
 
-      buffer = Orange.Renderer.render(element, %{width: 15, height: 6})
+      {buffer, _} = Orange.Renderer.render(element, %{width: 15, height: 6})
       screen = Buffer.to_string(buffer)
 
       assert screen == """
@@ -168,6 +170,7 @@ defmodule Orange.Renderer.TextTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -191,6 +194,7 @@ defmodule Orange.Renderer.TextTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -214,6 +218,7 @@ defmodule Orange.Renderer.TextTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 18, height: 6})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -237,6 +242,7 @@ defmodule Orange.Renderer.TextTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 18, height: 6})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -261,6 +267,7 @@ defmodule Orange.Renderer.TextTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 18, height: 6})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -285,6 +292,7 @@ defmodule Orange.Renderer.TextTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 18, height: 6})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -308,6 +316,7 @@ defmodule Orange.Renderer.TextTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 6})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -333,6 +342,7 @@ defmodule Orange.Renderer.TextTest do
     screen =
       element
       |> Orange.Renderer.render(%{width: 15, height: 6})
+      |> elem(0)
       |> Buffer.to_string()
 
     assert screen == """
@@ -361,6 +371,7 @@ defmodule Orange.Renderer.TextTest do
     screen =
       element
       |> Orange.Renderer.render(%{width: 15, height: 7})
+      |> elem(0)
       |> Buffer.to_string()
 
     assert screen == """

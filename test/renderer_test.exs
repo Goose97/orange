@@ -14,6 +14,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -35,6 +36,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -54,6 +56,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -80,6 +83,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 20, height: 10})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -115,6 +119,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 35, height: 12})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -143,7 +148,7 @@ defmodule Orange.RendererTest do
           end
         end
 
-      buffer = Orange.Renderer.render(element, %{width: 10, height: 3})
+      {buffer, _} = Orange.Renderer.render(element, %{width: 10, height: 3})
 
       Enum.each([{0, 0}, {1, 0}, {2, 0}], fn {x, y} ->
         assert Buffer.get_color(buffer, x, y) == :red
@@ -159,7 +164,7 @@ defmodule Orange.RendererTest do
           end
         end
 
-      buffer = Orange.Renderer.render(element, %{width: 10, height: 3})
+      {buffer, _} = Orange.Renderer.render(element, %{width: 10, height: 3})
 
       Enum.each([{0, 0}, {1, 0}, {2, 0}], fn {x, y} ->
         assert Buffer.get_color(buffer, x, y) == :blue
@@ -178,6 +183,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -198,6 +204,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 7})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -222,6 +229,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 7})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -252,6 +260,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -283,6 +292,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -315,6 +325,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 7})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -343,6 +354,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -369,6 +381,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -400,6 +413,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 7})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -434,6 +448,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 9})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -464,6 +479,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -486,6 +502,7 @@ defmodule Orange.RendererTest do
       screen =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
         |> Buffer.to_string()
 
       assert screen == """
@@ -504,7 +521,7 @@ defmodule Orange.RendererTest do
           "foo"
         end
 
-      buffer =
+      {buffer, _} =
         element
         |> Orange.Renderer.render(%{width: 15, height: 5})
 
