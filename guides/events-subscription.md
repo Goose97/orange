@@ -20,14 +20,14 @@ defmodule Example do
     case event do
       %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
         Orange.stop()
-        state
+        {:update, state}
 
       %Orange.Terminal.KeyEvent{code: {:char, char}} ->
         IO.puts("Key pressed: #{char}")
-        state
+        {:update, state}
 
       _ ->
-        state
+        :noop
     end
   end
 
@@ -43,7 +43,9 @@ end
 Orange.start(Example)
 ```
 
-Your component can handle events with the `handle_event/4` callback and returns the updated state.
+Your component can handle events with the `handle_event/4` callback. The callback should return either:
+- `{:update, new_state}` to update the component's state
+- `:noop` to keep the current state unchanged
 
 ## Orange.subscribe/1
 
@@ -68,10 +70,10 @@ defmodule Example do
     case event do
       %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
         Orange.stop()
-        state
+        {:update, state}
 
       _ ->
-        state
+        :noop
     end
   end
 

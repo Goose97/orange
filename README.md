@@ -54,19 +54,19 @@ defmodule Counter.App do
     case event do
       # Arrow up to increase counter
       %Orange.Terminal.KeyEvent{code: :up} ->
-        %{state | count: state.count + 1}
+        {:update, %{state | count: state.count + 1}}
 
       # Arrow down to decrease counter
       %Orange.Terminal.KeyEvent{code: :down} ->
-        %{state | count: state.count - 1}
+        {:update, %{state | count: state.count - 1}}
 
       %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
         # Quit the application
         Orange.stop()
-        state
+        :noop
 
       _ ->
-        state
+        :noop
     end
   end
 

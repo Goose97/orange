@@ -7,14 +7,14 @@ defmodule Grid.App do
   def init(_attrs), do: %{state: nil, events_subscription: true}
 
   @impl true
-  def handle_event(event, state, _attrs, _update) do
+  def handle_event(event, _state, _attrs, _update) do
     case event do
       %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
         Orange.stop()
-        state
+        :noop
 
       _ ->
-        state
+        :noop
     end
   end
 

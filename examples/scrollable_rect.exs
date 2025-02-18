@@ -14,18 +14,20 @@ defmodule ScrollableRect.App do
   def handle_event(event, state, _attrs, _update) do
     case event do
       %Orange.Terminal.KeyEvent{code: :up} ->
-        if state > 0, do: state - 1, else: state
+        state = if state > 0, do: state - 1, else: state
+        {:update, state}
 
       %Orange.Terminal.KeyEvent{code: :down} ->
         # Plus 2 because of the borders
-        if state + @container_height - 2 < @total_items, do: state + 1, else: state
+        state = if state + @container_height - 2 < @total_items, do: state + 1, else: state
+        {:update, state}
 
       %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
         Orange.stop()
-        state
+        :noop
 
       _ ->
-        state
+        :noop
     end
   end
 

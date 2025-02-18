@@ -10,19 +10,19 @@ defmodule Counter.Child do
   def handle_event(event, state, _attrs, _update) do
     case event do
       %Orange.Terminal.KeyEvent{code: :up} ->
-        state + 1
+        {:update, state + 1}
 
       %Orange.Terminal.KeyEvent{code: :down} ->
-        state - 1
+        {:update, state - 1}
 
       %Orange.Terminal.KeyEvent{code: {:char, "k"}} ->
-        state + 1
+        {:update, state + 1}
 
       %Orange.Terminal.KeyEvent{code: {:char, "j"}} ->
-        state - 1
+        {:update, state - 1}
 
       _ ->
-        state
+        :noop
     end
   end
 
@@ -35,7 +35,7 @@ defmodule Counter.Child do
   end
 
   @impl true
-  def render(state, attrs, update) do
+  def render(state, attrs, _update) do
     rect style: [width: 20, height: 20, border: attrs[:highlighted]] do
       rect do
         "Counter: #{state}"
@@ -58,35 +58,41 @@ defmodule Counter.App do
       %Orange.Terminal.KeyEvent{code: {:char, "h"}} ->
         old_focus = state.focus
 
-        case state.focus do
-          nil -> %{state | focus: :counter1}
-          :counter1 -> %{state | focus: :counter2}
-          :counter2 -> %{state | focus: :counter1}
-        end
-        |> tap(fn state ->
-          if old_focus, do: Orange.unsubscribe(old_focus)
-          Orange.subscribe(state.focus)
-        end)
+        state =
+          case state.focus do
+            nil -> %{state | focus: :counter1}
+            :counter1 -> %{state | focus: :counter2}
+            :counter2 -> %{state | focus: :counter1}
+          end
+          |> tap(fn state ->
+            if old_focus, do: Orange.unsubscribe(old_focus)
+            Orange.subscribe(state.focus)
+          end)
+
+        {:update, state}
 
       %Orange.Terminal.KeyEvent{code: {:char, "l"}} ->
         old_focus = state.focus
 
-        case state.focus do
-          nil -> %{state | focus: :counter1}
-          :counter1 -> %{state | focus: :counter2}
-          :counter2 -> %{state | focus: :counter1}
-        end
-        |> tap(fn state ->
-          if old_focus, do: Orange.unsubscribe(old_focus)
-          Orange.subscribe(state.focus)
-        end)
+        state =
+          case state.focus do
+            nil -> %{state | focus: :counter1}
+            :counter1 -> %{state | focus: :counter2}
+            :counter2 -> %{state | focus: :counter1}
+          end
+          |> tap(fn state ->
+            if old_focus, do: Orange.unsubscribe(old_focus)
+            Orange.subscribe(state.focus)
+          end)
+
+        {:update, state}
 
       %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
         Orange.stop()
-        state
+        :noop
 
       _ ->
-        state
+        :noop
     end
   end
 

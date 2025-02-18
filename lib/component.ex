@@ -22,13 +22,13 @@ defmodule Orange.Component do
         def handle_event(event, state, _attrs, _update) do
           case event do
             %Orange.Terminal.KeyEvent{code: :up} ->
-              state + 1
+              {:update, state + 1}
 
             %Orange.Terminal.KeyEvent{code: :down} ->
-              state - 1
+              {:update, state - 1}
 
             _ ->
-              state
+              :noop
           end
         end
 
@@ -67,10 +67,10 @@ defmodule Orange.Component do
           case event do
             %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
               Orange.stop()
-              state
+              :noop
 
             _ ->
-              state
+              :noop
           end
         end
 

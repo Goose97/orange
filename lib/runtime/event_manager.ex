@@ -72,15 +72,18 @@ defmodule Orange.Runtime.EventManager do
         Runtime.ComponentRegistry.get(component_ref)
 
       if function_exported?(module, :handle_event, 4) do
-        new_state =
-          apply(module, :handle_event, [
-            event,
-            state,
-            attrs,
-            Runtime.RenderLoop.make_update_callback(component_ref)
-          ])
+        case apply(module, :handle_event, [
+               event,
+               state,
+               attrs,
+               Runtime.RenderLoop.make_update_callback(component_ref)
+             ]) do
+          {:update, new_state} ->
+            Runtime.ComponentRegistry.update_state(component_ref, new_state)
 
-        Runtime.ComponentRegistry.update_state(component_ref, new_state)
+          :noop ->
+            :ok
+        end
       end
     end
   end

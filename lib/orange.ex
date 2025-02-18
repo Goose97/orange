@@ -28,10 +28,10 @@ defmodule Orange do
           case event do
             %Orange.Terminal.KeyEvent{code: {:char, "q"}} ->
               Orange.stop()
-              state
+              :noop
 
             _ ->
-              state
+              :noop
           end
         end
 

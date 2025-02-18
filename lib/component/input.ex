@@ -72,24 +72,28 @@ defmodule Orange.Component.Input do
         attrs[:on_submit].(state.input)
         if attrs[:auto_focus], do: Orange.unfocus(attrs[:id])
 
-        state
+        {:update, state}
 
       %Orange.Terminal.KeyEvent{code: ^exit_key} ->
         if attrs[:on_exit], do: attrs[:on_exit].()
         if attrs[:id], do: Orange.unfocus(attrs[:id])
 
-        state
+        {:update, state}
 
       %Orange.Terminal.KeyEvent{code: {:char, char}} ->
-        update_in(state, [:input], &(&1 <> char))
+        state = update_in(state, [:input], &(&1 <> char))
+        {:update, state}
 
       %Orange.Terminal.KeyEvent{code: :backspace} ->
-        if String.length(state.input) > 0,
-          do: update_in(state, [:input], &String.slice(&1, 0, String.length(&1) - 1)),
-          else: state
+        state =
+          if String.length(state.input) > 0,
+            do: update_in(state, [:input], &String.slice(&1, 0, String.length(&1) - 1)),
+            else: state
+
+        {:update, state}
 
       _ ->
-        state
+        :noop
     end
   end
 

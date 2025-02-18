@@ -201,17 +201,17 @@ defmodule Orange.Runtime.SubscribeTest do
     def handle_event(event, state, _attrs, _update) do
       case event do
         %Terminal.KeyEvent{code: :up} ->
-          state + 1
+          {:update, state + 1}
 
         %Terminal.KeyEvent{code: :down} ->
-          state - 1
+          {:update, state - 1}
 
         %Terminal.KeyEvent{code: {:char, "q"}} ->
           Orange.stop()
-          state
+          :noop
 
         _ ->
-          state
+          :noop
       end
     end
 
@@ -232,21 +232,21 @@ defmodule Orange.Runtime.SubscribeTest do
     def init(_attrs), do: %{state: nil, events_subscription: true}
 
     @impl true
-    def handle_event(event, state, attrs, _update) do
+    def handle_event(event, _state, attrs, _update) do
       case event do
         %Terminal.KeyEvent{code: {:char, "x"}} ->
           if attrs[:from_other_process],
             do: spawn(fn -> Orange.unsubscribe(:counter) end),
             else: Orange.unsubscribe(:counter)
 
-          state
+          :noop
 
         %Terminal.KeyEvent{code: {:char, "q"}} ->
           Orange.stop()
-          state
+          :noop
 
         _ ->
-          state
+          :noop
       end
     end
 
