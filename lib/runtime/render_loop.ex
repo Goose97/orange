@@ -148,6 +148,13 @@ defmodule Orange.Runtime.RenderLoop do
     {:noreply, state}
   end
 
+  @impl true
+  # Users code can link the main process to other processes
+  # We should expect EXIT messages since we set trap_exit = true
+  def handle_info({:EXIT, _pid, _reason}, state) do
+    {:noreply, state}
+  end
+
   defp render_tick(state, opts \\ []) do
     now = System.monotonic_time(:millisecond)
 
