@@ -346,37 +346,41 @@ defmodule Orange.Renderer do
       node.height - node.border.top - node.border.bottom - node.padding.top -
         node.padding.bottom
 
-    {render_text, render_opts} =
-      case background_text do
-        text when is_binary(text) ->
-          {text, []}
+    if inner_width > 0 and inner_height > 0 do
+      {render_text, render_opts} =
+        case background_text do
+          text when is_binary(text) ->
+            {text, []}
 
-        text when is_map(text) ->
-          opts =
-            text
-            |> Map.take([:color, :text_modifiers])
-            |> Map.to_list()
+          text when is_map(text) ->
+            opts =
+              text
+              |> Map.take([:color, :text_modifiers])
+              |> Map.to_list()
 
-          {text[:text], opts}
-      end
+            {text[:text], opts}
+        end
 
-    Enum.reduce(0..(inner_height - 1), buffer, fn y_offset, acc ->
-      background_line =
-        String.duplicate(
-          render_text,
-          ceil(inner_width / String.length(render_text))
+      Enum.reduce(0..(inner_height - 1), buffer, fn y_offset, acc ->
+        background_line =
+          String.duplicate(
+            render_text,
+            ceil(inner_width / String.length(render_text))
+          )
+
+        background_line = String.slice(background_line, 0, inner_width)
+
+        Buffer.write_string(
+          acc,
+          {start_x, start_y + y_offset},
+          background_line,
+          :horizontal,
+          render_opts
         )
-
-      background_line = String.slice(background_line, 0, inner_width)
-
-      Buffer.write_string(
-        acc,
-        {start_x, start_y + y_offset},
-        background_line,
-        :horizontal,
-        render_opts
-      )
-    end)
+      end)
+    else
+      buffer
+    end
   end
 
   # 1. If the first line is all whitespaces or empty, merge it with the second line
