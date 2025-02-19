@@ -290,6 +290,41 @@ defmodule Orange.Renderer.AbsolutePositionTest do
              """
     end
 
+    test "inherits parent style" do
+      element =
+        rect style: [width: "100%", height: "100%", color: :red] do
+          rect do
+            "foo"
+            "bar"
+          end
+
+          rect position: {:absolute, 4, 1, 1, 1}, style: [border: true] do
+            "baz"
+          end
+        end
+
+      {buffer, _} =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 10})
+
+      Enum.each(2..4, fn x ->
+        assert Buffer.get_color(buffer, x, 5) == :red
+      end)
+
+      """
+      foobar---------
+      ---------------
+      ---------------
+      ---------------
+      -┌───────────┐-
+      -│baz--------│-
+      -│-----------│-
+      -│-----------│-
+      -└───────────┘-
+      ---------------\
+      """
+    end
+
     @tag capture_log: true
     test "absolute position must specify at least left or right" do
       %RuntimeError{message: message} =

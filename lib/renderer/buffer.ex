@@ -145,17 +145,17 @@ defmodule Orange.Renderer.Buffer do
   end
 
   def get_color(%__MODULE__{} = buffer, x, y) do
-    cell = Orange.Renderer.Buffer.get_cell(buffer, {x, y})
+    cell = get_cell(buffer, {x, y})
     cell.foreground
   end
 
   def get_background_color(%__MODULE__{} = buffer, x, y) do
-    cell = Orange.Renderer.Buffer.get_cell(buffer, {x, y})
+    cell = get_cell(buffer, {x, y})
     cell.background
   end
 
   def get_modifiers(%__MODULE__{} = buffer, x, y) do
-    cell = Orange.Renderer.Buffer.get_cell(buffer, {x, y})
+    cell = get_cell(buffer, {x, y})
     cell.modifiers
   end
 end

@@ -5,7 +5,6 @@ defmodule Orange.Renderer do
   alias Orange.Layout.{OutputTreeNode, InputTreeNode}
 
   @type window :: %{width: integer, height: integer}
-  @type style_chain :: [Keyword.t()]
   @type ui_element :: Orange.Rect.t()
 
   # Render the elements to a buffer before painting them to the screen
@@ -27,7 +26,7 @@ defmodule Orange.Renderer do
           |> perform_rounding()
           |> caculate_absolute_position()
 
-        {render_node(output_tree, buffer, node_attributes_map, []), output_tree}
+        {render_node(output_tree, buffer, node_attributes_map), output_tree}
       else
         {buffer, nil}
       end
@@ -39,15 +38,25 @@ defmodule Orange.Renderer do
 
     buffer =
       Enum.reduce(out_of_flow_nodes, buffer, fn
-        {:fixed, node}, acc ->
-          render_out_of_flow_node(node, acc, {window[:width], window[:height]}, {0, 0})
+        {:fixed, node, parent_id}, acc ->
+          parent_style = Map.get(node_attributes_map, parent_id)[:style]
+
+          render_out_of_flow_node(
+            node,
+            acc,
+            parent_style,
+            {window[:width], window[:height]},
+            {0, 0}
+          )
 
         {:absolute, node, parent_id}, acc ->
+          parent_style = Map.get(node_attributes_map, parent_id)[:style]
           parent_node = Map.get(parent_nodes, parent_id)
 
           render_out_of_flow_node(
             node,
             acc,
+            parent_style,
             {parent_node.width, parent_node.height},
             {parent_node.abs_x, parent_node.abs_y}
           )
@@ -122,15 +131,14 @@ defmodule Orange.Renderer do
   defp render_node(
          %OutputTreeNode{} = node,
          buffer,
-         node_attributes_map,
-         style_chain
+         node_attributes_map
        ) do
     attributes = Map.get(node_attributes_map, node.id, [])
 
     buffer
     |> render_border(node, attributes)
     |> maybe_render_title(node, attributes[:title])
-    |> render_children(node, node_attributes_map, style_chain)
+    |> render_children(node, node_attributes_map)
     |> maybe_set_background_color(node, attributes)
   end
 
@@ -278,19 +286,18 @@ defmodule Orange.Renderer do
     end
   end
 
-  defp render_children(buffer, node, node_attributes_map, style_chain) do
+  defp render_children(buffer, node, node_attributes_map) do
     attributes = Map.get(node_attributes_map, node.id, [])
     scroll_x = attributes[:scroll_x]
     scroll_y = attributes[:scroll_y]
 
     if scroll_x || scroll_y,
-      do: render_scrollable_children(buffer, node, node_attributes_map, style_chain),
-      else: do_render_children(buffer, node, node_attributes_map, style_chain)
+      do: render_scrollable_children(buffer, node, node_attributes_map),
+      else: do_render_children(buffer, node, node_attributes_map)
   end
 
-  defp do_render_children(buffer, node, node_attributes_map, style_chain) do
+  defp do_render_children(buffer, node, node_attributes_map) do
     attributes = Map.get(node_attributes_map, node.id, [])
-    style_chain = [Keyword.get(attributes, :style, []) | style_chain]
 
     buffer =
       if background_text = attributes[:background_text],
@@ -303,8 +310,8 @@ defmodule Orange.Renderer do
         start_y = node.abs_y + if(node.border.top > 0, do: 1, else: 0) + node.padding.top
 
         opts = [
-          color: get_style_from_chain(style_chain, :color),
-          text_modifiers: get_style_from_chain(style_chain, :text_modifiers) || []
+          color: get_in(attributes, [:style, :color]),
+          text_modifiers: get_in(attributes, [:style, :text_modifiers]) || []
         ]
 
         # If the first line is all whitespaces or empty, merge it with the second line
@@ -322,7 +329,7 @@ defmodule Orange.Renderer do
 
       {:nodes, nodes} ->
         Enum.reduce(nodes, buffer, fn node, buffer ->
-          render_node(node, buffer, node_attributes_map, style_chain)
+          render_node(node, buffer, node_attributes_map)
         end)
     end
   end
@@ -404,7 +411,7 @@ defmodule Orange.Renderer do
   # 2. Extract the visible area from the children buffer. This area is determined by the scroll offset (x, y) and
   # the width and height of the parent node
   # 3. Merge the visible area into the parent buffer
-  defp render_scrollable_children(buffer, node, node_attributes_map, style_chain) do
+  defp render_scrollable_children(buffer, node, node_attributes_map) do
     scroll_buffer = Buffer.new()
 
     scroll_buffer =
@@ -412,8 +419,7 @@ defmodule Orange.Renderer do
         scroll_buffer,
         # Reset the parent container origin to zero
         caculate_absolute_position(%{node | x: 0, y: 0}),
-        node_attributes_map,
-        style_chain
+        node_attributes_map
       )
 
     attributes = Map.get(node_attributes_map, node.id, [])
@@ -503,9 +509,12 @@ defmodule Orange.Renderer do
   # Out-of-flow node render algorithm:
   # 1. In the first render pass, all out-of-flow elements will be collected and removed from the tree
   # 2. After the first pass, render each according to the order of appearance
+  #
+  # The out-of-flow node still needs to inherit the parent style
   defp render_out_of_flow_node(
          %Orange.Rect{} = rect,
          buffer,
+         parent_style,
          {parent_width, parent_height},
          {origin_x, origin_y}
        ) do
@@ -521,7 +530,8 @@ defmodule Orange.Renderer do
 
     rect = %{rect | attributes: Keyword.put(rect.attributes, :style, style)}
 
-    {tree, node_attributes_map, _out_of_flow_nodes} = to_binding_input_tree(rect)
+    {tree, node_attributes_map, _out_of_flow_nodes} =
+      to_binding_input_tree(rect, :atomics.new(1, []), %{}, [], parent_style)
 
     width =
       cond do
@@ -570,13 +580,9 @@ defmodule Orange.Renderer do
     render_node(
       output_tree,
       buffer,
-      node_attributes_map,
-      []
+      node_attributes_map
     )
   end
-
-  defp get_style_from_chain(style_chain, attribute),
-    do: Enum.find_value(style_chain, &Keyword.get(&1, attribute))
 
   defp to_binding_input_tree(
          _node,
@@ -596,19 +602,19 @@ defmodule Orange.Renderer do
          counter,
          node_map,
          out_of_flow_nodes,
-         _parent_style,
+         parent_style,
          parent_id
        ) do
     new_id = :atomics.add_get(counter, 1, 1)
-    raw_style = node.attributes[:style]
-    style = if raw_style, do: to_binding_style(node.attributes[:style])
+
+    style_attrs = inherit_style(node.attributes[:style], parent_style)
 
     # Collect fixed and absolute position nodes
     {new_node, node_map, out_of_flow_nodes} =
       case node.attributes[:position] do
         {:fixed, _, _, _, _} = position ->
           validate_position!(position)
-          {nil, node_map, out_of_flow_nodes ++ [{:fixed, node}]}
+          {nil, node_map, out_of_flow_nodes ++ [{:fixed, node, parent_id}]}
 
         {:absolute, _, _, _, _} = position ->
           if !parent_id, do: raise("Absolute position can't be used on root element")
@@ -627,7 +633,7 @@ defmodule Orange.Renderer do
                   counter,
                   node_map_acc,
                   out_of_flow_nodes_acc,
-                  raw_style,
+                  style_attrs,
                   new_id
                 )
 
@@ -635,6 +641,8 @@ defmodule Orange.Renderer do
               result = if new_node, do: result ++ [new_node], else: result
               {result, new_node_map, new_out_of_flow_nodes}
             end)
+
+          style = if style_attrs, do: to_binding_style(style_attrs)
 
           {
             %InputTreeNode{
@@ -648,7 +656,8 @@ defmodule Orange.Renderer do
       end
 
     # Save node attributes
-    node_map = Map.put(node_map, new_id, node.attributes)
+    attributes = Keyword.put(node.attributes, :style, style_attrs)
+    node_map = Map.put(node_map, new_id, attributes)
 
     {new_node, node_map, out_of_flow_nodes}
   end
@@ -684,21 +693,36 @@ defmodule Orange.Renderer do
        ) do
     new_id = :atomics.add_get(counter, 1, 1)
 
-    inherit_style =
-      if parent_style,
-        do: Keyword.take(parent_style, [:color, :text_modifiers, :line_wrap]),
-        else: []
+    line_wrap = parent_style[:line_wrap]
+    style = inherit_style(nil, parent_style)
+
+    style =
+      if line_wrap != nil, do: Keyword.put(style || [], :line_wrap, line_wrap), else: style
 
     # Save node attributes
-    node_map = Map.put(node_map, new_id, style: inherit_style)
+    node_map = if style, do: Map.put(node_map, new_id, style: style), else: node_map
 
     new_node = %InputTreeNode{
       id: new_id,
       children: {:text, string},
-      style: if(inherit_style, do: to_binding_style(inherit_style))
+      style: if(style, do: to_binding_style(style))
     }
 
     {new_node, node_map, out_of_flow_nodes}
+  end
+
+  defp inherit_style(style, nil), do: style
+  defp inherit_style(nil, parent_style), do: inherit_style([], parent_style)
+
+  defp inherit_style(style, parent_style) do
+    parent_color = parent_style[:color]
+    parent_text_modifiers = parent_style[:text_modifiers]
+
+    style = if parent_color, do: Keyword.put_new(style, :color, parent_color), else: style
+
+    if parent_text_modifiers,
+      do: Keyword.put_new(style, :text_modifiers, parent_text_modifiers),
+      else: style
   end
 
   defp to_binding_style(style) do

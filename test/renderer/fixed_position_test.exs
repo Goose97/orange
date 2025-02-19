@@ -251,35 +251,57 @@ defmodule Orange.Renderer.FixedPositionTest do
              ---------------\
              """
     end
-  end
 
-  @tag capture_log: true
-  test "fixed position must specify at least left or right" do
-    %RuntimeError{message: message} =
-      Orange.Test.render_catch_error(
-        rect do
-          rect position: {:fixed, 0, nil, 0, nil} do
-            "test"
+    test "inherits parent style" do
+      element =
+        rect style: [width: "100%", height: 3, color: :red] do
+          rect do
+            "foo"
+            "bar"
           end
-        end,
-        terminal_size: {20, 15}
-      )
 
-    assert message =~ "Fixed position element must specify either left or right"
-  end
-
-  @tag capture_log: true
-  test "fixed position must specify at least top or bottom" do
-    %RuntimeError{message: message} =
-      Orange.Test.render_catch_error(
-        rect do
-          rect position: {:fixed, nil, 0, nil, 0} do
-            "test"
+          rect position: {:fixed, 4, 1, 1, 1}, style: [border: true] do
+            "baz"
           end
-        end,
-        terminal_size: {20, 15}
-      )
+        end
 
-    assert message =~ "Fixed position element must specify either top or bottom"
+      {buffer, _} =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 10})
+
+      Enum.each(2..4, fn x ->
+        assert Buffer.get_color(buffer, x, 5) == :red
+      end)
+    end
+
+    @tag capture_log: true
+    test "fixed position must specify at least left or right" do
+      %RuntimeError{message: message} =
+        Orange.Test.render_catch_error(
+          rect do
+            rect position: {:fixed, 0, nil, 0, nil} do
+              "test"
+            end
+          end,
+          terminal_size: {20, 15}
+        )
+
+      assert message =~ "Fixed position element must specify either left or right"
+    end
+
+    @tag capture_log: true
+    test "fixed position must specify at least top or bottom" do
+      %RuntimeError{message: message} =
+        Orange.Test.render_catch_error(
+          rect do
+            rect position: {:fixed, nil, 0, nil, 0} do
+              "test"
+            end
+          end,
+          terminal_size: {20, 15}
+        )
+
+      assert message =~ "Fixed position element must specify either top or bottom"
+    end
   end
 end
