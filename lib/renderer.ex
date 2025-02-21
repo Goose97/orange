@@ -216,47 +216,45 @@ defmodule Orange.Renderer do
 
   defp maybe_render_title(buffer, _, nil), do: buffer
 
-  # In case the title is a list, the item will be rendered one after another
-  defp maybe_render_title(buffer, node, title) when is_list(title) do
-    normalized =
-      Enum.map(title, fn
-        string when is_binary(string) -> %{text: string}
-        map when is_map(map) -> map
-      end)
+  defp maybe_render_title(buffer, node, title) when is_binary(title),
+    do: maybe_render_title(buffer, node, %{text: title, offset: 0})
 
-    # Add offset to each title
-    {normalized, _} =
-      Enum.flat_map_reduce(normalized, 0, fn item, acc ->
-        updated = Map.put(item, :offset, acc)
-        {[updated], acc + String.length(item.text)}
-      end)
-
-    Enum.reduce(normalized, buffer, fn title, acc ->
-      maybe_render_title(acc, node, title)
-    end)
+  defp maybe_render_title(buffer, %OutputTreeNode{abs_x: x, abs_y: y}, %{
+         text: title,
+         offset: offset
+       })
+       when is_binary(title) do
+    Buffer.write_string(buffer, {x + offset + 1, y}, title, :horizontal)
   end
 
-  defp maybe_render_title(buffer, %OutputTreeNode{abs_x: x, abs_y: y}, title) do
-    {title_text, offset, opts} =
-      case title do
-        title when is_binary(title) ->
-          {title, 0, []}
+  defp maybe_render_title(buffer, node, title) when is_struct(title, Orange.Rect),
+    do: maybe_render_title(buffer, node, %{text: title, offset: 0})
 
-        title when is_map(title) ->
-          opts =
-            title
-            |> Map.take([:color, :text_modifiers])
-            |> Map.to_list()
+  defp maybe_render_title(buffer, node, %{text: title, offset: offset} = _title)
+       when is_struct(title, Orange.Rect) do
+    {tree, node_attributes_map, _} = to_binding_input_tree(title)
 
-          {title[:text], Map.get(title, :offset, 0), opts}
-      end
+    output_tree =
+      tree
+      |> Orange.Layout.layout({{:fixed, node.width}, {:fixed, 1}})
+      |> perform_rounding()
 
-    Buffer.write_string(
+    area = %__MODULE__.Area{
+      x: node.abs_x + offset + 1,
+      y: node.abs_y,
+      width: output_tree.width,
+      height: output_tree.height
+    }
+
+    buffer = Buffer.clear_area(buffer, area)
+
+    output_tree =
+      caculate_absolute_position(output_tree, {area.x, area.y})
+
+    render_node(
+      output_tree,
       buffer,
-      {x + offset + 1, y},
-      title_text,
-      :horizontal,
-      opts
+      node_attributes_map
     )
   end
 
