@@ -463,11 +463,15 @@ defmodule Orange.Renderer do
       Enum.with_index(row)
       |> Enum.reduce(acc, fn {cell, col_index}, acc ->
         if cell != :undefined do
-          Buffer.write_cell(
-            acc,
-            {node.abs_x + offset_x + col_index, node.abs_y + offset_y + row_index},
-            cell
-          )
+          {buffer_width, buffer_height} = buffer.size
+          x = node.abs_x + offset_x + col_index
+          y = node.abs_y + offset_y + row_index
+
+          cond do
+            x >= buffer_width -> acc
+            y >= buffer_height -> acc
+            true -> Buffer.write_cell(acc, {x, y}, cell)
+          end
         else
           acc
         end
