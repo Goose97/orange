@@ -74,6 +74,93 @@ defmodule Orange.Renderer.SizingTest do
              --------------------\
              """
     end
+
+    test "renders with min_width" do
+      element =
+        rect style: [border: true, min_width: 10] do
+          "foo"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 20, height: 5})
+        |> elem(0)
+        |> Buffer.to_string()
+
+      assert screen == """
+             ┌────────┐----------
+             │foo-----│----------
+             └────────┘----------
+             --------------------
+             --------------------\
+             """
+    end
+
+    test "renders with max_width" do
+      element =
+        rect style: [border: true, max_width: 3] do
+          "foo"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 20, height: 5})
+        |> elem(0)
+        |> Buffer.to_string()
+
+      assert screen == """
+             ┌─┐-----------------
+             │foo----------------
+             └─┘-----------------
+             --------------------
+             --------------------\
+             """
+    end
+
+    test "renders with min_height" do
+      element =
+        rect style: [border: true, min_height: 5] do
+          "foo"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 20, height: 8})
+        |> elem(0)
+        |> Buffer.to_string()
+
+      assert screen == """
+             ┌───┐---------------
+             │foo│---------------
+             │---│---------------
+             │---│---------------
+             └───┘---------------
+             --------------------
+             --------------------
+             --------------------\
+             """
+    end
+
+    test "renders with max_height" do
+      element =
+        rect style: [border: true, max_height: 2] do
+          "foo"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 20, height: 5})
+        |> elem(0)
+        |> Buffer.to_string()
+
+      assert screen == """
+             ┌───┐---------------
+             └foo┘---------------
+             --------------------
+             --------------------
+             --------------------\
+             """
+    end
   end
 
   describe "padding" do

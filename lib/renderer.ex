@@ -734,7 +734,11 @@ defmodule Orange.Renderer do
   defp to_binding_style(style) do
     %InputTreeNode.Style{
       width: parse_length_percentage(style[:width]),
+      min_width: parse_length_percentage(style[:min_width]),
+      max_width: parse_length_percentage(style[:max_width]),
       height: parse_length_percentage(style[:height]),
+      min_height: parse_length_percentage(style[:min_height]),
+      max_height: parse_length_percentage(style[:max_height]),
       border: expand_border(style),
       padding: expand_padding_margin(style[:padding]),
       margin: expand_padding_margin(style[:margin]),

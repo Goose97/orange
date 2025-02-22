@@ -24,7 +24,11 @@ defmodule Orange.Layout.InputTreeNode do
     @type t :: %__MODULE__{
             # Can be a percentage or a fixed value
             width: length_or_percent() | nil,
+            min_width: length_or_percent() | nil,
+            max_width: length_or_percent() | nil,
             height: {:fixed | integer()} | {:percentage, float()} | nil,
+            min_height: length_or_percent() | nil,
+            max_height: length_or_percent() | nil,
             padding: {integer(), integer(), integer(), integer()},
             margin: {integer(), integer(), integer(), integer()},
             border: {integer(), integer(), integer(), integer()},
@@ -57,7 +61,11 @@ defmodule Orange.Layout.InputTreeNode do
 
     defstruct [
       :width,
+      :min_width,
+      :max_width,
       :height,
+      :min_height,
+      :max_height,
       :padding,
       :margin,
       :border,

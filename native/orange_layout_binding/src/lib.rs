@@ -23,7 +23,11 @@ struct InputTreeNode {
 #[module = "Orange.Layout.InputTreeNode.Style"]
 struct InputTreeNodeStyle {
     width: Option<InputLengthPercentage>,
+    min_width: Option<InputLengthPercentage>,
+    max_width: Option<InputLengthPercentage>,
     height: Option<InputLengthPercentage>,
+    min_height: Option<InputLengthPercentage>,
+    max_height: Option<InputLengthPercentage>,
     padding: (usize, usize, usize, usize),
     margin: (usize, usize, usize, usize),
     border: (usize, usize, usize, usize),
@@ -220,7 +224,9 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
     let mut default_style = Style::default();
 
     if let Some(style) = &node.style {
-        default_style.size = node_size(style);
+        default_style.size = node_size(style, SizeType::Normal);
+        default_style.min_size = node_size(style, SizeType::Min);
+        default_style.max_size = node_size(style, SizeType::Max);
 
         default_style.border = Rect {
             top: LengthPercentage::Length(style.border.0 as f32),
@@ -396,22 +402,34 @@ fn grid_line(input_line: &InputGridLine) -> GridPlacement {
     }
 }
 
-fn node_size(style: &InputTreeNodeStyle) -> Size<Dimension> {
-    let width = style
-        .width
-        .clone()
-        .map_or(Dimension::Auto, |value| match value {
-            InputLengthPercentage::Fixed(v) => Dimension::Length(v as f32),
-            InputLengthPercentage::Percent(v) => Dimension::Percent(v as f32),
-        });
+enum SizeType {
+    Normal,
+    Min,
+    Max,
+}
 
-    let height = style
-        .height
-        .clone()
-        .map_or(Dimension::Auto, |value| match value {
-            InputLengthPercentage::Fixed(v) => Dimension::Length(v as f32),
-            InputLengthPercentage::Percent(v) => Dimension::Percent(v as f32),
-        });
+fn node_size(style: &InputTreeNodeStyle, size_type: SizeType) -> Size<Dimension> {
+    let width_style = match size_type {
+        SizeType::Normal => style.width.clone(),
+        SizeType::Min => style.min_width.clone(),
+        SizeType::Max => style.max_width.clone(),
+    };
+
+    let width = width_style.map_or(Dimension::Auto, |value| match value {
+        InputLengthPercentage::Fixed(v) => Dimension::Length(v as f32),
+        InputLengthPercentage::Percent(v) => Dimension::Percent(v as f32),
+    });
+
+    let height_style = match size_type {
+        SizeType::Normal => style.height.clone(),
+        SizeType::Min => style.min_height.clone(),
+        SizeType::Max => style.max_height.clone(),
+    };
+
+    let height = height_style.map_or(Dimension::Auto, |value| match value {
+        InputLengthPercentage::Fixed(v) => Dimension::Length(v as f32),
+        InputLengthPercentage::Percent(v) => Dimension::Percent(v as f32),
+    });
 
     Size { width, height }
 }
