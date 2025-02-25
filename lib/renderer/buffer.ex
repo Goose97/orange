@@ -58,6 +58,10 @@ defmodule Orange.Renderer.Buffer do
 
   def clear_area(buffer, %Renderer.Area{width: 0}), do: buffer
   def clear_area(buffer, %Renderer.Area{height: 0}), do: buffer
+
+  def clear_area(%{size: {width, height}} = buffer, %Renderer.Area{x: x, y: y})
+    when x >= width when y >= height, do: buffer
+
   def clear_area(buffer, %Renderer.Area{} = area) do
     Enum.reduce(0..(area.height - 1), buffer, fn i, acc ->
       row_to_update = :array.get(area.y + i, acc.rows)
