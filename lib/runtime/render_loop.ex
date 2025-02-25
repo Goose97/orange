@@ -56,7 +56,7 @@ defmodule Orange.Runtime.RenderLoop do
         # Expand the children
         attrs =
           Keyword.update(attrs, :children, [], fn children ->
-            Enum.map(children, &normalize_custom_component/1)
+            children |> Enum.reject(&is_nil/1) |> Enum.map(&normalize_custom_component/1)
           end)
 
         %CustomComponent{module: module, attributes: attrs}
@@ -65,10 +65,8 @@ defmodule Orange.Runtime.RenderLoop do
         leaf
 
       _ ->
-        %{
-          root
-          | children: Enum.map(root.children || [], &normalize_custom_component/1)
-        }
+        children = (root.children || []) |> Enum.reject(&is_nil/1) |> Enum.map(&normalize_custom_component/1)
+        %{root | children: children}
     end
   end
 
