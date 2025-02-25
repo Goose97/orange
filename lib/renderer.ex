@@ -87,8 +87,21 @@ defmodule Orange.Renderer do
           child
 
         {:nodes, nodes} ->
-          scale_x = if node.width == 0, do: 1, else: new_width / node.width
-          scale_y = if node.height == 0, do: 1, else: new_height / node.height
+          # I'm not sure if this is the correct way to perform rounding
+          scale_x = cond do
+            node.width == 0 -> 1
+            elem(node.content_size, 0) == 0 -> 1
+            elem(node.content_size, 0) == node.width -> new_width / node.width
+            true -> 1 + (new_width - node.width) / elem(node.content_size, 0)
+          end
+
+          scale_y = cond do
+            node.height == 0 -> 1
+            elem(node.content_size, 1) == 0 -> 1
+            elem(node.content_size, 1) == node.height -> new_height / node.height
+            true -> 1 + (new_height - node.height) / elem(node.content_size, 1)
+          end
+
           rounded = Enum.map(nodes, &perform_rounding(&1, {acc_x, acc_y}, {scale_x, scale_y}))
           {:nodes, rounded}
       end
