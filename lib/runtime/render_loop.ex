@@ -65,7 +65,11 @@ defmodule Orange.Runtime.RenderLoop do
         leaf
 
       _ ->
-        children = (root.children || []) |> Enum.reject(&is_nil/1) |> Enum.map(&normalize_custom_component/1)
+        children =
+          (root.children || [])
+          |> Enum.reject(&is_nil/1)
+          |> Enum.map(&normalize_custom_component/1)
+
         %{root | children: children}
     end
   end
@@ -239,13 +243,14 @@ defmodule Orange.Runtime.RenderLoop do
   end
 
   defp add_to_mounting_list(component, opts) do
-    mounted = Process.get({__MODULE__, :mounting_components})
-    Process.put({__MODULE__, :mounting_components}, [{component, opts} | mounted])
+    to_mount = Process.get({__MODULE__, :mounting_components})
+    Process.put({__MODULE__, :mounting_components}, [{component, opts} | to_mount])
   end
 
   defp add_to_unmounting_list(%CustomComponent{} = component) do
-    mounted = Process.get({__MODULE__, :unmounting_components})
-    Process.put({__MODULE__, :unmounting_components}, [component | mounted])
+    to_unmount = Process.get({__MODULE__, :unmounting_components})
+    Process.put({__MODULE__, :unmounting_components}, [component | to_unmount])
+    Enum.each(component.children, &add_to_unmounting_list/1)
   end
 
   defp add_to_unmounting_list(%Rect{} = component),
@@ -273,8 +278,16 @@ defmodule Orange.Runtime.RenderLoop do
     %{component | children: new_children}
   end
 
-  defp expand_with_prev(%Rect{} = component, _previous_tree), do: expand_new(component)
-  defp expand_with_prev(component, _previous_tree) when is_binary(component), do: component
+  defp expand_with_prev(%Rect{} = component, previous_tree) do
+    add_to_unmounting_list(previous_tree)
+    expand_new(component)
+  end
+
+  # Discard the previous tree
+  defp expand_with_prev(component, previous_tree) when is_binary(component) do
+    add_to_unmounting_list(previous_tree)
+    component
+  end
 
   defp expand_with_prev(
          %CustomComponent{module: module, attributes: attrs},
@@ -305,8 +318,10 @@ defmodule Orange.Runtime.RenderLoop do
     end
   end
 
-  defp expand_with_prev(%CustomComponent{} = component, _previous_tree),
-    do: expand_new(component)
+  defp expand_with_prev(%CustomComponent{} = component, previous_tree) do
+    add_to_unmounting_list(previous_tree)
+    expand_new(component)
+  end
 
   defp to_render_tree(component) do
     case component do
