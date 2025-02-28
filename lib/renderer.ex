@@ -88,19 +88,21 @@ defmodule Orange.Renderer do
 
         {:nodes, nodes} ->
           # I'm not sure if this is the correct way to perform rounding
-          scale_x = cond do
-            node.width == 0 -> 1
-            elem(node.content_size, 0) == 0 -> 1
-            elem(node.content_size, 0) == node.width -> new_width / node.width
-            true -> 1 + (new_width - node.width) / elem(node.content_size, 0)
-          end
+          scale_x =
+            cond do
+              node.width == 0 -> 1
+              elem(node.content_size, 0) == 0 -> 1
+              elem(node.content_size, 0) == node.width -> new_width / node.width
+              true -> 1 + (new_width - node.width) / elem(node.content_size, 0)
+            end
 
-          scale_y = cond do
-            node.height == 0 -> 1
-            elem(node.content_size, 1) == 0 -> 1
-            elem(node.content_size, 1) == node.height -> new_height / node.height
-            true -> 1 + (new_height - node.height) / elem(node.content_size, 1)
-          end
+          scale_y =
+            cond do
+              node.height == 0 -> 1
+              elem(node.content_size, 1) == 0 -> 1
+              elem(node.content_size, 1) == node.height -> new_height / node.height
+              true -> 1 + (new_height - node.height) / elem(node.content_size, 1)
+            end
 
           rounded = Enum.map(nodes, &perform_rounding(&1, {acc_x, acc_y}, {scale_x, scale_y}))
           {:nodes, rounded}
@@ -299,6 +301,7 @@ defmodule Orange.Renderer do
 
   defp render_children(buffer, node, node_attributes_map) do
     attributes = Map.get(node_attributes_map, node.id, [])
+
     scroll_x = attributes[:scroll_x]
     scroll_y = attributes[:scroll_y]
 
@@ -427,7 +430,14 @@ defmodule Orange.Renderer do
   # the width and height of the parent node
   # 3. Merge the visible area into the parent buffer
   defp render_scrollable_children(buffer, node, node_attributes_map) do
-    scroll_buffer = Buffer.new()
+    # For some reason, taffy doesn't include border bottom and border right into
+    # the content size. So we need to add them here
+    {content_width, content_height} = node.content_size
+    content_width = content_width + node.border.right
+    content_height = content_height + node.border.bottom
+    node = %{node | content_size: {content_width, content_height}}
+
+    scroll_buffer = Buffer.new({ceil(content_width), ceil(content_height)})
 
     scroll_buffer =
       do_render_children(
@@ -448,28 +458,30 @@ defmodule Orange.Renderer do
   end
 
   defp merge_scrollable_children(buffer, scrollable_buffer, node, {scroll_x, scroll_y}) do
-    inner_width =
-      node.width - node.padding.left - node.padding.right - node.border.left -
-        node.border.right
+    offset_x = node.border.left
+    offset_y = node.border.top
 
-    inner_height =
-      node.height - node.padding.top - node.padding.bottom - node.border.top -
-        node.border.bottom
-
-    inner_start_x = (scroll_x || 0) + node.padding.left + node.border.left
-    inner_start_y = (scroll_y || 0) + node.padding.top + node.border.top
+    inner_width = node.width - node.border.left - node.border.right
+    inner_height = node.height - node.border.top - node.border.bottom
 
     children_viewport =
       extract_buffer_viewport(
         scrollable_buffer,
-        inner_start_x,
-        inner_start_y,
+        (scroll_x || 0) + offset_x,
+        (scroll_y || 0) + offset_y,
         inner_width,
         inner_height
       )
 
-    offset_x = node.border.left + node.padding.left
-    offset_y = node.border.top + node.padding.top
+    buffer =
+      if scroll_x,
+        do: render_horizontal_scroll_bar(buffer, node, scroll_x),
+        else: buffer
+
+    buffer =
+      if scroll_y,
+        do: render_vertical_scroll_bar(buffer, node, scroll_y),
+        else: buffer
 
     Enum.with_index(children_viewport)
     |> Enum.reduce(buffer, fn {row, row_index}, acc ->
@@ -499,6 +511,80 @@ defmodule Orange.Renderer do
     |> Enum.map(fn row ->
       :array.to_list(row) |> Enum.slice(x, width)
     end)
+  end
+
+  # We need 4 things:
+  # 1. What is the total size of the scrollable area
+  # 2. What is the size that we can render on the screen
+  # 3. What is the scroll offset
+  # 4. What is the size of the scroll track
+  # The ratio between 1 and 2 determines how big the scroll thumb is
+  # The offset 3 determines the offset of the scroll thumb
+  defp render_horizontal_scroll_bar(buffer, node, scroll_offset) do
+    {content_width, _content_height} = node.content_size
+
+    total_scroll_width = content_width - node.border.left - node.border.right
+    renderable_width = node.width - node.border.left - node.border.right
+
+    scroll_track_length = renderable_width
+    # It's possible for the renderable_width to be greater than the total_scroll_width
+    # It means the content is not overflow. In this case, the scrollable area should
+    # be as big as the renderable width.
+    total_scroll_width = max(total_scroll_width, renderable_width)
+    scroll_thumb_size = round(renderable_width / total_scroll_width * scroll_track_length)
+
+    # Ignore if over scroll
+    total_scrolled = min(scroll_offset + renderable_width, total_scroll_width)
+
+    # Important variant that we need to preserve here:
+    # a. When the scroll_offset is 0, the scroll thumb MUST be at the top of the track
+    # b. When the scroll_offset is maximum (we can no longer scroll down), the scroll thumb MUST
+    # be at the bottom of the track
+    scroll_thumb_end = round(total_scrolled / total_scroll_width * scroll_track_length)
+    scroll_thumb_start = scroll_thumb_end - scroll_thumb_size
+
+    string =
+      [
+        List.duplicate("─", scroll_thumb_start),
+        List.duplicate("▂", scroll_thumb_size),
+        List.duplicate("─", scroll_track_length - scroll_thumb_end),
+      ]
+      |> IO.iodata_to_binary()
+
+    x = node.abs_x + node.border.left
+    y = node.abs_y + node.height - 1
+    Buffer.write_string(buffer, {x, y}, string, :horizontal)
+  end
+
+  # Mirror of render_horizontal_scroll_bar
+  defp render_vertical_scroll_bar(buffer, node, scroll_offset) do
+    {_content_width, content_height} = node.content_size
+
+    total_scroll_height = content_height - node.border.top - node.border.bottom
+    renderable_height = node.height - node.border.top - node.border.bottom
+
+    scroll_track_length = renderable_height
+    total_scroll_height = max(total_scroll_height, renderable_height)
+
+    scroll_thumb_size = round(renderable_height / total_scroll_height * scroll_track_length)
+
+    # Ignore if over scroll
+    total_scrolled = min(scroll_offset + renderable_height, total_scroll_height)
+
+    scroll_thumb_end = round(total_scrolled / total_scroll_height * scroll_track_length)
+    scroll_thumb_start = scroll_thumb_end - scroll_thumb_size
+
+    string =
+      [
+        List.duplicate("│", scroll_thumb_start),
+        List.duplicate("▐", scroll_thumb_size),
+        List.duplicate("│", scroll_track_length - scroll_thumb_end),
+      ]
+      |> IO.iodata_to_binary()
+
+    x = node.abs_x + node.width - 1
+    y = node.abs_y + node.border.top
+    Buffer.write_string(buffer, {x, y}, string, :vertical)
   end
 
   defp get_nodes_from_tree(_, _, result \\ %{})
@@ -661,7 +747,14 @@ defmodule Orange.Renderer do
               {result, new_node_map, new_out_of_flow_nodes}
             end)
 
-          style = if style_attrs, do: to_binding_style(style_attrs)
+          style =
+            if style_attrs,
+              do:
+                to_binding_style(
+                  style_attrs,
+                  node.attributes[:scroll_x],
+                  node.attributes[:scroll_y]
+                )
 
           {
             %InputTreeNode{
@@ -744,7 +837,13 @@ defmodule Orange.Renderer do
       else: style
   end
 
-  defp to_binding_style(style) do
+  defp to_binding_style(style, scroll_x \\ nil, scroll_y \\ nil) do
+    border = expand_border(style)
+    # We render the scrollbar on top of the border. It means scroll_x implies border_bottom: true,
+    # and scroll_y implies border_right: true
+    border = if scroll_x, do: put_elem(border, 2, 1), else: border
+    border = if scroll_y, do: put_elem(border, 1, 1), else: border
+
     %InputTreeNode.Style{
       width: parse_length_percentage(style[:width]),
       min_width: parse_length_percentage(style[:min_width]),
@@ -752,7 +851,7 @@ defmodule Orange.Renderer do
       height: parse_length_percentage(style[:height]),
       min_height: parse_length_percentage(style[:min_height]),
       max_height: parse_length_percentage(style[:max_height]),
-      border: expand_border(style),
+      border: border,
       padding: expand_padding_margin(style[:padding]),
       margin: expand_padding_margin(style[:margin]),
       display: Keyword.get(style, :display, :flex),
