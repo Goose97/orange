@@ -453,11 +453,19 @@ defmodule Orange.Renderer do
       buffer,
       scroll_buffer,
       node,
-      {attributes[:scroll_x], attributes[:scroll_y]}
+      {attributes[:scroll_x], attributes[:scroll_y]},
+      # The scrollbar color should match the border color
+      get_in(attributes, [:style, :border_color])
     )
   end
 
-  defp merge_scrollable_children(buffer, scrollable_buffer, node, {scroll_x, scroll_y}) do
+  defp merge_scrollable_children(
+         buffer,
+         scrollable_buffer,
+         node,
+         {scroll_x, scroll_y},
+         scrollbar_color
+       ) do
     offset_x = node.border.left
     offset_y = node.border.top
 
@@ -475,12 +483,12 @@ defmodule Orange.Renderer do
 
     buffer =
       if scroll_x,
-        do: render_horizontal_scroll_bar(buffer, node, scroll_x),
+        do: render_horizontal_scroll_bar(buffer, node, scroll_x, scrollbar_color),
         else: buffer
 
     buffer =
       if scroll_y,
-        do: render_vertical_scroll_bar(buffer, node, scroll_y),
+        do: render_vertical_scroll_bar(buffer, node, scroll_y, scrollbar_color),
         else: buffer
 
     Enum.with_index(children_viewport)
@@ -520,7 +528,7 @@ defmodule Orange.Renderer do
   # 4. What is the size of the scroll track
   # The ratio between 1 and 2 determines how big the scroll thumb is
   # The offset 3 determines the offset of the scroll thumb
-  defp render_horizontal_scroll_bar(buffer, node, scroll_offset) do
+  defp render_horizontal_scroll_bar(buffer, node, scroll_offset, scrollbar_color) do
     {content_width, _content_height} = node.content_size
 
     total_scroll_width = content_width - node.border.left - node.border.right
@@ -546,18 +554,18 @@ defmodule Orange.Renderer do
     string =
       [
         List.duplicate("─", scroll_thumb_start),
-        List.duplicate("▂", scroll_thumb_size),
+        List.duplicate("🭹", scroll_thumb_size),
         List.duplicate("─", scroll_track_length - scroll_thumb_end),
       ]
       |> IO.iodata_to_binary()
 
     x = node.abs_x + node.border.left
     y = node.abs_y + node.height - 1
-    Buffer.write_string(buffer, {x, y}, string, :horizontal)
+    Buffer.write_string(buffer, {x, y}, string, :horizontal, color: scrollbar_color)
   end
 
   # Mirror of render_horizontal_scroll_bar
-  defp render_vertical_scroll_bar(buffer, node, scroll_offset) do
+  defp render_vertical_scroll_bar(buffer, node, scroll_offset, scrollbar_color) do
     {_content_width, content_height} = node.content_size
 
     total_scroll_height = content_height - node.border.top - node.border.bottom
@@ -584,7 +592,7 @@ defmodule Orange.Renderer do
 
     x = node.abs_x + node.width - 1
     y = node.abs_y + node.border.top
-    Buffer.write_string(buffer, {x, y}, string, :vertical)
+    Buffer.write_string(buffer, {x, y}, string, :vertical, color: scrollbar_color)
   end
 
   defp get_nodes_from_tree(_, _, result \\ %{})

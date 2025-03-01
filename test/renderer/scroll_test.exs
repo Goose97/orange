@@ -146,7 +146,7 @@ defmodule Orange.Renderer.ScrollTest do
              line1----------
              line2----------
              line3----------
-             ▂▂▂▂▂----------\
+             🭹🭹🭹🭹🭹----------\
              """
     end
 
@@ -170,7 +170,7 @@ defmodule Orange.Renderer.ScrollTest do
              ine1-----------
              ine2-----------
              ine3-----------
-             ▂▂▂▂▂----------
+             🭹🭹🭹🭹🭹----------
              ---------------\
              """
     end
@@ -197,7 +197,7 @@ defmodule Orange.Renderer.ScrollTest do
              lin------------
              lin------------
              lin------------
-             ▂▂─------------
+             🭹🭹─------------
              ---------------\
              """
     end
@@ -224,7 +224,7 @@ defmodule Orange.Renderer.ScrollTest do
              ne3------------
              ne4------------
              ne5------------
-             ─▂▂------------
+             ─🭹🭹------------
              ---------------\
              """
     end
@@ -253,9 +253,27 @@ defmodule Orange.Renderer.ScrollTest do
              ine3-----------
              ine4-----------
              ine5-----------
-             ─▂▂▂-----------
+             ─🭹🭹🭹-----------
              ---------------\
              """
     end
+  end
+
+  test "scroll bar color matches the border color" do
+    element =
+      rect style: [width: 4, flex_direction: :column, border_color: :red], scroll_x: 0 do
+        "line0"
+        "line1"
+        "line2"
+        "line3"
+      end
+
+    {buffer, _} =
+      element
+      |> Orange.Renderer.render(%{width: 15, height: 5})
+
+    Enum.each(0..3, fn x ->
+      assert Buffer.get_color(buffer, x, 4) == :red
+    end)
   end
 end
