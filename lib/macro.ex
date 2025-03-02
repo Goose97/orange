@@ -284,6 +284,14 @@ defmodule Orange.Macro do
 
   By default, the text will wrap to the next line if it exceeds the width of the component. To disable this behavior, set the `:line_wrap` attribute to `false`
 
+  ### Scroll bar
+
+    * `:scroll_bar` - controls the visibility of scroll bars when scrolling is enabled. Supported values are:
+
+      * `:visible` (default) - scroll bars are shown when content is scrollable
+
+      * `:hidden` - scroll bars are never shown, even when content is scrollable
+
   ## Position
 
   Rect elements support positioning. Supported values are:
@@ -335,6 +343,8 @@ defmodule Orange.Macro do
       * `:color` - see [Color](#module-color) section
 
       * `:background_color` - see [Color](#module-color) section
+
+      * `:scroll_bar` - see [Border](#module-border) section
 
       * `:display` - see [Display][#module-display] section
 

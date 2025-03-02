@@ -1,3 +1,5 @@
+require Logger
+
 defmodule Orange.Renderer.ScrollTest do
   use ExUnit.Case
   import Orange.Macro
@@ -275,5 +277,100 @@ defmodule Orange.Renderer.ScrollTest do
     Enum.each(0..3, fn x ->
       assert Buffer.get_color(buffer, x, 4) == :red
     end)
+  end
+
+  describe "scroll_bar style attribute" do
+    test "vertical scroll bar is visible by default" do
+      element =
+        rect style: [width: "100%", height: 3, flex_direction: :column], scroll_y: 0 do
+          "line1"
+          "line2"
+          "line3"
+          "line4"
+          "line5"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 3})
+        |> elem(0)
+        |> Buffer.to_string()
+
+      assert screen == """
+             line1---------▐
+             line2---------▐
+             line3---------│\
+             """
+    end
+
+    test "vertical scroll bar can be hidden" do
+      element =
+        rect style: [width: "100%", height: 3, flex_direction: :column, scroll_bar: :hidden],
+             scroll_y: 0 do
+          "line1"
+          "line2"
+          "line3"
+          "line4"
+          "line5"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 3})
+        |> elem(0)
+        |> Buffer.to_string()
+
+      assert screen == """
+             line1----------
+             line2----------
+             line3----------\
+             """
+    end
+
+    test "horizontal scroll bar is visible by default" do
+      element =
+        rect style: [width: 3, flex_direction: :column], scroll_x: 0 do
+          "line1"
+          "line2"
+          "line3"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
+        |> Buffer.to_string()
+
+      assert screen == """
+             lin------------
+             lin------------
+             lin------------
+             🭹🭹─------------
+             ---------------\
+             """
+    end
+
+    test "horizontal scroll bar can be hidden" do
+      element =
+        rect style: [width: 3, flex_direction: :column, scroll_bar: :hidden], scroll_x: 0 do
+          "line1"
+          "line2"
+          "line3"
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
+        |> Buffer.to_string()
+
+      assert screen == """
+             lin------------
+             lin------------
+             lin------------
+             ---------------
+             ---------------\
+             """
+    end
   end
 end
