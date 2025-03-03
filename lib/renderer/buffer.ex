@@ -116,25 +116,33 @@ defmodule Orange.Renderer.Buffer do
   end
 
   defp set_cell_background_color(buffer, {x, y}, color) do
-    row_to_update = :array.get(y, buffer.rows)
-    cell = :array.get(x, row_to_update)
+    {width, height} = buffer.size
 
-    updated_row =
-      case cell do
-        :undefined ->
-          new_cell = %Renderer.Cell{background: color}
-          :array.set(x, new_cell, row_to_update)
+    cond do
+      x >= width -> buffer
+      y >= height -> buffer
 
-        %Orange.Renderer.Cell{background: nil} ->
-          updated_cell = %Orange.Renderer.Cell{cell | background: color}
-          :array.set(x, updated_cell, row_to_update)
+      true ->
+        row_to_update = :array.get(y, buffer.rows)
+        cell = :array.get(x, row_to_update)
 
-        # Already has a background color
-        _ ->
-          row_to_update
-      end
+        updated_row =
+          case cell do
+            :undefined ->
+              new_cell = %Renderer.Cell{background: color}
+              :array.set(x, new_cell, row_to_update)
 
-    %{buffer | rows: :array.set(y, updated_row, buffer.rows)}
+            %Orange.Renderer.Cell{background: nil} ->
+              updated_cell = %Orange.Renderer.Cell{cell | background: color}
+              :array.set(x, updated_cell, row_to_update)
+
+            # Already has a background color
+            _ ->
+              row_to_update
+          end
+
+        %{buffer | rows: :array.set(y, updated_row, buffer.rows)}
+    end
   end
 
   def to_string(%__MODULE__{rows: rows}) do
