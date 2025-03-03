@@ -164,15 +164,18 @@ defmodule Orange.Runtime.RenderLoop do
       to_component_tree(state.root, state.previous_tree)
 
     Process.put({__MODULE__, :component_tree}, current_tree)
+    to_component_tree_time = System.monotonic_time(:millisecond)
 
     {width, height} = state.terminal_size
 
+    render_tree = to_render_tree(current_tree)
+    to_render_tree_time = System.monotonic_time(:millisecond)
+
     {current_buffer, layout_tree_id_map} =
-      current_tree
-      |> to_render_tree()
-      |> Renderer.render(%{width: width, height: height})
+      Renderer.render(render_tree, %{width: width, height: height})
 
     Process.put({__MODULE__, :layout_tree_id_map}, layout_tree_id_map)
+    to_buffer_time = System.monotonic_time(:millisecond)
 
     if opts[:clean_buffer] do
       terminal_impl().clear()
@@ -181,10 +184,18 @@ defmodule Orange.Runtime.RenderLoop do
       terminal_impl().draw(current_buffer, state.previous_buffer)
     end
 
+    draw_time = System.monotonic_time(:millisecond)
+
     after_mount(mounting_components)
     after_unmount(unmounting_components)
 
-    Logger.debug("Render pass took #{System.monotonic_time(:millisecond) - now}ms")
+    Logger.debug("""
+    Render pass took #{System.monotonic_time(:millisecond) - now}ms
+    - to_component_tree: #{to_component_tree_time - now}ms
+    - to_render_tree: #{to_render_tree_time - to_component_tree_time}ms
+    - to_buffer: #{to_buffer_time - to_render_tree_time}ms
+    - draw: #{draw_time - to_buffer_time}ms
+    """)
 
     %{state | previous_tree: current_tree, previous_buffer: current_buffer}
   end
