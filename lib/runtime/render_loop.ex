@@ -158,10 +158,13 @@ defmodule Orange.Runtime.RenderLoop do
   end
 
   defp render_tick(state, opts \\ []) do
-    now = System.monotonic_time(:millisecond)
+    start = System.monotonic_time(:millisecond)
 
     {current_tree, mounting_components, unmounting_components} =
       to_component_tree(state.root, state.previous_tree)
+
+    # {current_tree, mounting_components, unmounting_components} =
+    #   :eflambe.apply({__MODULE__, :to_component_tree, [state.root, state.previous_tree]}, return: :value)
 
     Process.put({__MODULE__, :component_tree}, current_tree)
     to_component_tree_time = System.monotonic_time(:millisecond)
@@ -190,8 +193,8 @@ defmodule Orange.Runtime.RenderLoop do
     after_unmount(unmounting_components)
 
     Logger.debug("""
-    Render pass took #{System.monotonic_time(:millisecond) - now}ms
-    - to_component_tree: #{to_component_tree_time - now}ms
+    Render pass took #{System.monotonic_time(:millisecond) - start}ms:
+    - to_component_tree: #{to_component_tree_time - start}ms
     - to_render_tree: #{to_render_tree_time - to_component_tree_time}ms
     - to_buffer: #{to_buffer_time - to_render_tree_time}ms
     - draw: #{draw_time - to_buffer_time}ms
@@ -208,7 +211,7 @@ defmodule Orange.Runtime.RenderLoop do
   #   a. If the nodes are of the same type, diff their children and expand them recursively. If the current
   #    node is a custom component, copy the state from the previous node.
   #   b. If the nodes are of different types, expand the current node as new
-  defp to_component_tree(component, previous_tree) do
+  def to_component_tree(component, previous_tree) do
     Process.put({__MODULE__, :mounting_components}, [])
     Process.put({__MODULE__, :unmounting_components}, [])
 

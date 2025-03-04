@@ -1,6 +1,8 @@
 defmodule Orange.Renderer do
   @moduledoc false
 
+  require Logger
+
   alias Orange.Renderer.Buffer
   alias Orange.Layout.{OutputTreeNode, InputTreeNode}
 
@@ -11,7 +13,10 @@ defmodule Orange.Renderer do
   # A buffer is a m×n matrix of cells
   @spec render(ui_element, window) :: {Buffer.t(), %{any() => OutputTreeNode.t()}}
   def render(tree, window) do
+    start = System.monotonic_time(:millisecond)
+
     {tree, node_attributes_map, out_of_flow_nodes} = to_binding_input_tree(tree)
+    binding_input_tree_time = System.monotonic_time(:millisecond)
 
     width = window[:width]
     height = window[:height]
@@ -30,6 +35,8 @@ defmodule Orange.Renderer do
       else
         {buffer, nil}
       end
+
+    render_normal_nodes_time = System.monotonic_time(:millisecond)
 
     absolute_parent_nodes =
       for {:absolute, _node, parent_id} <- out_of_flow_nodes, do: parent_id
@@ -61,6 +68,15 @@ defmodule Orange.Renderer do
             {parent_node.abs_x, parent_node.abs_y}
           )
       end)
+
+    render_out_of_flow_nodes_time = System.monotonic_time(:millisecond)
+
+    Logger.debug("""
+    Renderer took #{System.monotonic_time(:millisecond) - start}ms:
+    - to_binding_input_tree: #{binding_input_tree_time - start}ms
+    - render_normal_nodes: #{render_normal_nodes_time - binding_input_tree_time}ms
+    - render_out_of_flow_nodes: #{render_out_of_flow_nodes_time - render_normal_nodes_time}ms
+    """)
 
     {buffer, build_output_tree_id_map(output_tree, node_attributes_map)}
   end
