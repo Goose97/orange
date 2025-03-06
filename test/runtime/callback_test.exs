@@ -39,7 +39,7 @@ defmodule Orange.Runtime.CallbackTest do
     assert :atomics.get(ref3, 1) == -1
   end
 
-  test "triggers before_update/2 callback" do
+  test "triggers before_update/3 callback" do
     [snapshot1, snapshot2 | _] =
       Test.render(__MODULE__.Text,
         terminal_size: {20, 10},
@@ -173,7 +173,7 @@ defmodule Orange.Runtime.CallbackTest do
     def init(attrs), do: %{state: %{text: attrs[:text]}, events_subscription: false}
 
     @impl true
-    def before_update(state, attrs) do
+    def before_update(state, attrs, _update) do
       if state.text != attrs[:text], do: {:update, %{state | text: attrs[:text]}}, else: :noop
     end
 

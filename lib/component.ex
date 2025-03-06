@@ -151,7 +151,7 @@ defmodule Orange.Component do
     * `{:update, new_state}` - Update the state
     * `:noop` - Do nothing
   """
-  @callback before_update(state, attributes :: map()) :: {:update, state} | :noop
+  @callback before_update(state, attributes :: map(), update_callback) :: {:update, state} | :noop
 
-  @optional_callbacks [handle_event: 4, after_mount: 3, after_unmount: 3, before_update: 2]
+  @optional_callbacks [handle_event: 4, after_mount: 3, after_unmount: 3, before_update: 3]
 end
