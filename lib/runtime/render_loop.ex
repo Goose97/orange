@@ -310,6 +310,20 @@ defmodule Orange.Runtime.RenderLoop do
     %{state: state} = Runtime.ComponentRegistry.get(previous_component.ref)
     Runtime.ComponentRegistry.update_attributes(previous_component.ref, attrs)
 
+    state =
+      if function_exported?(module, :before_update, 2) do
+        case apply(module, :before_update, [state, attrs]) do
+          {:update, new_state} ->
+            Runtime.ComponentRegistry.update_state(previous_component.ref, new_state)
+            new_state
+
+          :noop ->
+            state
+        end
+      else
+        state
+      end
+
     current_child =
       apply(module, :render, [
         state,

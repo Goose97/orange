@@ -1,6 +1,8 @@
 defmodule Orange.Runtime.CallbackTest do
   use ExUnit.Case
 
+  import Orange.Test.Assertions
+
   alias Orange.{Test, Terminal}
 
   test "triggers after_mount/3 callback" do
@@ -35,6 +37,51 @@ defmodule Orange.Runtime.CallbackTest do
 
     assert :atomics.get(ref2, 1) == -1
     assert :atomics.get(ref3, 1) == -1
+  end
+
+  test "triggers before_update/2 callback" do
+    [snapshot1, snapshot2 | _] =
+      Test.render(__MODULE__.Text,
+        terminal_size: {20, 10},
+        events: [
+          # Trigger state update
+          %Terminal.KeyEvent{code: {:char, "a"}},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
+      )
+
+    assert_content(
+      snapshot1,
+      """
+      Text: --------------
+      Double text: -------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
+
+    assert_content(
+      snapshot2,
+      """
+      Text: a-------------
+      Double text: aa-----
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
   end
 
   defmodule Counter do
@@ -113,6 +160,61 @@ defmodule Orange.Runtime.CallbackTest do
             {Counter, atomic: attrs[:atomic3]}
           end
         end
+      end
+    end
+  end
+
+  defmodule TextDouble do
+    @behaviour Orange.Component
+
+    import Orange.Macro
+
+    @impl true
+    def init(attrs), do: %{state: %{text: attrs[:text]}, events_subscription: false}
+
+    @impl true
+    def before_update(state, attrs) do
+      if state.text != attrs[:text], do: {:update, %{state | text: attrs[:text]}}, else: :noop
+    end
+
+    @impl true
+    def render(state, _attrs, _update) do
+      text = if state.text, do: String.duplicate(state.text, 2), else: ""
+
+      rect do
+        "Double text: #{text}"
+      end
+    end
+  end
+
+  defmodule Text do
+    @behaviour Orange.Component
+
+    import Orange.Macro
+
+    @impl true
+    def init(_attrs), do: %{state: %{text: nil}, events_subscription: true}
+
+    @impl true
+    def handle_event(event, state, _attrs, _update) do
+      case event do
+        %Terminal.KeyEvent{code: {:char, "q"}} ->
+          Orange.stop()
+          :noop
+
+        %Terminal.KeyEvent{code: {:char, char}} ->
+          {:update, %{state | text: char}}
+
+        _ ->
+          :noop
+      end
+    end
+
+    @impl true
+    def render(state, _attrs, _update) do
+      rect style: [flex_direction: :column] do
+        "Text: #{state.text}"
+        {TextDouble, text: state.text}
       end
     end
   end

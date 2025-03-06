@@ -143,5 +143,15 @@ defmodule Orange.Component do
   """
   @callback after_unmount(state, attributes :: map(), update_callback) :: any()
 
-  @optional_callbacks [handle_event: 4, after_mount: 3, after_unmount: 3]
+  @doc """
+  Lifecycle hook that is called before the component is updated.
+
+  Return value can be:
+
+    * `{:update, new_state}` - Update the state
+    * `:noop` - Do nothing
+  """
+  @callback before_update(state, attributes :: map()) :: {:update, state} | :noop
+
+  @optional_callbacks [handle_event: 4, after_mount: 3, after_unmount: 3, before_update: 2]
 end
