@@ -60,7 +60,9 @@ defmodule Orange.Renderer.Buffer do
   def clear_area(buffer, %Renderer.Area{height: 0}), do: buffer
 
   def clear_area(%{size: {width, height}} = buffer, %Renderer.Area{x: x, y: y})
-    when x >= width when y >= height, do: buffer
+      when x >= width
+      when y >= height,
+      do: buffer
 
   def clear_area(buffer, %Renderer.Area{} = area) do
     Enum.reduce(0..(area.height - 1), buffer, fn i, acc ->
@@ -116,11 +118,12 @@ defmodule Orange.Renderer.Buffer do
   end
 
   defp set_cell_background_color(buffer, {x, y}, color) do
-    {width, height} = buffer.size
-
     cond do
-      x >= width -> buffer
-      y >= height -> buffer
+      buffer.size && x >= elem(buffer.size, 0) ->
+        buffer
+
+      buffer.size && y >= elem(buffer.size, 1) ->
+        buffer
 
       true ->
         row_to_update = :array.get(y, buffer.rows)
