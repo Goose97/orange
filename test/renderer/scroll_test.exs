@@ -373,4 +373,28 @@ defmodule Orange.Renderer.ScrollTest do
              """
     end
   end
+
+  test "absolute elements inside a scrollable element" do
+    element =
+      rect style: [width: "100%", height: 3, flex_direction: :column, padding: {0, 1}],
+           scroll_x: 2 do
+        "foo"
+
+        rect position: {:absolute, 0, nil, nil, 15}, style: [padding: {1, 0}] do
+          "bar"
+        end
+      end
+
+    screen =
+      element
+      |> Orange.Renderer.render(%{width: 15, height: 3})
+      |> elem(0)
+      |> Buffer.to_string()
+
+    assert screen == """
+           oo-------------
+           -------------ba
+           🭹🭹🭹🭹🭹🭹🭹🭹🭹🭹🭹🭹🭹🭹🭹\
+           """
+  end
 end

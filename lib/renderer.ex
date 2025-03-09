@@ -462,7 +462,7 @@ defmodule Orange.Renderer do
   end
 
   # The render algorithm is as follows:
-  # 1. First render the scrollable children into a separate buffer.
+  # 1. First render the scrollable children into a separate buffer with dynamic size.
   # 2. Extract the visible area from the children buffer. This area is determined by the scroll offset (x, y) and
   # the width and height of the parent node
   # 3. Merge the visible area into the parent buffer
@@ -474,7 +474,7 @@ defmodule Orange.Renderer do
     content_height = content_height + node.border.bottom
     node = %{node | content_size: {content_width, content_height}}
 
-    scroll_buffer = Buffer.new({ceil(content_width), ceil(content_height)})
+    scroll_buffer = Buffer.new()
 
     scroll_buffer =
       do_render_children(
@@ -508,15 +508,6 @@ defmodule Orange.Renderer do
     inner_width = node.width - node.border.left - node.border.right
     inner_height = node.height - node.border.top - node.border.bottom
 
-    children_viewport =
-      extract_buffer_viewport(
-        scrollable_buffer,
-        (scroll_x || 0) + offset_x,
-        (scroll_y || 0) + offset_y,
-        inner_width,
-        inner_height
-      )
-
     # The scrollbar color should match the border color
     scroll_bar_color = style[:border_color]
     scroll_bar_visibility = Keyword.get(style, :scroll_bar, :visible)
@@ -531,14 +522,24 @@ defmodule Orange.Renderer do
         do: render_vertical_scroll_bar(buffer, node, scroll_y, scroll_bar_color),
         else: buffer
 
-    Enum.with_index(children_viewport)
-    |> Enum.reduce(buffer, fn {row, row_index}, acc ->
-      Enum.with_index(row)
-      |> Enum.reduce(acc, fn {cell, col_index}, acc ->
+    # Get the actual size of the scrollable buffer
+    scroll_x_offset = scroll_x || 0
+    scroll_y_offset = scroll_y || 0
+
+    # Iterate through the visible area of the scrollable buffer
+    Enum.reduce(0..(inner_height - 1), buffer, fn y_offset, acc_buffer ->
+      y_pos = scroll_y_offset + y_offset
+
+      Enum.reduce(0..(inner_width - 1), acc_buffer, fn x_offset, acc ->
+        x_pos = scroll_x_offset + x_offset
+
+        # Get the cell from the scrollable buffer if it exists
+        cell = Buffer.get_cell(scrollable_buffer, {x_pos, y_pos})
+
         if cell != :undefined do
           {buffer_width, buffer_height} = buffer.size
-          x = node.abs_x + offset_x + col_index
-          y = node.abs_y + offset_y + row_index
+          x = node.abs_x + offset_x + x_offset
+          y = node.abs_y + offset_y + y_offset
 
           cond do
             x >= buffer_width -> acc
@@ -549,15 +550,6 @@ defmodule Orange.Renderer do
           acc
         end
       end)
-    end)
-  end
-
-  defp extract_buffer_viewport(buffer, x, y, width, height) do
-    buffer.rows
-    |> :array.to_list()
-    |> Enum.slice(y, height)
-    |> Enum.map(fn row ->
-      :array.to_list(row) |> Enum.slice(x, width)
     end)
   end
 
@@ -633,30 +625,6 @@ defmodule Orange.Renderer do
     x = node.abs_x + node.width - 1
     y = node.abs_y + node.border.top
     Buffer.write_string(buffer, {x, y}, string, :vertical, color: scroll_bar_color)
-  end
-
-  defp get_nodes_from_tree(_, _, result \\ %{})
-  defp get_nodes_from_tree(nil, _, result), do: result
-
-  defp get_nodes_from_tree(output_tree, ids, result) do
-    id = output_tree.id
-
-    result =
-      if id in ids do
-        Map.put(result, output_tree.id, Map.delete(output_tree, :children))
-      else
-        result
-      end
-
-    case output_tree.children do
-      {:nodes, nodes} ->
-        Enum.reduce(nodes, result, fn node, acc ->
-          get_nodes_from_tree(node, ids, acc)
-        end)
-
-      {:text, _text} ->
-        result
-    end
   end
 
   # Out-of-flow node render algorithm:
