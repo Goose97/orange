@@ -19,9 +19,8 @@ defmodule Orange.Renderer.Buffer do
 
   # Dynamic size buffer
   def new() do
-    # Pre-allocate a 10x10 buffer
-    default_row = :array.new(10, fixed: false)
-    rows = :array.new(10, default: default_row, fixed: false)
+    default_row = :array.new(0, fixed: false)
+    rows = :array.new(0, default: default_row, fixed: false)
     %__MODULE__{rows: rows, size: nil}
   end
 
@@ -175,4 +174,21 @@ defmodule Orange.Renderer.Buffer do
     cell = get_cell(buffer, {x, y})
     cell.modifiers
   end
+
+  def size(%__MODULE__{size: nil} = buffer) do
+    content_height = :array.size(buffer.rows)
+
+    content_width =
+      Enum.map(1..content_height, fn i ->
+        case :array.get(i, buffer.rows) do
+          :undefined -> 0
+          row -> :array.size(row)
+        end
+      end)
+      |> Enum.max()
+
+    {content_width, content_height}
+  end
+
+  def size(%__MODULE__{size: size}), do: size
 end

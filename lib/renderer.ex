@@ -467,22 +467,15 @@ defmodule Orange.Renderer do
   # the width and height of the parent node
   # 3. Merge the visible area into the parent buffer
   defp render_scrollable_children(buffer, node, input_tree_lookup_index) do
-    # For some reason, taffy doesn't include border bottom and border right into
-    # the content size. So we need to add them here
-    {content_width, content_height} = node.content_size
-    content_width = content_width + node.border.right
-    content_height = content_height + node.border.bottom
-    node = %{node | content_size: {content_width, content_height}}
-
-    scroll_buffer = Buffer.new()
-
     scroll_buffer =
       do_render_children(
-        scroll_buffer,
+        Buffer.new(),
         # Reset the parent container origin to zero
         caculate_absolute_position(%{node | x: 0, y: 0}),
         input_tree_lookup_index
       )
+
+    node = %{node | content_size: Buffer.size(scroll_buffer)}
 
     attributes = get_in(input_tree_lookup_index, [node.id, :attributes])
 
@@ -502,9 +495,6 @@ defmodule Orange.Renderer do
          {scroll_x, scroll_y},
          style
        ) do
-    offset_x = node.border.left
-    offset_y = node.border.top
-
     inner_width = node.width - node.border.left - node.border.right
     inner_height = node.height - node.border.top - node.border.bottom
 
@@ -522,35 +512,44 @@ defmodule Orange.Renderer do
         do: render_vertical_scroll_bar(buffer, node, scroll_y, scroll_bar_color),
         else: buffer
 
-    # Get the actual size of the scrollable buffer
     scroll_x_offset = scroll_x || 0
     scroll_y_offset = scroll_y || 0
 
+    inner_content_offset_x = node.border.left
+    inner_content_offset_y = node.border.top
+
     # Iterate through the visible area of the scrollable buffer
-    Enum.reduce(0..(inner_height - 1), buffer, fn y_offset, acc_buffer ->
-      y_pos = scroll_y_offset + y_offset
+    Enum.reduce(
+      inner_content_offset_y..(inner_content_offset_y + inner_height - 1),
+      buffer,
+      fn column, acc_buffer ->
+        scroll_cell_column = scroll_y_offset + column
 
-      Enum.reduce(0..(inner_width - 1), acc_buffer, fn x_offset, acc ->
-        x_pos = scroll_x_offset + x_offset
+        Enum.reduce(
+          inner_content_offset_x..(inner_content_offset_x + inner_width - 1),
+          acc_buffer,
+          fn row, acc_buffer ->
+            scroll_cell_row = scroll_x_offset + row
 
-        # Get the cell from the scrollable buffer if it exists
-        cell = Buffer.get_cell(scrollable_buffer, {x_pos, y_pos})
+            cell = Buffer.get_cell(scrollable_buffer, {scroll_cell_row, scroll_cell_column})
 
-        if cell != :undefined do
-          {buffer_width, buffer_height} = buffer.size
-          x = node.abs_x + offset_x + x_offset
-          y = node.abs_y + offset_y + y_offset
+            if cell != :undefined do
+              {buffer_width, buffer_height} = buffer.size
+              x = node.abs_x + row
+              y = node.abs_y + column
 
-          cond do
-            x >= buffer_width -> acc
-            y >= buffer_height -> acc
-            true -> Buffer.write_cell(acc, {x, y}, cell)
+              cond do
+                x >= buffer_width -> acc_buffer
+                y >= buffer_height -> acc_buffer
+                true -> Buffer.write_cell(acc_buffer, {x, y}, cell)
+              end
+            else
+              acc_buffer
+            end
           end
-        else
-          acc
-        end
-      end)
-    end)
+        )
+      end
+    )
   end
 
   # We need 4 things:
