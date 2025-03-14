@@ -132,8 +132,8 @@ defmodule Orange.Macro do
 
   When display is `:grid`, the following properties control the layout:
 
-    * `:grid_template_rows` - defines the rows in the grid. Takes a list of track sizes. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-rows) for more info.
-    * `:grid_template_columns` - defines the columns in the grid. Takes a list of track sizes. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns) for more info.
+    * `:grid_template_rows` - defines the size of the rows in the grid. Takes a list of track sizes. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-rows) for more info.
+    * `:grid_template_columns` - defines the size of the columns in the grid. Takes a list of track sizes. See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns) for more info.
 
   Track sizes can be:
 
@@ -145,7 +145,16 @@ defmodule Orange.Macro do
 
     * `:auto` - sized based on content
 
+    * `:min_content` - mimimum size to display the content
+
+    * `:max_content` - maximum size to display the content
+
     * `{:repeat, count, size}` - repeats the size specification count times
+
+  If no explicit rows/columns are defined, grid items will be put into implicitly created tracks, determined by:
+
+    * `:grid_auto_rows` - defines the size of the implicitly created rows. Takes a list of track sizes (except the :repeat). See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-rows) for more info.
+    * `:grid_auto_columns` - defines the size of the implicitly created columns. Takes a list of track sizes (except the :repeat). See [MDN docs](https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-columns) for more info.
 
   Child items can be positioned in the grid using:
 
