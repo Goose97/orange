@@ -42,6 +42,8 @@ struct InputTreeNodeStyle {
     column_gap: Option<usize>,
     grid_template_rows: Option<Vec<InputGridTrack>>,
     grid_template_columns: Option<Vec<InputGridTrack>>,
+    grid_auto_rows: Option<Vec<InputGridTrack>>,
+    grid_auto_columns: Option<Vec<InputGridTrack>>,
     grid_row: Option<InputGridLines>,
     grid_column: Option<InputGridLines>,
 }
@@ -71,6 +73,8 @@ enum InputGridTrack {
     Percent(f32),
     Fr(usize),
     Auto,
+    MinContent,
+    MaxContent,
     Repeat(usize, InputGridTrackRepeat),
 }
 
@@ -325,6 +329,14 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
             default_style.grid_template_columns = grid_tracks(template_columns);
         }
 
+        if let Some(auto_rows) = &style.grid_auto_rows {
+            default_style.grid_auto_rows = non_repeated_grid_tracks(auto_rows);
+        }
+
+        if let Some(auto_columns) = &style.grid_auto_columns {
+            default_style.grid_auto_columns = non_repeated_grid_tracks(auto_columns);
+        }
+
         match &style.grid_row {
             Some(InputGridLines::Single(line)) => {
                 default_style.grid_row = Line {
@@ -378,6 +390,8 @@ fn grid_tracks(tracks: &[InputGridTrack]) -> Vec<TrackSizingFunction> {
             InputGridTrack::Percent(v) => percent(*v),
             InputGridTrack::Fr(v) => fr(*v as f32),
             InputGridTrack::Auto => auto(),
+            InputGridTrack::MinContent => min_content(),
+            InputGridTrack::MaxContent => max_content(),
             InputGridTrack::Repeat(count, track) => {
                 let repeat_value = match track {
                     InputGridTrackRepeat::Fixed(v) => length(*v as f32),
@@ -390,6 +404,21 @@ fn grid_tracks(tracks: &[InputGridTrack]) -> Vec<TrackSizingFunction> {
                     vec![repeat_value],
                 )
             }
+        })
+        .collect()
+}
+
+fn non_repeated_grid_tracks(tracks: &[InputGridTrack]) -> Vec<NonRepeatedTrackSizingFunction> {
+    tracks
+        .iter()
+        .map(|v| match v {
+            InputGridTrack::Fixed(v) => length(*v as f32),
+            InputGridTrack::Percent(v) => percent(*v),
+            InputGridTrack::Fr(v) => fr(*v as f32),
+            InputGridTrack::Auto => auto(),
+            InputGridTrack::MinContent => min_content(),
+            InputGridTrack::MaxContent => max_content(),
+            InputGridTrack::Repeat(_count, _track) => unreachable!(),
         })
         .collect()
 }

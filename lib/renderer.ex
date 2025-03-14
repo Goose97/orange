@@ -871,6 +871,8 @@ defmodule Orange.Renderer do
       # Grid properties
       grid_template_rows: parse_grid_tracks(style[:grid_template_rows]),
       grid_template_columns: parse_grid_tracks(style[:grid_template_columns]),
+      grid_auto_rows: parse_grid_tracks(style[:grid_auto_rows]),
+      grid_auto_columns: parse_grid_tracks(style[:grid_auto_columns]),
       grid_row: parse_grid_line_pair(style[:grid_row]),
       grid_column: parse_grid_line_pair(style[:grid_column])
     }
@@ -916,8 +918,8 @@ defmodule Orange.Renderer do
 
   defp parse_grid_tracks(tracks) when is_list(tracks) do
     Enum.map(tracks, fn
-      :auto ->
-        :auto
+      v when v in [:auto, :min_content, :max_content] ->
+        v
 
       {:repeat, count, track} when is_integer(count) ->
         [track] = parse_grid_tracks([track])

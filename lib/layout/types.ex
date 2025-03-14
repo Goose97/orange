@@ -46,6 +46,8 @@ defmodule Orange.Layout.InputTreeNode do
             column_gap: integer() | nil,
             grid_template_rows: list(grid_track()) | nil,
             grid_template_columns: list(grid_track()) | nil,
+            grid_auto_rows: list(grid_track()) | nil,
+            grid_auto_columns: list(grid_track()) | nil,
             grid_row: grid_lines(),
             grid_column: grid_lines()
           }
@@ -55,6 +57,8 @@ defmodule Orange.Layout.InputTreeNode do
             | binary()
             | {:fr, integer()}
             | :auto
+            | :min_content
+            | :max_content
             | {:repeat, integer(), length_or_percent() | {:fr, integer()}}
 
     @type grid_line :: {:fixed, integer()} | {:span, integer()} | :auto
@@ -79,6 +83,8 @@ defmodule Orange.Layout.InputTreeNode do
       :line_wrap,
       :grid_template_rows,
       :grid_template_columns,
+      :grid_auto_rows,
+      :grid_auto_columns,
       :grid_row,
       :grid_column,
       :row_gap,
