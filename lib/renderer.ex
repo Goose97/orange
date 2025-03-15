@@ -503,58 +503,62 @@ defmodule Orange.Renderer do
     inner_width = node.width - node.border.left - node.border.right
     inner_height = node.height - node.border.top - node.border.bottom
 
-    # The scrollbar color should match the border color
-    scroll_bar_color = style[:border_color]
-    scroll_bar_visibility = Keyword.get(style, :scroll_bar, :visible)
+    if inner_width == 0 or inner_height == 0 do
+      buffer
+    else
+      # The scrollbar color should match the border color
+      scroll_bar_color = style[:border_color]
+      scroll_bar_visibility = Keyword.get(style, :scroll_bar, :visible)
 
-    buffer =
-      if scroll_x && scroll_bar_visibility == :visible,
-        do: render_horizontal_scroll_bar(buffer, node, scroll_x, scroll_bar_color),
-        else: buffer
+      buffer =
+        if scroll_x && scroll_bar_visibility == :visible,
+          do: render_horizontal_scroll_bar(buffer, node, scroll_x, scroll_bar_color),
+          else: buffer
 
-    buffer =
-      if scroll_y && scroll_bar_visibility == :visible,
-        do: render_vertical_scroll_bar(buffer, node, scroll_y, scroll_bar_color),
-        else: buffer
+      buffer =
+        if scroll_y && scroll_bar_visibility == :visible,
+          do: render_vertical_scroll_bar(buffer, node, scroll_y, scroll_bar_color),
+          else: buffer
 
-    scroll_x_offset = scroll_x || 0
-    scroll_y_offset = scroll_y || 0
+      scroll_x_offset = scroll_x || 0
+      scroll_y_offset = scroll_y || 0
 
-    inner_content_offset_x = node.border.left
-    inner_content_offset_y = node.border.top
+      inner_content_offset_x = node.border.left
+      inner_content_offset_y = node.border.top
 
-    # Iterate through the visible area of the scrollable buffer
-    Enum.reduce(
-      inner_content_offset_y..(inner_content_offset_y + inner_height - 1),
-      buffer,
-      fn column, acc_buffer ->
-        scroll_cell_column = scroll_y_offset + column
+      # Iterate through the visible area of the scrollable buffer
+      Enum.reduce(
+        inner_content_offset_y..(inner_content_offset_y + inner_height - 1),
+        buffer,
+        fn column, acc_buffer ->
+          scroll_cell_column = scroll_y_offset + column
 
-        Enum.reduce(
-          inner_content_offset_x..(inner_content_offset_x + inner_width - 1),
-          acc_buffer,
-          fn row, acc_buffer ->
-            scroll_cell_row = scroll_x_offset + row
+          Enum.reduce(
+            inner_content_offset_x..(inner_content_offset_x + inner_width - 1),
+            acc_buffer,
+            fn row, acc_buffer ->
+              scroll_cell_row = scroll_x_offset + row
 
-            cell = Buffer.get_cell(scrollable_buffer, {scroll_cell_row, scroll_cell_column})
+              cell = Buffer.get_cell(scrollable_buffer, {scroll_cell_row, scroll_cell_column})
 
-            if cell != :undefined do
-              {buffer_width, buffer_height} = buffer.size
-              x = node.abs_x + row
-              y = node.abs_y + column
+              if cell != :undefined do
+                {buffer_width, buffer_height} = buffer.size
+                x = node.abs_x + row
+                y = node.abs_y + column
 
-              cond do
-                x >= buffer_width -> acc_buffer
-                y >= buffer_height -> acc_buffer
-                true -> Buffer.write_cell(acc_buffer, {x, y}, cell)
+                cond do
+                  x >= buffer_width -> acc_buffer
+                  y >= buffer_height -> acc_buffer
+                  true -> Buffer.write_cell(acc_buffer, {x, y}, cell)
+                end
+              else
+                acc_buffer
               end
-            else
-              acc_buffer
             end
-          end
-        )
-      end
-    )
+          )
+        end
+      )
+    end
   end
 
   # We need 4 things:
@@ -575,29 +579,34 @@ defmodule Orange.Renderer do
     # It means the content is not overflow. In this case, the scrollable area should
     # be as big as the renderable width.
     total_scroll_width = max(total_scroll_width, renderable_width)
-    scroll_thumb_size = round(renderable_width / total_scroll_width * scroll_track_length)
 
-    # Ignore if over scroll
-    total_scrolled = min(scroll_offset + renderable_width, total_scroll_width)
+    if total_scroll_width != 0 do
+      scroll_thumb_size = round(renderable_width / total_scroll_width * scroll_track_length)
 
-    # Important variant that we need to preserve here:
-    # a. When the scroll_offset is 0, the scroll thumb MUST be at the top of the track
-    # b. When the scroll_offset is maximum (we can no longer scroll down), the scroll thumb MUST
-    # be at the bottom of the track
-    scroll_thumb_end = round(total_scrolled / total_scroll_width * scroll_track_length)
-    scroll_thumb_start = scroll_thumb_end - scroll_thumb_size
+      # Ignore if over scroll
+      total_scrolled = min(scroll_offset + renderable_width, total_scroll_width)
 
-    string =
-      [
-        List.duplicate("─", scroll_thumb_start),
-        List.duplicate("🭹", scroll_thumb_size),
-        List.duplicate("─", scroll_track_length - scroll_thumb_end),
-      ]
-      |> IO.iodata_to_binary()
+      # Important variant that we need to preserve here:
+      # a. When the scroll_offset is 0, the scroll thumb MUST be at the top of the track
+      # b. When the scroll_offset is maximum (we can no longer scroll down), the scroll thumb MUST
+      # be at the bottom of the track
+      scroll_thumb_end = round(total_scrolled / total_scroll_width * scroll_track_length)
+      scroll_thumb_start = scroll_thumb_end - scroll_thumb_size
 
-    x = node.abs_x + node.border.left
-    y = node.abs_y + node.height - 1
-    Buffer.write_string(buffer, {x, y}, string, :horizontal, color: scroll_bar_color)
+      string =
+        [
+          List.duplicate("─", scroll_thumb_start),
+          List.duplicate("🭹", scroll_thumb_size),
+          List.duplicate("─", scroll_track_length - scroll_thumb_end),
+        ]
+        |> IO.iodata_to_binary()
+
+      x = node.abs_x + node.border.left
+      y = node.abs_y + node.height - 1
+      Buffer.write_string(buffer, {x, y}, string, :horizontal, color: scroll_bar_color)
+    else
+      buffer
+    end
   end
 
   # Mirror of render_horizontal_scroll_bar
@@ -610,25 +619,29 @@ defmodule Orange.Renderer do
     scroll_track_length = renderable_height
     total_scroll_height = max(total_scroll_height, renderable_height)
 
-    scroll_thumb_size = round(renderable_height / total_scroll_height * scroll_track_length)
+    if total_scroll_height != 0 do
+      scroll_thumb_size = round(renderable_height / total_scroll_height * scroll_track_length)
 
-    # Ignore if over scroll
-    total_scrolled = min(scroll_offset + renderable_height, total_scroll_height)
+      # Ignore if over scroll
+      total_scrolled = min(scroll_offset + renderable_height, total_scroll_height)
 
-    scroll_thumb_end = round(total_scrolled / total_scroll_height * scroll_track_length)
-    scroll_thumb_start = scroll_thumb_end - scroll_thumb_size
+      scroll_thumb_end = round(total_scrolled / total_scroll_height * scroll_track_length)
+      scroll_thumb_start = scroll_thumb_end - scroll_thumb_size
 
-    string =
-      [
-        List.duplicate("│", scroll_thumb_start),
-        List.duplicate("▐", scroll_thumb_size),
-        List.duplicate("│", scroll_track_length - scroll_thumb_end),
-      ]
-      |> IO.iodata_to_binary()
+      string =
+        [
+          List.duplicate("│", scroll_thumb_start),
+          List.duplicate("▐", scroll_thumb_size),
+          List.duplicate("│", scroll_track_length - scroll_thumb_end),
+        ]
+        |> IO.iodata_to_binary()
 
-    x = node.abs_x + node.width - 1
-    y = node.abs_y + node.border.top
-    Buffer.write_string(buffer, {x, y}, string, :vertical, color: scroll_bar_color)
+      x = node.abs_x + node.width - 1
+      y = node.abs_y + node.border.top
+      Buffer.write_string(buffer, {x, y}, string, :vertical, color: scroll_bar_color)
+    else
+      buffer
+    end
   end
 
   # Out-of-flow node render algorithm:
