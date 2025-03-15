@@ -389,6 +389,20 @@ defmodule Orange.Macro do
 
         * `:right` - aligns the title to the right edge of the rect
 
+    * `:footer` - the footer of the rect. If specified, it implies `border` is `true`. The footer can be a string, a rect element, or a map. Supported keys for map are:
+
+      * `:text` - the footer text. Accepts a string or a rect element. This field is required
+
+      * `:offset` - an integer specifies the footer offset from the edge. This field is optional and defaults to 0
+
+      * `:align` - controls the alignment of the footer. Supported values are:
+
+        * `:left` - aligns the title to the left edge of the rect
+
+        * `:center` - centers the title in the rect
+
+        * `:right` (default) - aligns the title to the right edge of the rect
+
     * `:scroll_x` - the horizontal scroll offset
 
     * `:scroll_y` - the vertical scroll offset

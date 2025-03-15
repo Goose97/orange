@@ -161,6 +161,7 @@ defmodule Orange.Renderer do
     |> render_border(node, attributes)
     |> maybe_render_title(node, attributes[:title])
     |> render_children(node, input_tree_lookup_index, window)
+    |> maybe_render_footer(node, attributes[:footer])
     |> maybe_set_background_color(node, attributes)
   end
 
@@ -287,6 +288,67 @@ defmodule Orange.Renderer do
     area = %__MODULE__.Area{
       x: position_x,
       y: node.abs_y,
+      width: output_tree.width,
+      height: output_tree.height
+    }
+
+    buffer = Buffer.clear_area(buffer, area)
+    output_tree = caculate_absolute_position(output_tree, {area.x, area.y})
+    input_tree_lookup_index = build_input_tree_index(input_tree)
+    render_node(output_tree, input_tree_lookup_index, buffer)
+  end
+
+  defp maybe_render_footer(buffer, _, nil), do: buffer
+
+  defp maybe_render_footer(buffer, node, footer) when is_binary(footer),
+    do: maybe_render_footer(buffer, node, %{text: footer, offset: 0, align: :right})
+
+  defp maybe_render_footer(
+         buffer,
+         %OutputTreeNode{abs_x: x, abs_y: y, width: w, height: h},
+         %{
+           text: footer
+         } = footer_opts
+       )
+       when is_binary(footer) do
+    offset = Map.get(footer_opts, :offset, 0)
+    align = Map.get(footer_opts, :align, :right)
+
+    position_x =
+      case align do
+        :left -> x + offset + 1
+        :right -> x + w - String.length(footer) - offset - 1
+        :center -> x + div(w - String.length(footer), 2) + offset
+      end
+
+    Buffer.write_string(buffer, {position_x, y + h - 1}, footer, :horizontal)
+  end
+
+  defp maybe_render_footer(buffer, node, footer) when is_struct(footer, Orange.Rect),
+    do: maybe_render_footer(buffer, node, %{text: footer, offset: 0, align: :right})
+
+  defp maybe_render_footer(buffer, node, %{text: footer} = footer_opts)
+       when is_struct(footer, Orange.Rect) do
+    input_tree = to_binding_input_tree(footer)
+
+    output_tree =
+      input_tree
+      |> Orange.Layout.layout({{:fixed, node.width}, {:fixed, 1}})
+      |> perform_rounding()
+
+    offset = Map.get(footer_opts, :offset, 0)
+    align = Map.get(footer_opts, :align, :right)
+
+    position_x =
+      case align do
+        :left -> node.abs_x + offset + 1
+        :right -> node.abs_x + node.width - output_tree.width - offset - 1
+        :center -> node.abs_x + div(node.width - output_tree.width, 2) + offset
+      end
+
+    area = %__MODULE__.Area{
+      x: position_x,
+      y: node.abs_y + node.height - 1,
       width: output_tree.width,
       height: output_tree.height
     }
