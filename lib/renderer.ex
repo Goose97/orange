@@ -239,20 +239,33 @@ defmodule Orange.Renderer do
   defp maybe_render_title(buffer, _, nil), do: buffer
 
   defp maybe_render_title(buffer, node, title) when is_binary(title),
-    do: maybe_render_title(buffer, node, %{text: title, offset: 0})
+    do: maybe_render_title(buffer, node, %{text: title, offset: 0, align: :left})
 
-  defp maybe_render_title(buffer, %OutputTreeNode{abs_x: x, abs_y: y}, %{
-         text: title,
-         offset: offset
-       })
+  defp maybe_render_title(
+         buffer,
+         %OutputTreeNode{abs_x: x, abs_y: y, width: w},
+         %{
+           text: title
+         } = title_opts
+       )
        when is_binary(title) do
-    Buffer.write_string(buffer, {x + offset + 1, y}, title, :horizontal)
+    offset = Map.get(title_opts, :offset, 0)
+    align = Map.get(title_opts, :align, :left)
+
+    position_x =
+      case align do
+        :left -> x + offset + 1
+        :right -> x + w - String.length(title) - offset - 1
+        :center -> x + div(w - String.length(title), 2) + offset
+      end
+
+    Buffer.write_string(buffer, {position_x, y}, title, :horizontal)
   end
 
   defp maybe_render_title(buffer, node, title) when is_struct(title, Orange.Rect),
-    do: maybe_render_title(buffer, node, %{text: title, offset: 0})
+    do: maybe_render_title(buffer, node, %{text: title, offset: 0, align: :left})
 
-  defp maybe_render_title(buffer, node, %{text: title, offset: offset} = _title)
+  defp maybe_render_title(buffer, node, %{text: title} = title_opts)
        when is_struct(title, Orange.Rect) do
     input_tree = to_binding_input_tree(title)
 
@@ -261,8 +274,18 @@ defmodule Orange.Renderer do
       |> Orange.Layout.layout({{:fixed, node.width}, {:fixed, 1}})
       |> perform_rounding()
 
+    offset = Map.get(title_opts, :offset, 0)
+    align = Map.get(title_opts, :align, :left)
+
+    position_x =
+      case align do
+        :left -> node.abs_x + offset + 1
+        :right -> node.abs_x + node.width - output_tree.width - offset - 1
+        :center -> node.abs_x + div(node.width - output_tree.width, 2) + offset
+      end
+
     area = %__MODULE__.Area{
-      x: node.abs_x + offset + 1,
+      x: position_x,
       y: node.abs_y,
       width: output_tree.width,
       height: output_tree.height

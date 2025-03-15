@@ -379,7 +379,15 @@ defmodule Orange.Macro do
 
       * `:text` - the title text. Accepts a string or a rect element. This field is required
 
-      * `:offset` - an integer specifies the title offset from the left edge. This field is optional and defaults to 0
+      * `:offset` - an integer specifies the title offset from the edge. This field is optional and defaults to 0
+
+      * `:align` - controls the alignment of the title. Supported values are:
+
+        * `:left` (default) - aligns the title to the left edge of the rect
+
+        * `:center` - centers the title in the rect
+
+        * `:right` - aligns the title to the right edge of the rect
 
     * `:scroll_x` - the horizontal scroll offset
 
