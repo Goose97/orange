@@ -3,8 +3,9 @@ defmodule Orange.Renderer do
 
   require Logger
 
-  alias Orange.Renderer.Buffer
+  alias Orange.Layout
   alias Orange.Layout.{OutputTreeNode, InputTreeNode}
+  alias Orange.Renderer.{Buffer, InputTree}
 
   @type window :: %{width: integer, height: integer}
   @type ui_element :: Orange.Rect.t()
@@ -15,7 +16,7 @@ defmodule Orange.Renderer do
   def render(tree, window) do
     start = System.monotonic_time(:millisecond)
 
-    input_tree = to_binding_input_tree(tree)
+    input_tree = InputTree.to_input_tree(tree)
     binding_input_tree_time = System.monotonic_time(:millisecond)
 
     width = window[:width]
@@ -29,9 +30,8 @@ defmodule Orange.Renderer do
       if input_tree do
         output_tree =
           input_tree
-          |> Orange.Layout.layout({{:fixed, width}, {:fixed, height}})
-          |> perform_rounding()
-          |> caculate_absolute_position()
+          |> Layout.layout({{:fixed, width}, {:fixed, height}})
+          |> Layout.caculate_absolute_position()
 
         {
           render_node(output_tree, input_tree_lookup_index, buffer, window),
@@ -45,89 +45,11 @@ defmodule Orange.Renderer do
 
     Logger.debug("""
     Renderer took #{now - start}ms:
-    - to_binding_input_tree: #{binding_input_tree_time - start}ms
+    - to_input_tree: #{binding_input_tree_time - start}ms
     - render: #{now - binding_input_tree_time}ms
     """)
 
     {buffer, build_output_tree_index(output_tree, input_tree_lookup_index)}
-  end
-
-  # The layout algorithm returns float values for positions and sizes.
-  # We need to round these values to integers so that we can render them to the screen.
-  # Adapt from taffy: https://github.com/DioxusLabs/taffy/blob/0386dc966a41b6b10e4089018fcbeada72504df6/src/compute/mod.rs#L205-L260
-  defp perform_rounding(
-         %OutputTreeNode{} = node,
-         {acc_x, acc_y} \\ {0, 0},
-         {scale_x, scale_y} \\ {1, 1}
-       ) do
-    node = %{node | x: node.x * scale_x, y: node.y * scale_y}
-
-    acc_x = acc_x + node.x
-    acc_y = acc_y + node.y
-
-    new_width = round(round(acc_x + node.width) - round(acc_x))
-    new_height = round(round(acc_y + node.height) - round(acc_y))
-
-    children =
-      case node.children do
-        {:text, _text} = child ->
-          child
-
-        {:nodes, nodes} ->
-          # I'm not sure if this is the correct way to perform rounding
-          scale_x =
-            cond do
-              node.width == 0 -> 1
-              elem(node.content_size, 0) == 0 -> 1
-              elem(node.content_size, 0) == node.width -> new_width / node.width
-              true -> 1 + (new_width - node.width) / elem(node.content_size, 0)
-            end
-
-          scale_y =
-            cond do
-              node.height == 0 -> 1
-              elem(node.content_size, 1) == 0 -> 1
-              elem(node.content_size, 1) == node.height -> new_height / node.height
-              true -> 1 + (new_height - node.height) / elem(node.content_size, 1)
-            end
-
-          rounded = Enum.map(nodes, &perform_rounding(&1, {acc_x, acc_y}, {scale_x, scale_y}))
-          {:nodes, rounded}
-      end
-
-    %OutputTreeNode{
-      id: node.id,
-      x: round(node.x),
-      y: round(node.y),
-      width: new_width,
-      height: new_height,
-      border: node.border,
-      padding: node.padding,
-      margin: node.margin,
-      content_text_lines: node.content_text_lines,
-      content_size: node.content_size,
-      children: children
-    }
-  end
-
-  defp caculate_absolute_position(%OutputTreeNode{} = node, {acc_x, acc_y} \\ {0, 0}) do
-    node_x = acc_x + node.x
-    node_y = acc_y + node.y
-
-    children =
-      case node.children do
-        {:text, _text} = child ->
-          child
-
-        {:nodes, nodes} ->
-          {:nodes, Enum.map(nodes, &caculate_absolute_position(&1, {node_x, node_y}))}
-      end
-
-    Map.merge(node, %{
-      abs_x: node_x,
-      abs_y: node_y,
-      children: children
-    })
   end
 
   defp build_input_tree_index(_, result \\ %{})
@@ -268,12 +190,11 @@ defmodule Orange.Renderer do
 
   defp maybe_render_title(buffer, node, %{text: title} = title_opts)
        when is_struct(title, Orange.Rect) do
-    input_tree = to_binding_input_tree(title)
+    input_tree = InputTree.to_input_tree(title)
 
     output_tree =
       input_tree
       |> Orange.Layout.layout({{:fixed, node.width}, {:fixed, 1}})
-      |> perform_rounding()
 
     offset = Map.get(title_opts, :offset, 0)
     align = Map.get(title_opts, :align, :left)
@@ -293,7 +214,7 @@ defmodule Orange.Renderer do
     }
 
     buffer = Buffer.clear_area(buffer, area)
-    output_tree = caculate_absolute_position(output_tree, {area.x, area.y})
+    output_tree = Layout.caculate_absolute_position(output_tree, {area.x, area.y})
     input_tree_lookup_index = build_input_tree_index(input_tree)
     render_node(output_tree, input_tree_lookup_index, buffer)
   end
@@ -329,12 +250,11 @@ defmodule Orange.Renderer do
 
   defp maybe_render_footer(buffer, node, %{text: footer} = footer_opts)
        when is_struct(footer, Orange.Rect) do
-    input_tree = to_binding_input_tree(footer)
+    input_tree = InputTree.to_input_tree(footer)
 
     output_tree =
       input_tree
       |> Orange.Layout.layout({{:fixed, node.width}, {:fixed, 1}})
-      |> perform_rounding()
 
     offset = Map.get(footer_opts, :offset, 0)
     align = Map.get(footer_opts, :align, :right)
@@ -354,7 +274,7 @@ defmodule Orange.Renderer do
     }
 
     buffer = Buffer.clear_area(buffer, area)
-    output_tree = caculate_absolute_position(output_tree, {area.x, area.y})
+    output_tree = Layout.caculate_absolute_position(output_tree, {area.x, area.y})
     input_tree_lookup_index = build_input_tree_index(input_tree)
     render_node(output_tree, input_tree_lookup_index, buffer)
   end
@@ -556,7 +476,7 @@ defmodule Orange.Renderer do
       do_render_children(
         Buffer.new(),
         # Reset the parent container origin to zero
-        caculate_absolute_position(%{node | x: 0, y: 0}),
+        Layout.caculate_absolute_position(%{node | x: 0, y: 0}),
         input_tree_lookup_index
       )
 
@@ -735,7 +655,7 @@ defmodule Orange.Renderer do
 
     rect = %{rect | attributes: Keyword.put(rect.attributes, :style, style)}
 
-    input_tree = to_binding_input_tree(rect, :atomics.new(1, []), parent_style)
+    input_tree = InputTree.to_input_tree(rect, :atomics.new(1, []), parent_style)
 
     width =
       cond do
@@ -762,7 +682,6 @@ defmodule Orange.Renderer do
     output_tree =
       input_tree
       |> Orange.Layout.layout({width, height})
-      |> perform_rounding()
 
     # The out-of-flow now will overshadow the layer behind it
     # So we need to clear the render area first
@@ -778,275 +697,8 @@ defmodule Orange.Renderer do
 
     buffer = Buffer.clear_area(buffer, area)
 
-    output_tree = caculate_absolute_position(output_tree, {area.x, area.y})
+    output_tree = Layout.caculate_absolute_position(output_tree, {area.x, area.y})
     render_node(output_tree, build_input_tree_index(input_tree), buffer)
-  end
-
-  defp to_binding_input_tree(
-         node,
-         counter \\ :atomics.new(1, []),
-         parent_style \\ nil,
-         parent_id \\ nil
-       ) do
-    case do_to_binding_input_tree(node, counter, parent_style, parent_id) do
-      {:fixed, _, _} = fixed ->
-        # If the root node is fixed, normalize the output
-        new_id = :atomics.add_get(counter, 1, 1)
-
-        %InputTreeNode{
-          id: new_id,
-          children: {:nodes, []},
-          out_of_flow_children: [fixed],
-          attributes: [],
-          style: nil
-        }
-
-      node ->
-        node
-    end
-  end
-
-  # Convert a component tree to a input tree to pass to the layout binding
-  # Traverse the tree and convert recursively
-  defp do_to_binding_input_tree(
-         %Orange.Rect{} = node,
-         counter,
-         parent_style,
-         parent_id
-       ) do
-    new_id = :atomics.add_get(counter, 1, 1)
-
-    # Process out-of-flow nodes (fixed and absolute position)
-    case node.attributes[:position] do
-      {:fixed, _, _, _, _} = position ->
-        validate_position!(position)
-        {:fixed, node, parent_id}
-
-      {:absolute, _, _, _, _} = position ->
-        if !parent_id, do: raise("Absolute position can't be used on root element")
-        validate_position!(position)
-        {:absolute, node, parent_id}
-
-      _ ->
-        inherited_style = inherit_style(node.attributes[:style], parent_style)
-
-        children =
-          for child_node <- node.children do
-            do_to_binding_input_tree(child_node, counter, inherited_style, new_id)
-          end
-
-        {normal_children, out_of_flow_children} =
-          Enum.split_with(children, fn
-            %InputTreeNode{} -> true
-            {:fixed, _, _} -> false
-            {:absolute, _, _} -> false
-          end)
-
-        %InputTreeNode{
-          id: new_id,
-          children: {:nodes, normal_children},
-          out_of_flow_children: out_of_flow_children,
-          attributes: Keyword.put(node.attributes, :style, inherited_style),
-          style:
-            to_binding_style(
-              inherited_style,
-              node.attributes[:scroll_x],
-              node.attributes[:scroll_y]
-            )
-        }
-    end
-  end
-
-  # A simple text node, like:
-  #
-  # rect do
-  #   "foo"
-  # end
-  #
-  # will be converted to:
-  #
-  # %InputTreeNode{
-  #   id: 1,
-  #   children: {:nodes, [
-  #     %InputTreeNode{
-  #       id: 1,
-  #       children: {:text, "foo"},
-  #       style: nil
-  #     }
-  #   ]},
-  #   style: nil
-  # }
-  #
-  # The inner node should inherit the parent style
-  defp do_to_binding_input_tree(
-         string,
-         counter,
-         parent_style,
-         _parent_id
-       ) do
-    new_id = :atomics.add_get(counter, 1, 1)
-
-    line_wrap = parent_style[:line_wrap]
-    style = inherit_style(nil, parent_style)
-
-    style =
-      if line_wrap != nil, do: Keyword.put(style || [], :line_wrap, line_wrap), else: style
-
-    new_node = %InputTreeNode{
-      id: new_id,
-      children: {:text, string},
-      style: to_binding_style(style),
-      out_of_flow_children: [],
-      attributes: [style: style]
-    }
-
-    new_node
-  end
-
-  defp inherit_style(style, nil), do: style
-  defp inherit_style(nil, parent_style), do: inherit_style([], parent_style)
-
-  defp inherit_style(style, parent_style) do
-    parent_color = parent_style[:color]
-    parent_text_modifiers = parent_style[:text_modifiers]
-
-    style = if parent_color, do: Keyword.put_new(style, :color, parent_color), else: style
-
-    if parent_text_modifiers,
-      do: Keyword.put_new(style, :text_modifiers, parent_text_modifiers),
-      else: style
-  end
-
-  defp to_binding_style(style, scroll_x \\ nil, scroll_y \\ nil)
-
-  defp to_binding_style(nil, _, _), do: nil
-
-  defp to_binding_style(style, scroll_x, scroll_y) do
-    border = expand_border(style)
-    # We render the scrollbar on top of the border. It means scroll_x implies border_bottom: true,
-    # and scroll_y implies border_right: true
-    scroll_bar_visible = Keyword.get(style, :scroll_bar, :visible) == :visible
-    border = if scroll_x && scroll_bar_visible, do: put_elem(border, 2, 1), else: border
-    border = if scroll_y && scroll_bar_visible, do: put_elem(border, 1, 1), else: border
-
-    %InputTreeNode.Style{
-      width: parse_length_percentage(style[:width]),
-      min_width: parse_length_percentage(style[:min_width]),
-      max_width: parse_length_percentage(style[:max_width]),
-      height: parse_length_percentage(style[:height]),
-      min_height: parse_length_percentage(style[:min_height]),
-      max_height: parse_length_percentage(style[:max_height]),
-      border: border,
-      padding: expand_padding_margin(style[:padding]),
-      margin: expand_padding_margin(style[:margin]),
-      display: Keyword.get(style, :display, :flex),
-
-      # Flex properties
-      flex_direction: style[:flex_direction],
-      flex_grow: style[:flex_grow],
-      flex_shrink: style[:flex_shrink],
-      justify_content: style[:justify_content],
-      align_items: style[:align_items],
-      line_wrap: Keyword.get(style, :line_wrap, true),
-
-      # Gap properties
-      row_gap: style[:row_gap] || style[:gap],
-      column_gap: style[:column_gap] || style[:gap],
-
-      # Grid properties
-      grid_template_rows: parse_grid_tracks(style[:grid_template_rows]),
-      grid_template_columns: parse_grid_tracks(style[:grid_template_columns]),
-      grid_auto_rows: parse_grid_tracks(style[:grid_auto_rows]),
-      grid_auto_columns: parse_grid_tracks(style[:grid_auto_columns]),
-      grid_row: parse_grid_line_pair(style[:grid_row]),
-      grid_column: parse_grid_line_pair(style[:grid_column])
-    }
-  end
-
-  defp parse_length_percentage(size) do
-    cond do
-      is_integer(size) ->
-        {:fixed, size}
-
-      is_binary(size) and String.ends_with?(size, "%") ->
-        {float, "%"} = Float.parse(size)
-        {:percent, float / 100}
-
-      size == nil ->
-        size
-    end
-  end
-
-  defp expand_border(style) do
-    border = fn position ->
-      border_value =
-        if style[:"border_#{position}"] != nil,
-          do: style[:"border_#{position}"],
-          else: style[:border]
-
-      if border_value, do: 1, else: 0
-    end
-
-    {border.(:top), border.(:right), border.(:bottom), border.(:left)}
-  end
-
-  defp expand_padding_margin(value) do
-    case value do
-      {vy, vx} -> {vy, vx, vy, vx}
-      {_top, _right, _bottom, _left} -> value
-      v when is_integer(v) -> {v, v, v, v}
-      nil -> {0, 0, 0, 0}
-    end
-  end
-
-  defp parse_grid_tracks(nil), do: nil
-
-  defp parse_grid_tracks(tracks) when is_list(tracks) do
-    Enum.map(tracks, fn
-      v when v in [:auto, :min_content, :max_content] ->
-        v
-
-      {:repeat, count, track} when is_integer(count) ->
-        [track] = parse_grid_tracks([track])
-        {:repeat, count, track}
-
-      {:fr, v} when is_integer(v) ->
-        {:fr, v}
-
-      track ->
-        # Otherwise, it must be fixed track
-        size = parse_length_percentage(track)
-        if size == nil, do: raise("Invalid grid track: #{inspect(track)}")
-        size
-    end)
-  end
-
-  defp parse_grid_line_pair(nil), do: nil
-
-  # Single span
-  defp parse_grid_line_pair({:span, span} = v) when is_integer(span), do: {:single, v}
-
-  defp parse_grid_line_pair({start, end_}),
-    do: {:double, parse_grid_line(start), parse_grid_line(end_)}
-
-  defp parse_grid_line_pair(start), do: {:single, parse_grid_line(start)}
-
-  defp parse_grid_line(line) when is_integer(line), do: {:fixed, line}
-  defp parse_grid_line({:span, span}) when is_integer(span), do: {:span, span}
-  defp parse_grid_line(:auto), do: :auto
-
-  defp validate_position!({type, top, right, bottom, left}) when type in [:absolute, :fixed] do
-    type_text =
-      case type do
-        :absolute -> "Absolute"
-        :fixed -> "Fixed"
-      end
-
-    if !top and !bottom,
-      do: raise("#{type_text} position element must specify either top or bottom")
-
-    if !left and !right,
-      do: raise("#{type_text} position element must specify either left or right")
   end
 
   defp build_output_tree_index(_, _, result \\ %{})
