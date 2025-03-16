@@ -303,5 +303,25 @@ defmodule Orange.Renderer.FixedPositionTest do
 
       assert message =~ "Fixed position element must specify either top or bottom"
     end
+
+    test "output tree lookup index contains elements inside the fixed element" do
+      element =
+        rect style: [width: "100%", height: 3] do
+          rect id: :foo do
+            "foo"
+            "bar"
+          end
+
+          rect position: {:fixed, 4, 1, 1, 1}, style: [border: true] do
+            rect id: :baz do
+              "baz"
+            end
+          end
+        end
+
+      {_screen, lookup} = Orange.Renderer.render(element, %{width: 15, height: 10})
+
+      assert Map.has_key?(lookup, :baz)
+    end
   end
 end

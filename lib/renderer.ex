@@ -49,7 +49,11 @@ defmodule Orange.Renderer do
     - render: #{now - binding_input_tree_time}ms
     """)
 
-    {buffer, build_output_tree_index(output_tree, input_tree_lookup_index)}
+    out_of_flow_output_tree_index = Process.get(:out_of_flow_output_tree_index, %{})
+
+    {buffer,
+     build_output_tree_index(output_tree, input_tree_lookup_index)
+     |> Map.merge(out_of_flow_output_tree_index)}
   end
 
   defp build_input_tree_index(_, result \\ %{})
@@ -692,9 +696,7 @@ defmodule Orange.Renderer do
           :max_content
       end
 
-    output_tree =
-      input_tree
-      |> Orange.Layout.layout({width, height})
+    output_tree = Orange.Layout.layout(input_tree, {width, height})
 
     # The out-of-flow now will overshadow the layer behind it
     # So we need to clear the render area first
@@ -711,7 +713,16 @@ defmodule Orange.Renderer do
     buffer = Buffer.clear_area(buffer, area)
 
     output_tree = Layout.caculate_absolute_position(output_tree, {area.x, area.y})
-    render_node(output_tree, build_input_tree_index(input_tree), buffer)
+    input_tree_lookup_index = build_input_tree_index(input_tree)
+
+    # HACK: to avoid passing the output tree indexes of out of flow nodes through functions,
+    # we store them in the process dictionary.
+    # They will later be merged with the main output tree index.
+    output_tree_index = build_output_tree_index(output_tree, input_tree_lookup_index)
+    current = Process.get(:out_of_flow_output_tree_index, %{})
+    Process.put(:out_of_flow_output_tree_index, Map.merge(current, output_tree_index))
+
+    render_node(output_tree, input_tree_lookup_index, buffer)
   end
 
   defp build_output_tree_index(_, _, result \\ %{})
