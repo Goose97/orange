@@ -1,4 +1,3 @@
-require Logger
 defmodule Orange.Test.MockTerminal do
   @moduledoc false
 
@@ -12,6 +11,7 @@ defmodule Orange.Test.MockTerminal do
     # We store in ETS table so that we can access data from any processes
     :ets.new(__MODULE__.Storage, [:set, :public, :named_table])
     :ets.insert(__MODULE__.Storage, {:buffers, []})
+    :ets.insert(__MODULE__.Storage, {:captured_buffers, []})
 
     terminal_size = Keyword.get(opts, :terminal_size)
     if terminal_size, do: :ets.insert(__MODULE__.Storage, {:terminal_size, terminal_size})
@@ -29,6 +29,11 @@ defmodule Orange.Test.MockTerminal do
 
   def get_drawn_buffers() do
     [{_, buffers}] = :ets.lookup(__MODULE__.Storage, :buffers)
+    buffers
+  end
+
+  def get_captured_buffers() do
+    [{_, buffers}] = :ets.lookup(__MODULE__.Storage, :captured_buffers)
     buffers
   end
 
@@ -63,6 +68,15 @@ defmodule Orange.Test.MockTerminal do
         fun.()
         next_event(events, counter, stop_after_last_event)
 
+      :snapshot ->
+        take_snapshot()
+        next_event(events, counter, stop_after_last_event)
+
+      {:wait_and_snapshot, ms} ->
+        Process.sleep(ms)
+        take_snapshot()
+        next_event(events, counter, stop_after_last_event)
+
       nil ->
         if stop_after_last_event, do: Orange.stop()
         Process.sleep(:infinity)
@@ -70,6 +84,16 @@ defmodule Orange.Test.MockTerminal do
       _ ->
         event
     end
+  end
+
+  defp take_snapshot() do
+    drawn_buffers = get_drawn_buffers()
+    [{_, captured_buffers}] = :ets.lookup(__MODULE__.Storage, :captured_buffers)
+
+    :ets.insert(
+      __MODULE__.Storage,
+      {:captured_buffers, captured_buffers ++ [List.last(drawn_buffers)]}
+    )
   end
 
   @impl true

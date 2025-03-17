@@ -48,7 +48,7 @@ defmodule Orange.Test do
       {:DOWN, ^ref, :process, _pid, _reason} -> :ok
     end
 
-    for buffer <- __MODULE__.MockTerminal.get_drawn_buffers() do
+    for buffer <- __MODULE__.MockTerminal.get_captured_buffers() do
       %__MODULE__.Snapshot{buffer: buffer}
     end
   end
