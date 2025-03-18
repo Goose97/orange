@@ -147,12 +147,14 @@ defmodule Orange.Renderer.Buffer do
     end
   end
 
-  def to_string(%__MODULE__{rows: rows}) do
+  def to_string(%__MODULE__{rows: rows}, opts \\ []) do
+    empty_char = Keyword.get(opts, :empty_char, "-")
+
     :array.to_list(rows)
     |> Enum.map(fn row ->
       for cell <- :array.to_list(row) do
         case cell do
-          :undefined -> "-"
+          :undefined -> empty_char
           %Orange.Renderer.Cell{character: char} -> char
         end
       end

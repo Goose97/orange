@@ -10,5 +10,6 @@ defmodule Orange.Test.Snapshot do
   @doc """
   Returns the content of the snapshot as a string.
   """
-  def content(%__MODULE__{buffer: buffer}), do: Orange.Renderer.Buffer.to_string(buffer)
+  def content(%__MODULE__{buffer: buffer}, opts \\ []),
+    do: Orange.Renderer.Buffer.to_string(buffer, opts)
 end
