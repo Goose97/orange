@@ -112,6 +112,12 @@ defmodule Orange.Renderer.InputTree do
     style =
       if line_wrap != nil, do: Keyword.put(style || [], :line_wrap, line_wrap), else: style
 
+    if not is_binary(string) do
+      raise(
+        "#{__MODULE__}.to_input_tree: invalid element children. Expected a string or another element, got #{inspect(string, pretty: true)}"
+      )
+    end
+
     new_node = %InputTreeNode{
       id: new_id,
       children: {:text, string},

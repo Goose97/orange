@@ -137,6 +137,19 @@ defmodule Orange.RendererTest do
              -----------------------------------\
              """
     end
+
+    test "raises error when given invalid children" do
+      element =
+        rect do
+          1
+        end
+
+      assert_raise RuntimeError,
+                   "Elixir.Orange.Renderer.InputTree.to_input_tree: invalid element children. Expected a string or another element, got 1",
+                   fn ->
+                     Orange.Renderer.render(element, %{width: 15, height: 5})
+                   end
+    end
   end
 
   describe "style inheritance" do
