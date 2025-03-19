@@ -68,8 +68,8 @@ defmodule Orange.Component.Modal do
 
     style =
       Keyword.merge(
-        Keyword.get(attrs, :style, []),
-        border: true
+        [border: true],
+        Keyword.get(attrs, :style, [])
       )
 
     # Plus 2 for the border
