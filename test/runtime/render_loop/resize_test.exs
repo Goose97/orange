@@ -6,11 +6,13 @@ defmodule Orange.Runtime.RenderLoop.ResizeTest do
   alias Orange.{Test, Terminal}
 
   test "Rerender on resizing" do
-    [snapshot1, snapshot2 | _] =
+    [snapshot1, snapshot2] =
       Test.render(__MODULE__.Example,
         terminal_size: {20, 6},
         events: [
+          {:wait_and_snapshot, 10},
           %Terminal.ResizeEvent{width: 14, height: 8},
+          {:wait_and_snapshot, 10},
           # Quit
           %Terminal.KeyEvent{code: {:char, "q"}}
         ]

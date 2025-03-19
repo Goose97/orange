@@ -8,33 +8,19 @@ defmodule Orange.Runtime.UpdateStateTest do
   test "update state with callback" do
     ref = :atomics.new(1, [])
 
-    [snapshot1, snapshot2 | _] =
+    [snapshot] =
       Test.render({__MODULE__.Counter, atomic: ref},
         terminal_size: {20, 6},
         events: [
           # Wait to make sure after_mount fires first
-          {:wait, 20},
-          # Noop event
-          %Terminal.KeyEvent{code: :up},
+          {:wait_and_snapshot, 20},
           # Quit
           %Terminal.KeyEvent{code: {:char, "q"}}
         ]
       )
 
     assert_content(
-      snapshot1,
-      """
-      ┌─────────────┐-----
-      │Counter: 0---│-----
-      └─────────────┘-----
-      --------------------
-      --------------------
-      --------------------\
-      """
-    )
-
-    assert_content(
-      snapshot2,
+      snapshot,
       """
       ┌─────────────┐-----
       │Counter: 1---│-----

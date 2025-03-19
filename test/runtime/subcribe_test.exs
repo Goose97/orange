@@ -6,14 +6,17 @@ defmodule Orange.Runtime.SubscribeTest do
   alias Orange.{Test, Terminal}
 
   test "render components and subscribe to events" do
-    [snapshot1, snapshot2, snapshot3 | _] =
+    [snapshot1, snapshot2, snapshot3] =
       Test.render({__MODULE__.Counter, highlighted: true, events_subscription: true},
         terminal_size: {20, 6},
         events: [
+          {:wait_and_snapshot, 10},
           # Increase by one
           %Terminal.KeyEvent{code: :up},
+          {:wait_and_snapshot, 10},
           # Decrease by one
           %Terminal.KeyEvent{code: :down},
+          {:wait_and_snapshot, 10},
           # Quit
           %Terminal.KeyEvent{code: {:char, "q"}}
         ]
@@ -57,16 +60,20 @@ defmodule Orange.Runtime.SubscribeTest do
   end
 
   test "unsubcribed components don't receive events" do
-    [snapshot1, snapshot2, snapshot3, snapshot4 | _] =
+    [snapshot1, snapshot2, snapshot3, snapshot4] =
       Test.render(__MODULE__.CounterWrapper,
         terminal_size: {20, 6},
         events: [
+          {:wait_and_snapshot, 10},
           # Increase by one
           %Terminal.KeyEvent{code: :up},
+          {:wait_and_snapshot, 10},
           # Unsuscribe counter
           %Terminal.KeyEvent{code: {:char, "x"}},
+          {:wait_and_snapshot, 10},
           # Decrease by one but the event is not handled
           %Terminal.KeyEvent{code: :down},
+          {:wait_and_snapshot, 10},
           # Quit
           %Terminal.KeyEvent{code: {:char, "q"}}
         ]
@@ -122,18 +129,21 @@ defmodule Orange.Runtime.SubscribeTest do
   end
 
   test "call unsubcribed from another process" do
-    [snapshot1, snapshot2, snapshot3, snapshot4 | _] =
+    [snapshot1, snapshot2, snapshot3, snapshot4] =
       Test.render({__MODULE__.CounterWrapper, from_other_process: true},
         terminal_size: {20, 6},
         events: [
+          {:wait_and_snapshot, 10},
           # Increase by one
           %Terminal.KeyEvent{code: :up},
+          {:wait_and_snapshot, 10},
           # Unsuscribe counter
           %Terminal.KeyEvent{code: {:char, "x"}},
+          {:wait_and_snapshot, 10},
           # Make sure unsubscribe event is handled
-          {:wait, 20},
           # Decrease by one but the event is not handled
           %Terminal.KeyEvent{code: :down},
+          {:wait_and_snapshot, 10},
           # Quit
           %Terminal.KeyEvent{code: {:char, "q"}}
         ]

@@ -40,12 +40,14 @@ defmodule Orange.Runtime.CallbackTest do
   end
 
   test "triggers before_update/3 callback" do
-    [snapshot1, snapshot2 | _] =
+    [snapshot1, snapshot2] =
       Test.render(__MODULE__.Text,
         terminal_size: {20, 10},
         events: [
+          {:wait_and_snapshot, 10},
           # Trigger state update
           %Terminal.KeyEvent{code: {:char, "a"}},
+          {:wait_and_snapshot, 10},
           # Quit
           %Terminal.KeyEvent{code: {:char, "q"}}
         ]

@@ -6,16 +6,20 @@ defmodule Orange.Runtime.FocusTest do
   alias Orange.{Test, Terminal}
 
   test "focused components receive events and prevent other components from receiving events" do
-    [snapshot1, snapshot2, snapshot3, snapshot4 | _] =
+    [snapshot1, snapshot2, snapshot3, snapshot4] =
       Test.render(__MODULE__.CounterWrapper,
         terminal_size: {20, 6},
         events: [
+          {:wait_and_snapshot, 10},
           # Increase both counters by one
           %Terminal.KeyEvent{code: :up},
+          {:wait_and_snapshot, 10},
           # Focus on the first counter
           %Terminal.KeyEvent{code: {:char, "x"}},
+          {:wait_and_snapshot, 10},
           # Decrease only the focused counter by one
           %Terminal.KeyEvent{code: :down},
+          {:wait_and_snapshot, 10},
           # Quit
           %Terminal.KeyEvent{code: {:char, "q"}}
         ]
@@ -71,20 +75,26 @@ defmodule Orange.Runtime.FocusTest do
   end
 
   test "unfocus the focused component and all previously subscribed components receive events again" do
-    [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5, snapshot6 | _] =
+    [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5, snapshot6] =
       Test.render(__MODULE__.CounterWrapper,
         terminal_size: {20, 6},
         events: [
+          {:wait_and_snapshot, 10},
           # Increase both counters by one
           %Terminal.KeyEvent{code: :up},
+          {:wait_and_snapshot, 10},
           # Focus on the first counter
           %Terminal.KeyEvent{code: {:char, "x"}},
+          {:wait_and_snapshot, 10},
           # Decrease only the focused counter by one
           %Terminal.KeyEvent{code: :down},
+          {:wait_and_snapshot, 10},
           # Unfocus
           %Terminal.KeyEvent{code: {:char, "y"}},
+          {:wait_and_snapshot, 10},
           # Decrease both counters by one
           %Terminal.KeyEvent{code: :down},
+          {:wait_and_snapshot, 10},
           # Quit
           %Terminal.KeyEvent{code: {:char, "q"}}
         ]
@@ -164,24 +174,28 @@ defmodule Orange.Runtime.FocusTest do
   end
 
   test "call focus and unfocus from another process" do
-    [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5, snapshot6 | _] =
+    [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5, snapshot6] =
       Test.render({__MODULE__.CounterWrapper, from_another_process: true},
         terminal_size: {20, 6},
         events: [
+          {:wait_and_snapshot, 10},
           # Increase both counters by one
           %Terminal.KeyEvent{code: :up},
+          {:wait_and_snapshot, 10},
           # Focus on the first counter
           %Terminal.KeyEvent{code: {:char, "x"}},
+          {:wait_and_snapshot, 10},
           # Make sure the focus event is handled
-          {:wait, 20},
           # Decrease only the focused counter by one
           %Terminal.KeyEvent{code: :down},
+          {:wait_and_snapshot, 10},
           # Unfocus
           %Terminal.KeyEvent{code: {:char, "y"}},
+          {:wait_and_snapshot, 10},
           # Make sure the unfocus event is handled
-          {:wait, 20},
           # Decrease both counters by one
           %Terminal.KeyEvent{code: :down},
+          {:wait_and_snapshot, 10},
           # Quit
           %Terminal.KeyEvent{code: {:char, "q"}}
         ]

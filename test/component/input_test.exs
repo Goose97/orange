@@ -6,18 +6,24 @@ defmodule Orange.Component.InputTest do
   alias Orange.{Terminal, Test}
 
   test "receives keyboard events and renders input" do
-    events = [
-      %Terminal.KeyEvent{code: {:char, "f"}},
-      %Terminal.KeyEvent{code: {:char, "o"}},
-      %Terminal.KeyEvent{code: {:char, "o"}},
-      # Submit input
-      %Terminal.KeyEvent{code: :enter},
-      # Quit
-      %Terminal.KeyEvent{code: {:char, "q"}}
-    ]
-
-    [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5 | _] =
-      Test.render(__MODULE__.Input, terminal_size: {25, 5}, events: events)
+    [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5] =
+      Test.render(__MODULE__.Input,
+        terminal_size: {25, 5},
+        events: [
+          {:wait_and_snapshot, 10},
+          %Terminal.KeyEvent{code: {:char, "f"}},
+          {:wait_and_snapshot, 10},
+          %Terminal.KeyEvent{code: {:char, "o"}},
+          {:wait_and_snapshot, 10},
+          %Terminal.KeyEvent{code: {:char, "o"}},
+          {:wait_and_snapshot, 10},
+          # Submit input
+          %Terminal.KeyEvent{code: :enter},
+          {:wait_and_snapshot, 10},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
+      )
 
     assert_content(
       snapshot1,
@@ -76,20 +82,27 @@ defmodule Orange.Component.InputTest do
   end
 
   test "backspace deletes characters" do
-    events = [
-      %Terminal.KeyEvent{code: {:char, "f"}},
-      %Terminal.KeyEvent{code: {:char, "o"}},
-      # Delete character
-      %Terminal.KeyEvent{code: :backspace},
-      %Terminal.KeyEvent{code: {:char, "a"}},
-      # Submit input
-      %Terminal.KeyEvent{code: :enter},
-      # Quit
-      %Terminal.KeyEvent{code: {:char, "q"}}
-    ]
-
-    [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5, snapshot6 | _] =
-      Test.render(__MODULE__.Input, terminal_size: {25, 5}, events: events)
+    [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5, snapshot6] =
+      Test.render(__MODULE__.Input,
+        terminal_size: {25, 5},
+        events: [
+          {:wait_and_snapshot, 10},
+          %Terminal.KeyEvent{code: {:char, "f"}},
+          {:wait_and_snapshot, 10},
+          %Terminal.KeyEvent{code: {:char, "o"}},
+          {:wait_and_snapshot, 10},
+          # Delete character
+          %Terminal.KeyEvent{code: :backspace},
+          {:wait_and_snapshot, 10},
+          %Terminal.KeyEvent{code: {:char, "a"}},
+          {:wait_and_snapshot, 10},
+          # Submit input
+          %Terminal.KeyEvent{code: :enter},
+          {:wait_and_snapshot, 10},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
+      )
 
     assert_content(
       snapshot1,
@@ -159,18 +172,19 @@ defmodule Orange.Component.InputTest do
   end
 
   test "custom submit_key" do
-    events = [
-      %Terminal.KeyEvent{code: {:char, "f"}},
-      # Submit input
-      %Terminal.KeyEvent{code: {:char, "x"}},
-      # Quit
-      %Terminal.KeyEvent{code: {:char, "q"}}
-    ]
-
-    [snapshot1, snapshot2, snapshot3 | _] =
+    [snapshot1, snapshot2, snapshot3] =
       Test.render({__MODULE__.Input, submit_key: {:char, "x"}},
         terminal_size: {25, 5},
-        events: events
+        events: [
+          {:wait_and_snapshot, 10},
+          %Terminal.KeyEvent{code: {:char, "f"}},
+          {:wait_and_snapshot, 10},
+          # Submit input
+          %Terminal.KeyEvent{code: {:char, "x"}},
+          {:wait_and_snapshot, 10},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
       )
 
     assert_content(
@@ -208,22 +222,23 @@ defmodule Orange.Component.InputTest do
   end
 
   test "custom exit_key" do
-    events = [
-      %Terminal.KeyEvent{code: {:char, "f"}},
-      # Exit
-      %Terminal.KeyEvent{code: {:char, "x"}},
-      # Quit
-      %Terminal.KeyEvent{code: {:char, "q"}}
-    ]
-
     counter = :counters.new(1, [])
 
-    [snapshot1, snapshot2, snapshot3 | _] =
+    [snapshot1, snapshot2, snapshot3] =
       Test.render(
         {__MODULE__.Input,
          exit_key: {:char, "x"}, on_exit: fn -> :counters.add(counter, 1, 1) end},
         terminal_size: {25, 5},
-        events: events
+        events: [
+          {:wait_and_snapshot, 10},
+          %Terminal.KeyEvent{code: {:char, "f"}},
+          # Exit
+          {:wait_and_snapshot, 10},
+          %Terminal.KeyEvent{code: {:char, "x"}},
+          {:wait_and_snapshot, 10},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
       )
 
     assert_content(
@@ -263,17 +278,17 @@ defmodule Orange.Component.InputTest do
   end
 
   test ":auto_focus false" do
-    events = [
-      # Auto focus is disabled, this event shouldn't be processed
-      %Terminal.KeyEvent{code: {:char, "f"}},
-      # Quit
-      %Terminal.KeyEvent{code: {:char, "q"}}
-    ]
-
-    [snapshot1, snapshot2, snapshot3 | _] =
+    [snapshot1, snapshot2] =
       Test.render({__MODULE__.Input, submit_key: {:char, "x"}, auto_focus: false},
         terminal_size: {25, 5},
-        events: events
+        events: [
+          {:wait_and_snapshot, 10},
+          # Auto focus is disabled, this event shouldn't be processed
+          %Terminal.KeyEvent{code: {:char, "f"}},
+          {:wait_and_snapshot, 10},
+          # Quit
+          %Terminal.KeyEvent{code: {:char, "q"}}
+        ]
       )
 
     assert_content(
@@ -289,17 +304,6 @@ defmodule Orange.Component.InputTest do
 
     assert_content(
       snapshot2,
-      """
-      Input: ------------------
-      Submitted value: --------
-      -------------------------
-      -------------------------
-      -------------------------\
-      """
-    )
-
-    assert_content(
-      snapshot3,
       """
       Input: ------------------
       Submitted value: --------
