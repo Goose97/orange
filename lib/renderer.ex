@@ -546,13 +546,13 @@ defmodule Orange.Renderer do
               cell = Buffer.get_cell(scrollable_buffer, {scroll_cell_row, scroll_cell_column})
 
               if cell != :undefined do
-                {buffer_width, buffer_height} = buffer.size
+                {buffer_width, buffer_height} = buffer.size || {nil, nil}
                 x = node.abs_x + row
                 y = node.abs_y + column
 
                 cond do
-                  x >= buffer_width -> acc_buffer
-                  y >= buffer_height -> acc_buffer
+                  buffer_width && x >= buffer_width -> acc_buffer
+                  buffer_height && y >= buffer_height -> acc_buffer
                   true -> Buffer.write_cell(acc_buffer, {x, y}, cell)
                 end
               else

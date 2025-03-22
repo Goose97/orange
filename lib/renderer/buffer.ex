@@ -64,15 +64,25 @@ defmodule Orange.Renderer.Buffer do
       do: buffer
 
   def clear_area(buffer, %Renderer.Area{} = area) do
+    {buffer_width, buffer_height} = buffer.size || {nil, nil}
+
     Enum.reduce(0..(area.height - 1), buffer, fn i, acc ->
-      row_to_update = :array.get(area.y + i, acc.rows)
+      if !buffer_height || area.y + i < buffer_height do
+        row_to_update = :array.get(area.y + i, acc.rows)
 
-      updated_row =
-        Enum.reduce(0..(area.width - 1), row_to_update, fn j, row ->
-          :array.set(area.x + j, :array.default(row), row)
-        end)
+        updated_row =
+          Enum.reduce(0..(area.width - 1), row_to_update, fn j, row ->
+            if !buffer_width || area.x + j < buffer_width do
+              :array.set(area.x + j, :array.default(row), row)
+            else
+              row
+            end
+          end)
 
-      %{acc | rows: :array.set(area.y + i, updated_row, acc.rows)}
+        %{acc | rows: :array.set(area.y + i, updated_row, acc.rows)}
+      else
+        acc
+      end
     end)
   end
 
