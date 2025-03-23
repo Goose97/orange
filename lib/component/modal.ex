@@ -4,16 +4,16 @@ defmodule Orange.Component.Modal do
 
   ## Attributes
 
-    - `:open` - Whether the modal is open or not. This attribute is required.
-    - `:offset_x` - The offset from the left and right edge of the screen. This attribute is required.
-    - `:offset_y` - The offset from the top and bottom edge of the screen. This attribute is required.
+    * `:open` - Whether the modal is open or not. This attribute is required.
+    * `:offset_x` - The offset from the left and right edge of the screen. This attribute is required.
+    * `:offset_y` - The offset from the top and bottom edge of the screen. This attribute is required.
     > #### Info {: .info}
     >
     > When the offset_x/y is too big for the terminal size, the modal will not be rendered.
 
-    - `:children` - A list of elements used as content of the modal. This attribute is optional.
-    - `:title` - The title of the modal. See `Orange.Macro.rect/2` for supported values. This attribute is optional.
-    - `:style` - The modal style. See `Orange.Macro.rect/2` for supported values. This attribute is optional.
+    * `:children` - A list of elements used as content of the modal. This attribute is optional.
+    * `:title` - The title of the modal. See `Orange.Macro.rect/2` for supported values. This attribute is optional.
+    * `:style` - The modal style. See `Orange.Macro.rect/2` for supported values. This attribute is optional.
 
   ## Examples
 

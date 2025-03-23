@@ -18,7 +18,7 @@ Orange is a framework to build TUI (terminal UI) applications in Elixir. Its hig
 
   will render this:
 
-  ![Rendered result](https://github.com/Goose97/orange/blob/main/.github/assets/example_syntax.png)
+  ![rendered result](https://github.com/Goose97/orange/blob/main/.github/assets/example_syntax.png)
 
 - Support handling terminal events: currently, only keyboard events are supported.
 

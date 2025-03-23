@@ -85,7 +85,7 @@ defmodule Orange.Component do
         end
       end
 
-  ![Rendered result](assets/component-example.gif)
+  ![rendered result](assets/component-example.gif)
 
   ## Update callback
 

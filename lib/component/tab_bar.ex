@@ -4,13 +4,14 @@ defmodule Orange.Component.TabBar do
 
   ## Attributes
 
-    - `:tabs` - A list of tabs. Each tab is a map with the following keys:
-      - `:id` - The id of the tab
-      - `:name` - The name of the tab
-    This attribute is required.
+    * `:tabs` - A list of tabs. Each tab is a map with the following keys:
+      * `:id` - The id of the tab
+      * `:name` - The name of the tab
 
-    - `:active_tab` - The id of the active tab. This attribute is required.
-    - `:active_color` - The color of the active tab. This attribute is optional. Defaults to `:green`.
+      This attribute is required.
+
+    * `:active_tab` - The id of the active tab. This attribute is required.
+    * `:active_color` - The color of the active tab. This attribute is optional. Defaults to `:green`.
 
   ## Examples
 
