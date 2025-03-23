@@ -139,4 +139,12 @@ defmodule Orange do
       %{width: 10, height: 10}
   """
   defdelegate get_layout_size(component_id), to: Orange.Runtime
+
+  @doc """
+  Get the terminal size.
+  """
+  def terminal_size() do
+    terminal_impl = Application.get_env(:orange, :terminal, Orange.Terminal)
+    terminal_impl.terminal_size()
+  end
 end
