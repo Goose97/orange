@@ -493,7 +493,7 @@ defmodule Orange.Renderer do
       scroll_buffer,
       node,
       {attributes[:scroll_x], attributes[:scroll_y]},
-      attributes[:style]
+      attributes[:style] || []
     )
   end
 
