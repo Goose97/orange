@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/Goose97/orange/compare/v1.0.0...v1.1.0) (2025-03-25)
+
+
+### Features
+
+* add list component ([f70eed8](https://github.com/Goose97/orange/commit/f70eed8f9792bbb8eff7ddb1823f1211d0b7fc6c))
+* add Orange.terminal_size/0 API ([f37fdb2](https://github.com/Goose97/orange/commit/f37fdb23e1e6ddfc7ca57168cffa005a6fac6381))
+* **list:** auto scroll selected item into view during initial render ([8a09fc7](https://github.com/Goose97/orange/commit/8a09fc7333a647f495bc250c3a528bc8b631dfef))
+
+
+### Bug Fixes
+
+* crash when style is not specified ([1c80395](https://github.com/Goose97/orange/commit/1c8039581f18b43145244d40dac575d8de7fe75d))
+
 ## [1.0.0](https://github.com/Goose97/orange/compare/v0.5.0...v1.0.0) (2025-03-22)
 
 
