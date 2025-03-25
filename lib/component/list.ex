@@ -119,9 +119,29 @@ defmodule Orange.Component.List do
   end
 
   @impl true
-  def after_mount(_state, _attrs, update) do
+  def after_mount(state, attrs, update) do
     # Force re-render because we now have layout measurements after the first render
     update.(fn state -> %{state | mounted: true} end)
+    scroll_selected_item_into_view(state, attrs)
+  end
+
+  # Ensure that after the initial render, the selected item is always in view
+  # NOTE: we only do this in the initial render, NOT on subsequent renders. It means that
+  # if the selected item is changed via props, other than our built-in navigation, the selected
+  # item might not be in view.
+  defp scroll_selected_item_into_view(state, attrs) do
+    %{height: available_height} = Orange.get_layout_size(state.id)
+
+    selected_item_index =
+      Enum.find_index(attrs[:items], &(&1.key == attrs[:selected_item]))
+
+    target_scroll_offset =
+      item_start_offset(attrs[:items], selected_item_index) +
+        Enum.at(attrs[:items], selected_item_index).height
+
+    if target_scroll_offset > attrs[:scroll_offset] + available_height do
+      attrs[:on_scroll_offset_change].(target_scroll_offset - available_height)
+    end
   end
 
   defp move_to_next_item(state, attrs) do

@@ -426,6 +426,34 @@ defmodule Orange.Component.ListTest do
     )
   end
 
+  test "automatically scrolls the selecting item into view during the initial render" do
+    [snapshot] =
+      Test.render(
+        {
+          __MODULE__.List,
+          selected_item: :item4, style: [height: 6]
+        },
+        terminal_size: {20, 10},
+        events: [{:wait_and_snapshot, 20}]
+      )
+
+    assert_content(
+      snapshot,
+      """
+      ┌───────────────┐---
+      │-Item 2-------▐│---
+      │-Item 3-------▐│---
+      │ Item 4 ------││---
+      │Selected: item4│---
+      └───────────────┘---
+      --------------------
+      --------------------
+      --------------------
+      --------------------\
+      """
+    )
+  end
+
   defmodule List do
     @behaviour Orange.Component
 
@@ -433,8 +461,11 @@ defmodule Orange.Component.ListTest do
     alias Orange.{Terminal, Component}
 
     @impl true
-    def init(_attrs),
-      do: %{state: %{selected_item: :item1, scroll_offset: 0}, events_subscription: true}
+    def init(attrs),
+      do: %{
+        state: %{selected_item: Keyword.get(attrs, :selected_item, :item1), scroll_offset: 0},
+        events_subscription: true
+      }
 
     @impl true
     def handle_event(event, _state, _attrs, _update) do
