@@ -26,6 +26,27 @@ defmodule Orange.RendererTest do
              """
     end
 
+    test "renders a rect with empty string" do
+      element =
+        rect do
+          "   "
+        end
+
+      screen =
+        element
+        |> Orange.Renderer.render(%{width: 15, height: 5})
+        |> elem(0)
+        |> Buffer.to_string()
+
+      assert screen == """
+                ------------
+             ---------------
+             ---------------
+             ---------------
+             ---------------\
+             """
+    end
+
     test "renders with flex direction" do
       element =
         rect style: [border: true, flex_direction: :row] do

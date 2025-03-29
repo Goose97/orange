@@ -86,11 +86,6 @@ fn split_with_whitespaces(text: &str) -> Vec<(&str, usize)> {
     let mut leading_whitespace_count = 0;
     let chars: Vec<(usize, char)> = text.char_indices().collect();
 
-    // Handle empty string case
-    if text.is_empty() {
-        return vec![("", 0)];
-    }
-
     // Handle leading whitespaces
     for (idx, c) in chars.iter() {
         if c.is_whitespace() {
@@ -102,6 +97,11 @@ fn split_with_whitespaces(text: &str) -> Vec<(&str, usize)> {
             word_start = Some(*idx);
             break;
         }
+    }
+
+    // It means the string only contains whitespaces
+    if word_start.is_none() {
+        return vec![("", leading_whitespace_count)];
     }
 
     // Process rest of string
