@@ -86,6 +86,9 @@ fn split_with_whitespaces(text: &str) -> Vec<(&str, usize)> {
     let mut leading_whitespace_count = 0;
     let chars: Vec<(usize, char)> = text.char_indices().collect();
 
+    // Check for the special case of an empty string. If so, return vec![[("", x)]] where
+    // x is the number of leading whitespaces. ai!
+
     // Handle leading whitespaces
     for (idx, c) in chars.iter() {
         if c.is_whitespace() {
@@ -161,6 +164,7 @@ mod tests {
                 vec![("foo", 2), ("bar", 4), ("baz", 0)]
             );
         }
+
         #[test]
         fn with_leading_whitespaces() {
             assert_eq!(split_with_whitespaces(" foo"), vec![("", 1), ("foo", 0),]);
@@ -170,6 +174,7 @@ mod tests {
                 vec![("", 3), ("foo", 1), ("bar", 4), ("baz", 0)]
             );
         }
+
         #[test]
         fn with_trailing_whitespaces() {
             assert_eq!(split_with_whitespaces("foo "), vec![("foo", 1)]);
@@ -178,6 +183,11 @@ mod tests {
                 split_with_whitespaces("foo bar    baz  "),
                 vec![("foo", 1), ("bar", 4), ("baz", 2)]
             );
+        }
+
+        #[test]
+        fn empty_string() {
+            assert_eq!(split_with_whitespaces("   "), vec![("", 3)]);
         }
     }
 }
