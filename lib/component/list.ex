@@ -139,7 +139,8 @@ defmodule Orange.Component.List do
       item_start_offset(attrs[:items], selected_item_index) +
         Enum.at(attrs[:items], selected_item_index).height
 
-    if target_scroll_offset > attrs[:scroll_offset] + available_height do
+    if target_scroll_offset > attrs[:scroll_offset] + available_height &&
+         attrs[:on_scroll_offset_change] do
       attrs[:on_scroll_offset_change].(target_scroll_offset - available_height)
     end
   end
@@ -166,7 +167,8 @@ defmodule Orange.Component.List do
 
           trigger_on_selected_item_change(attrs, next_item)
 
-          if target_scroll_offset > attrs[:scroll_offset] + available_height do
+          if target_scroll_offset > attrs[:scroll_offset] + available_height &&
+               attrs[:on_scroll_offset_change] do
             # The next item is not fully visible, scroll down
             attrs[:on_scroll_offset_change].(target_scroll_offset - available_height)
           end
@@ -191,7 +193,7 @@ defmodule Orange.Component.List do
 
         trigger_on_selected_item_change(attrs, previous_item)
 
-        if target_scroll_offset < attrs[:scroll_offset] do
+        if target_scroll_offset < attrs[:scroll_offset] && attrs[:on_scroll_offset_change] do
           # The prev item is not fully visible, scroll up
           attrs[:on_scroll_offset_change].(target_scroll_offset)
         end
