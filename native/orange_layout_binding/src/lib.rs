@@ -278,6 +278,8 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
         {
             "row" => default_style.flex_direction = FlexDirection::Row,
             "column" => default_style.flex_direction = FlexDirection::Column,
+            "row_reverse" => default_style.flex_direction = FlexDirection::RowReverse,
+            "column_reverse" => default_style.flex_direction = FlexDirection::ColumnReverse,
             _ => default_style.flex_direction = FlexDirection::Row,
         };
 
