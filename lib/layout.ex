@@ -21,8 +21,21 @@ defmodule Orange.Layout do
     acc_x = acc_x + node.x
     acc_y = acc_y + node.y
 
-    new_width = round(round(acc_x + node.width) - round(acc_x))
-    new_height = round(round(acc_y + node.height) - round(acc_y))
+    new_width = round(acc_x + node.width * scale_x) - round(acc_x)
+    new_height = round(acc_y + node.height * scale_y) - round(acc_y)
+
+    result = %OutputTreeNode{
+      id: node.id,
+      x: round(node.x),
+      y: round(node.y),
+      width: new_width,
+      height: new_height,
+      border: node.border,
+      padding: node.padding,
+      margin: node.margin,
+      content_text_lines: node.content_text_lines,
+      content_size: node.content_size
+    }
 
     children =
       case node.children do
@@ -47,23 +60,15 @@ defmodule Orange.Layout do
               true -> 1 + (new_height - node.height) / elem(node.content_size, 1)
             end
 
+          # Adjust the acc to account for the difference after rounding
+          acc_x = acc_x + (result.x - node.x)
+          acc_y = acc_y + (result.y - node.y)
           rounded = Enum.map(nodes, &perform_rounding(&1, {acc_x, acc_y}, {scale_x, scale_y}))
+
           {:nodes, rounded}
       end
 
-    %OutputTreeNode{
-      id: node.id,
-      x: round(node.x),
-      y: round(node.y),
-      width: new_width,
-      height: new_height,
-      border: node.border,
-      padding: node.padding,
-      margin: node.margin,
-      content_text_lines: node.content_text_lines,
-      content_size: node.content_size,
-      children: children
-    }
+    %{result | children: children}
   end
 
   def caculate_absolute_position(%OutputTreeNode{} = node, {acc_x, acc_y} \\ {0, 0}) do
