@@ -122,7 +122,7 @@ defmodule Orange.Component.List do
   def after_mount(state, attrs, update) do
     # Force re-render because we now have layout measurements after the first render
     update.(fn state -> %{state | mounted: true} end)
-    scroll_selected_item_into_view(state, attrs)
+    if attrs[:items] != [], do: scroll_selected_item_into_view(state, attrs)
   end
 
   # Ensure that after the initial render, the selected item is always in view
@@ -139,7 +139,9 @@ defmodule Orange.Component.List do
       item_start_offset(attrs[:items], selected_item_index) +
         Enum.at(attrs[:items], selected_item_index).height
 
-    if target_scroll_offset > attrs[:scroll_offset] + available_height &&
+    scroll_offset = Keyword.get(attrs, :scroll_offset, 0)
+
+    if target_scroll_offset > scroll_offset + available_height &&
          attrs[:on_scroll_offset_change] do
       attrs[:on_scroll_offset_change].(target_scroll_offset - available_height)
     end
