@@ -88,10 +88,10 @@ defmodule Orange.Renderer.Buffer do
 
   defp buffer_write(%__MODULE__{size: {width, height}} = buffer, {x, y}, text, opts) do
     cond do
-      y >= height ->
+      y >= height or y < 0 ->
         buffer
 
-      x >= width ->
+      x >= width or x < 0 ->
         buffer
 
       true ->
