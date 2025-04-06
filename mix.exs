@@ -42,7 +42,8 @@ defmodule Orange.MixProject do
           Orange.Component.Input,
           Orange.Component.Modal,
           Orange.Component.TabBar,
-          Orange.Component.List
+          Orange.Component.List,
+          Orange.Component.Table
         ],
         Events: [
           Orange.Terminal.KeyEvent,
