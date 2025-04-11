@@ -23,8 +23,12 @@ defmodule Orange.Component.Table do
     * `:on_selected_row_change` - A function that is called when moving to a different row.
       It receives the new row index. This attribute is optional.
 
-    * `:on_row_select` - A function that is called when a row is selected (Enter key).
-      It receives the row_key of the selected row. This attribute is optional.
+    * `:actions` - A list of key-action pairs for custom keyboard actions on rows.
+      Each pair is a tuple of `{key_code, callback}`, where:
+      * `key_code` - A key code. See `Orange.Terminal.KeyEvent.key_code`
+      * `callback` - A function that receives the row_key of the selected row
+      
+      This attribute is optional.
 
     * `:current_page` - The current page number (0-based). This attribute is optional. Defaults to 0.
 
@@ -61,10 +65,10 @@ defmodule Orange.Component.Table do
     * `k` - Move to the previous row
     * `>` - Go to the next page
     * `<` - Go to the previous page
-    * `Enter` - Select the current row
     * `L` - Scroll right (when table is wider than the viewport)
     * `H` - Scroll left (when table is wider than the viewport)
     * `[sort_key]` - Sort by the column with the matching sort_key
+    * Custom keys defined in `:actions` - Perform the associated action on the selected row
 
   ## Examples
 
@@ -117,7 +121,10 @@ defmodule Orange.Component.Table do
             on_selected_row_change: fn index ->
               update.(fn state -> %{state | selected_row_index: index} end)
             end,
-            on_row_select: fn row_key -> IO.puts(\"Selected row: \#{row_key}\") end,
+            actions: [
+              {{:char, "e"}, fn row_key -> IO.puts(\"Editing row: \#{row_key}\") end},
+              {{:char, "d"}, fn row_key -> IO.puts(\"Deleting row: \#{row_key}\") end}
+            ],
             current_page: state.current_page,
             on_page_change: fn page ->
               update.(fn state -> 
@@ -167,8 +174,15 @@ defmodule Orange.Component.Table do
     if !attrs[:disabled] do
       case event do
         %Orange.Terminal.KeyEvent{code: {:char, "j"}} ->
+          total_pages = ceil(length(attrs[:rows]) / state.page_size)
+
+          last_row_index =
+            if attrs[:current_page] < total_pages - 1,
+              do: state.page_size - 1,
+              else: rem(length(attrs[:rows]), state.page_size) - 1
+
           if attrs[:on_selected_row_change] && state.page_size &&
-               attrs[:selected_row_index] < state.page_size - 1,
+               attrs[:selected_row_index] < last_row_index,
              do: attrs[:on_selected_row_change].(attrs[:selected_row_index] + 1)
 
           :noop
@@ -201,17 +215,6 @@ defmodule Orange.Component.Table do
 
           :noop
 
-        %Orange.Terminal.KeyEvent{code: :enter} ->
-          selected_row_index = attrs[:selected_row_index]
-          rows = Process.get({__MODULE__, state.id, :rows})
-
-          if selected_row_index != nil and selected_row_index < length(rows) do
-            {row_key, _} = Enum.at(rows, selected_row_index)
-            if on_row_select = attrs[:on_row_select], do: on_row_select.(row_key)
-          end
-
-          :noop
-
         # Scroll right a quarter of the screen
         %Orange.Terminal.KeyEvent{code: {:char, "L"}} ->
           if state.layout_size do
@@ -230,12 +233,20 @@ defmodule Orange.Component.Table do
             :noop
           end
 
-        %Orange.Terminal.KeyEvent{code: {:char, char}} ->
-          column = Enum.find(attrs[:columns], fn column -> Map.get(column, :sort_key) == char end)
+        %Orange.Terminal.KeyEvent{code: code} ->
+          selected_row_index = attrs[:selected_row_index]
 
-          if column do
-            sort_column = update_sort_column(attrs[:sort_column], column.id)
-            if attrs[:on_sort_change], do: attrs[:on_sort_change].(sort_column)
+          cond do
+            triggered_sort_column = match_sort_key(code, attrs[:columns]) ->
+              sort_column = update_sort_column(attrs[:sort_column], triggered_sort_column.id)
+              if attrs[:on_sort_change], do: attrs[:on_sort_change].(sort_column)
+
+            (action_callback = match_action(code, attrs[:actions])) && selected_row_index != nil ->
+              row_key = get_selected_row_key(state, attrs)
+              if row_key, do: action_callback.(row_key)
+
+            :else ->
+              nil
           end
 
           :noop
@@ -247,6 +258,11 @@ defmodule Orange.Component.Table do
       :noop
     end
   end
+
+  defp match_sort_key({:char, char}, columns),
+    do: Enum.find(columns, fn column -> Map.get(column, :sort_key) == char end)
+
+  defp match_sort_key(_, _), do: nil
 
   # If sort the same column, toggle direction
   defp update_sort_column({sort_column, direction}, sort_column) do
@@ -261,6 +277,29 @@ defmodule Orange.Component.Table do
 
   # If sort a different column, reset sort column and set the new column direction
   defp update_sort_column(_, new_sort_column), do: {new_sort_column, @initial_sort_direction}
+
+  defp match_action(_, nil), do: nil
+
+  defp match_action(code, actions) do
+    Enum.find_value(actions, fn
+      {^code, callback} -> callback
+      _ -> nil
+    end)
+  end
+
+  defp get_selected_row_key(state, attrs) do
+    # We pay the price to re-sort the rows before triggering the action.
+    # However, we expect the price is small due to the small size of the table.
+    # If performance becomes an issue, we can optimize this by caching the sorted rows.
+    rows = sort_rows(attrs[:rows], attrs[:sort_column], attrs[:columns])
+    start_index = attrs[:current_page] * state.page_size
+    rows_in_page = Enum.slice(rows, start_index, state.page_size)
+
+    if attrs[:selected_row_index] && attrs[:selected_row_index] < length(rows_in_page) do
+      {row_key, _} = Enum.at(rows_in_page, attrs[:selected_row_index])
+      row_key
+    end
+  end
 
   defp column_name(%{id: sort_column_id} = column, {sort_column_id, direction}) do
     direction_text =
@@ -327,8 +366,7 @@ defmodule Orange.Component.Table do
 
     {children, footer} =
       if state.page_size do
-        current_row =
-          current_page  * state.page_size + attrs[:selected_row_index] + 1
+        current_row = current_page * state.page_size + attrs[:selected_row_index] + 1
 
         footer =
           if attrs[:footer],
@@ -410,12 +448,6 @@ defmodule Orange.Component.Table do
         {row_key, contents}
       end)
 
-    row_heights =
-      for {_, contents} <- rows do
-        Enum.map(contents, &(String.split(&1, "\n") |> length()))
-        |> Enum.max()
-      end
-
     column_widths =
       Enum.map(0..(length(columns) - 1), fn index ->
         column = Enum.at(columns, index)
@@ -437,7 +469,7 @@ defmodule Orange.Component.Table do
         Enum.max([header_width | row_widths])
       end)
 
-    {rows, column_widths, row_heights}
+    {rows, column_widths}
   end
 
   defp headers(columns, column_widths, state, attrs) do
@@ -465,20 +497,14 @@ defmodule Orange.Component.Table do
   @impl true
   def render(state, attrs, _update) do
     columns = attrs[:columns]
-
     rows = sort_rows(attrs[:rows], attrs[:sort_column], columns)
-    {rows, column_widths, row_heights} = prepare_render(columns, rows)
-    Process.put({__MODULE__, state.id, :rows}, rows)
-
-    custom_style = Keyword.get(attrs, :style, [])
+    {rows, column_widths} = prepare_render(columns, rows)
 
     container_style =
       Keyword.merge(
         [flex_direction: :column, width: "100%", height: "100%", min_height: 0],
-        custom_style
+        Keyword.get(attrs, :style, [])
       )
-
-    Process.put({__MODULE__, state.id, :row_heights}, row_heights)
 
     rect style: container_style do
       headers(columns, column_widths, state, attrs)
