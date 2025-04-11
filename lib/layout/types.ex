@@ -135,6 +135,12 @@ defmodule Orange.Layout.OutputTreeNode do
     :children
   ]
 
+  defimpl Inspect do
+    def inspect(%Orange.Layout.OutputTreeNode{id: id}, _opts) do
+      "#OutputTreeNode<id: #{id}>"
+    end
+  end
+
   defmodule FourValues do
     @moduledoc false
 
