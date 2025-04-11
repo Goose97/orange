@@ -10,6 +10,15 @@ defmodule Orange.Renderer.Buffer do
     rows: []
   ]
 
+  defimpl Inspect do
+    def inspect(%Orange.Renderer.Buffer{size: size}, _opts) do
+      case size do
+        {width, height} -> "#Buffer<#{width}x#{height}>"
+        nil -> "#Buffer<dynamic>"
+      end
+    end
+  end
+
   # Fixed size buffer
   def new({width, height}) do
     default_row = :array.new(width, fixed: true)
