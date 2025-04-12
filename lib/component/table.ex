@@ -370,7 +370,10 @@ defmodule Orange.Component.Table do
 
     {children, footer} =
       if state.page_size do
-        current_row = current_page * state.page_size + attrs[:selected_row_index] + 1
+        current_row =
+          if length(all_rows) > 0,
+            do: current_page * state.page_size + attrs[:selected_row_index] + 1,
+            else: 0
 
         footer =
           if attrs[:footer],
