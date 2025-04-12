@@ -55,6 +55,8 @@ defmodule Orange.Component.Table do
 
     * `:border_color` - The color of the table borders. This attribute is optional.
 
+    * `:sort_key_color` - The color of the sort key indicators. Defaults to `:blue`. This attribute is optional.
+
     * `:disabled` - Whether the table is disabled (non-interactive). When disabled, all keyboard events are ignored. This attribute is optional.
 
     * `:style` - The table custom style. See `Orange.Macro.rect/2` for supported values. This attribute is optional.
@@ -301,7 +303,7 @@ defmodule Orange.Component.Table do
     end
   end
 
-  defp column_name(%{id: sort_column_id} = column, {sort_column_id, direction}) do
+  defp column_name(%{id: sort_column_id} = column, {sort_column_id, direction}, attrs) do
     direction_text =
       case direction do
         :desc -> "▼"
@@ -309,19 +311,21 @@ defmodule Orange.Component.Table do
       end
 
     rect do
-      column_with_sort_key(column)
+      column_with_sort_key(column, attrs)
       " #{direction_text}"
     end
   end
 
-  defp column_name(column, _), do: column_with_sort_key(column)
+  defp column_name(column, _, attrs), do: column_with_sort_key(column, attrs)
 
-  defp column_with_sort_key(column) do
+  defp column_with_sort_key(column, attrs) do
     if sort_key = Map.get(column, :sort_key) do
+      sort_key_color = Keyword.get(attrs, :sort_key_color, :blue)
+
       rect do
         column.name
 
-        rect style: [margin: {0, 0, 0, 1}, color: :blue] do
+        rect style: [margin: {0, 0, 0, 1}, color: sort_key_color] do
           "(#{sort_key})"
         end
       end
@@ -488,7 +492,7 @@ defmodule Orange.Component.Table do
       |> Enum.map(fn {column, width} ->
         # Plus 2 for the padding
         rect style: [width: width, flex_shrink: 0] do
-          column_name(column, attrs[:sort_column])
+          column_name(column, attrs[:sort_column], attrs)
         end
       end)
     end
