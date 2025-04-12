@@ -25,7 +25,7 @@ defmodule Orange.Component.Table do
 
     * `:actions` - A list of key-action pairs for custom keyboard actions on rows.
       Each pair is a tuple of `{key_code, callback}`, where:
-      * `key_code` - A key code. See `Orange.Terminal.KeyEvent.key_code`
+      * `key_code` - A [key code](`Orange.Terminal.KeyEvent#key_code`)
       * `callback` - A function that receives the row_key of the selected row
       
       This attribute is optional.
