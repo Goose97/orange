@@ -53,9 +53,17 @@ defmodule Orange.Component.Table do
     * `:row_style` - A function that returns custom styles for a row. It receives the row_key.
       See `Orange.Macro.rect/2` for supported values. This attribute is optional.
 
-    * `:border_color` - The color of the table borders. This attribute is optional.
+    * `:colors` - A map with color customization options:
+      * `:border` - The color of the table borders
+      * `:sort_key` - The color of the sort key indicators
+      * `:selected_row_bg` - The background color of the selected row
+      * `:selected_row_fg` - The foreground color of the selected row
+      
+      This attribute is optional.
 
-    * `:sort_key_color` - The color of the sort key indicators. Defaults to `:blue`. This attribute is optional.
+    * `:border_color` - (Deprecated) The color of the table borders. Use `:colors.border` instead. This attribute is optional.
+
+    * `:sort_key_color` - (Deprecated) The color of the sort key indicators. Use `:colors.sort_key` instead. Defaults to `:blue`. This attribute is optional.
 
     * `:disabled` - Whether the table is disabled (non-interactive). When disabled, all keyboard events are ignored. This attribute is optional.
 
@@ -320,7 +328,13 @@ defmodule Orange.Component.Table do
 
   defp column_with_sort_key(column, attrs) do
     if sort_key = Map.get(column, :sort_key) do
-      sort_key_color = Keyword.get(attrs, :sort_key_color, :blue)
+      # Support both new colors map and legacy sort_key_color attribute
+      sort_key_color = 
+        if colors = attrs[:colors] do
+          Map.get(colors, :sort_key, :blue)
+        else
+          Keyword.get(attrs, :sort_key_color, :blue)
+        end
 
       rect do
         column.name
@@ -342,11 +356,19 @@ defmodule Orange.Component.Table do
   end
 
   defp header_separator(attrs) do
+    # Support both new colors map and legacy border_color attribute
+    border_color = 
+      if colors = attrs[:colors] do
+        Map.get(colors, :border, attrs[:border_color])
+      else
+        attrs[:border_color]
+      end
+
     [
-      rect position: {:absolute, 2, 0, nil, nil}, style: [color: attrs[:border_color]] do
+      rect position: {:absolute, 2, 0, nil, nil}, style: [color: border_color] do
         "┤"
       end,
-      rect position: {:absolute, 2, nil, nil, 0}, style: [color: attrs[:border_color]] do
+      rect position: {:absolute, 2, nil, nil, 0}, style: [color: border_color] do
         "├"
       end
     ]
@@ -387,7 +409,22 @@ defmodule Orange.Component.Table do
           rows_in_page
           |> Enum.with_index()
           |> Enum.map(fn {{row_key, row}, index} ->
-            row_background_color = if attrs[:selected_row_index] == index, do: :dark_grey
+            is_selected = attrs[:selected_row_index] == index
+              
+            # Get colors from the colors map or use defaults
+            {row_background_color, row_foreground_color} =
+              if is_selected do
+                if colors = attrs[:colors] do
+                  {
+                    Map.get(colors, :selected_row_bg, :dark_grey),
+                    Map.get(colors, :selected_row_fg, nil)
+                  }
+                else
+                  {:dark_grey, nil}
+                end
+              else
+                {nil, nil}
+              end
 
             custom_row_style =
               if row_style_fn = attrs[:row_style], do: row_style_fn.(row_key), else: []
@@ -396,6 +433,7 @@ defmodule Orange.Component.Table do
               Keyword.merge(
                 [
                   background_color: row_background_color,
+                  color: row_foreground_color,
                   padding: {0, padding_x},
                   gap: cell_gap,
                   flex_shrink: 0,
@@ -422,6 +460,14 @@ defmodule Orange.Component.Table do
         {[], nil}
       end
 
+    # Support both new colors map and legacy border_color attribute
+    border_color = 
+      if colors = attrs[:colors] do
+        Map.get(colors, :border, attrs[:border_color])
+      else
+        attrs[:border_color]
+      end
+        
     rect id: state.id,
          style: [
            flex_direction: :column,
@@ -431,7 +477,7 @@ defmodule Orange.Component.Table do
            border_right: true,
            border_bottom: true,
            border_style: :round_corners,
-           border_color: attrs[:border_color]
+           border_color: border_color
          ],
          footer: footer,
          scroll_x: state.scroll_offset_x do
@@ -480,6 +526,14 @@ defmodule Orange.Component.Table do
   end
 
   defp headers(columns, column_widths, state, attrs) do
+    # Support both new colors map and legacy border_color attribute
+    border_color = 
+      if colors = attrs[:colors] do
+        Map.get(colors, :border, attrs[:border_color])
+      else
+        attrs[:border_color]
+      end
+      
     rect style: [
            gap: 2,
            width: "100%",
@@ -488,7 +542,7 @@ defmodule Orange.Component.Table do
            text_modifiers: [:bold],
            scroll_bar: :hidden,
            border_style: :round_corners,
-           border_color: attrs[:border_color]
+           border_color: border_color
          ],
          scroll_x: state.scroll_offset_x do
       Enum.zip(columns, column_widths)
