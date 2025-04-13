@@ -187,15 +187,21 @@ defmodule Orange.Component.Table do
               do: state.page_size - 1,
               else: rem(length(attrs[:rows]), state.page_size) - 1
 
-          if attrs[:on_selected_row_change] && state.page_size &&
-               attrs[:selected_row_index] < last_row_index,
-             do: attrs[:on_selected_row_change].(attrs[:selected_row_index] + 1)
+          if attrs[:on_selected_row_change] &&
+               state.page_size &&
+               attrs[:selected_row_index] &&
+               attrs[:selected_row_index] < last_row_index do
+            attrs[:on_selected_row_change].(attrs[:selected_row_index] + 1)
+          end
 
           :noop
 
         %Orange.Terminal.KeyEvent{code: {:char, "k"}} ->
-          if attrs[:on_selected_row_change] && attrs[:selected_row_index] > 0,
-            do: attrs[:on_selected_row_change].(attrs[:selected_row_index] - 1)
+          if attrs[:on_selected_row_change] &&
+               attrs[:selected_row_index] &&
+               attrs[:selected_row_index] > 0 do
+            attrs[:on_selected_row_change].(attrs[:selected_row_index] - 1)
+          end
 
           :noop
 
@@ -240,14 +246,12 @@ defmodule Orange.Component.Table do
           end
 
         %Orange.Terminal.KeyEvent{code: code} ->
-          selected_row_index = attrs[:selected_row_index]
-
           cond do
             triggered_sort_column = match_sort_key(code, attrs[:columns]) ->
               sort_column = update_sort_column(attrs[:sort_column], triggered_sort_column.id)
               if attrs[:on_sort_change], do: attrs[:on_sort_change].(sort_column)
 
-            (action_callback = match_action(code, attrs[:actions])) && selected_row_index != nil ->
+            (action_callback = match_action(code, attrs[:actions])) && attrs[:selected_row_index] ->
               row_key = get_selected_row_key(state, attrs)
               if row_key, do: action_callback.(row_key)
 
@@ -297,8 +301,9 @@ defmodule Orange.Component.Table do
     # We pay the price to re-sort the rows before triggering the action.
     # However, we expect the price is small due to the small size of the table.
     # If performance becomes an issue, we can optimize this by caching the sorted rows.
+    current_page = Keyword.get(attrs, :current_page, 0)
     rows = sort_rows(attrs[:rows], attrs[:sort_column], attrs[:columns])
-    start_index = attrs[:current_page] * state.page_size
+    start_index = current_page * state.page_size
     rows_in_page = Enum.slice(rows, start_index, state.page_size)
 
     if attrs[:selected_row_index] && attrs[:selected_row_index] < length(rows_in_page) do
@@ -377,14 +382,21 @@ defmodule Orange.Component.Table do
     {children, footer} =
       if state.page_size do
         current_row =
-          if length(all_rows) > 0,
-            do: current_page * state.page_size + attrs[:selected_row_index] + 1,
-            else: 0
+          cond do
+            attrs[:selected_row_index] == nil ->
+              nil
+
+            length(all_rows) > 0 ->
+              current_page * state.page_size + attrs[:selected_row_index] + 1
+
+            :else ->
+              0
+          end
 
         footer =
           if attrs[:footer],
             do: attrs[:footer].(%{current_row: current_row, total_rows: length(all_rows)}),
-            else: "< #{current_row} of #{length(all_rows)} >"
+            else: "< #{current_row || 0} of #{length(all_rows)} >"
 
         start_index = current_page * state.page_size
         rows_in_page = Enum.slice(all_rows, start_index, state.page_size)

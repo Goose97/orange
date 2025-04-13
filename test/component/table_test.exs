@@ -1,6 +1,7 @@
 defmodule Orange.Component.TableTest do
   use ExUnit.Case
 
+  import Orange.Macro
   import Orange.Test.Assertions
 
   alias Orange.{Terminal, Test}
@@ -260,26 +261,6 @@ defmodule Orange.Component.TableTest do
         """
       )
     end
-
-    test "pressing enter selects a row" do
-      [] =
-        Test.render(
-          {
-            __MODULE__.TableWrapper,
-            on_row_select: fn row_key ->
-              :persistent_term.put({__MODULE__, :select_row_test}, row_key)
-            end
-          },
-          terminal_size: {30, 10},
-          events: [
-            # Move down and select
-            %Terminal.KeyEvent{code: {:char, "j"}},
-            %Terminal.KeyEvent{code: :enter}
-          ]
-        )
-
-      assert :persistent_term.get({__MODULE__, :select_row_test}) == :row2
-    end
   end
 
   describe "pagination" do
@@ -380,7 +361,10 @@ defmodule Orange.Component.TableTest do
   describe "sorting" do
     test "pressing sort key changes sort column and direction" do
       [snapshot1, snapshot2] =
-        Test.render(__MODULE__.TableWrapper,
+        Test.render(
+          rect style: [width: "100%", height: "100%"] do
+            Orange.Component.TableTest.TableWrapper
+          end,
           terminal_size: {30, 10},
           events: [
             # Sort by name
@@ -424,6 +408,31 @@ defmodule Orange.Component.TableTest do
         """
       )
     end
+  end
+
+  test "custom actions" do
+    Test.render(
+      {
+        Orange.Component.Table,
+        columns: [%{id: :name, name: "Name"}],
+        rows: [{:row1, ["Alice"]}, {:row2, ["Bob"]}],
+        selected_row_index: 1,
+        actions: [
+          {:enter,
+           fn row_key ->
+             :persistent_term.put({__MODULE__, :select_row_test}, row_key)
+           end}
+        ]
+      },
+      terminal_size: {30, 10},
+      events: [
+        # Move down and select
+        %Terminal.KeyEvent{code: {:char, "j"}},
+        %Terminal.KeyEvent{code: :enter}
+      ]
+    )
+
+    assert :persistent_term.get({__MODULE__, :select_row_test}) == :row2
   end
 
   describe "horizontal scrolling" do
@@ -541,7 +550,7 @@ defmodule Orange.Component.TableTest do
         state: %{
           selected_row_index: 0,
           sort_column: nil,
-          current_page: 1
+          current_page: 0
         },
         events_subscription: true
       }
