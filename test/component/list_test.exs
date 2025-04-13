@@ -95,7 +95,7 @@ defmodule Orange.Component.ListTest do
         snapshot1,
         """
         ┌───────────────┐--------
-        │ Item 1 -------│--------
+        │ Item 1        │--------
         │-Item 2--------│--------
         │-Item 3--------│--------
         │-Item 4--------│--------
@@ -113,7 +113,7 @@ defmodule Orange.Component.ListTest do
         ┌───────────────┐--------
         │-Item 1--------│--------
         │-Item 2--------│--------
-        │ Item 3 -------│--------
+        │ Item 3        │--------
         │-Item 4--------│--------
         │-Item 5--------│--------
         │Selected: item3│--------
@@ -128,7 +128,7 @@ defmodule Orange.Component.ListTest do
         """
         ┌───────────────┐--------
         │-Item 1--------│--------
-        │ Item 2 -------│--------
+        │ Item 2        │--------
         │-Item 3--------│--------
         │-Item 4--------│--------
         │-Item 5--------│--------
@@ -172,9 +172,9 @@ defmodule Orange.Component.ListTest do
         """
         ┌───────────────┐--------
         │-Item 1--------│--------
-        │ Multiple -----│--------
-        │ lines    -----│--------
-        │ item     -----│--------
+        │ Multiple      │--------
+        │ lines         │--------
+        │ item          │--------
         │-Item 3--------│--------
         │Selected: item2│--------
         └───────────────┘--------
@@ -187,7 +187,7 @@ defmodule Orange.Component.ListTest do
         snapshot2,
         """
         ┌───────────────┐--------
-        │ Item 1   -----│--------
+        │ Item 1        │--------
         │-Multiple------│--------
         │-lines---------│--------
         │-item----------│--------
@@ -226,7 +226,7 @@ defmodule Orange.Component.ListTest do
       snapshot1,
       """
       ┌───────────────┐--------
-      │ Item 1 ------▐│--------
+      │ Item 1       ▐│--------
       │-Item 2-------▐│--------
       │-Item 3-------││--------
       │Selected: item1│--------
@@ -244,7 +244,7 @@ defmodule Orange.Component.ListTest do
       ┌───────────────┐--------
       │-Item 2-------▐│--------
       │-Item 3-------▐│--------
-      │ Item 4 ------││--------
+      │ Item 4       ││--------
       │Selected: item4│--------
       └───────────────┘--------
       -------------------------
@@ -258,7 +258,7 @@ defmodule Orange.Component.ListTest do
       snapshot3,
       """
       ┌───────────────┐--------
-      │ Item 1 ------▐│--------
+      │ Item 1       ▐│--------
       │-Item 2-------▐│--------
       │-Item 3-------││--------
       │Selected: item1│--------
@@ -305,7 +305,7 @@ defmodule Orange.Component.ListTest do
       snapshot,
       """
       ┌───────────────┐--------
-      │ Item 1 -------│--------
+      │ Item 1        │--------
       │-Item 2--------│--------
       │-Item 3--------│--------
       │-Item 4--------│--------
@@ -443,7 +443,7 @@ defmodule Orange.Component.ListTest do
       ┌───────────────┐---
       │-Item 2-------▐│---
       │-Item 3-------▐│---
-      │ Item 4 ------││---
+      │ Item 4       ││---
       │Selected: item4│---
       └───────────────┘---
       --------------------

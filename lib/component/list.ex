@@ -250,7 +250,8 @@ defmodule Orange.Component.List do
       style = Keyword.merge([min_height: 0], attrs[:style] || [])
 
       rect style: style, scroll_y: scroll_y do
-        rect id: state.id, style: [flex_direction: :column, min_height: 0] do
+        rect id: state.id,
+             style: [flex_direction: :column, min_height: 0, width: "100%"] do
           for %{key: item_key, item: item} <- attrs[:items] do
             rect style: item_style(attrs, item_key) do
               item
