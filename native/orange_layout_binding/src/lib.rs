@@ -1,6 +1,7 @@
 mod text_utils;
 
 use std::collections::HashMap;
+use std::time::SystemTime;
 
 use rustler::{Atom, Env, NifStruct, NifTaggedEnum};
 use taffy::prelude::*;
@@ -86,6 +87,50 @@ enum InputGridLine {
 }
 
 #[derive(Debug, NifStruct)]
+#[module = "Orange.Layout.Span"]
+struct Span {
+    name: String,
+    start_time: u64,
+    end_time: u64,
+    children: Vec<Span>,
+}
+
+fn now_nanos() -> u64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos() as u64
+}
+
+impl Span {
+    fn new(name: &str) -> Self {
+        Span {
+            name: name.to_string(),
+            start_time: now_nanos(),
+            end_time: 0,
+            children: Vec::new(),
+        }
+    }
+
+    fn end(&mut self) {
+        self.end_time = now_nanos();
+    }
+
+    fn add_child(&mut self, child: Span) {
+        self.children.push(child);
+    }
+
+    fn with_span<T>(&mut self, name: &str, callback: impl FnOnce() -> T) -> T {
+        let mut span = Span::new(name);
+        let result = callback();
+        span.end();
+        self.add_child(span);
+
+        return result;
+    }
+}
+
+#[derive(Debug, NifStruct)]
 #[module = "Orange.Layout.OutputTreeNode.FourValues"]
 struct OutputTreeNodeFourValues {
     left: usize,
@@ -139,54 +184,78 @@ impl NodeContext {
     }
 }
 
+#[derive(Debug, NifStruct)]
+#[module = "Orange.Layout.LayoutResult"]
+struct LayoutResult {
+    root: OutputTreeNode,
+    spans: Span,
+}
+
 #[rustler::nif]
 fn layout(
     env: Env,
     root: InputTreeNode,
     window_size: (WindowDimension, WindowDimension),
-) -> OutputTreeNode {
+) -> LayoutResult {
+    let mut root_span = Span::new("layout_nif");
+
     let mut tree: TaffyTree<NodeContext> = TaffyTree::new();
     tree.disable_rounding();
 
     let mut node_id_mapping = HashMap::<NodeId, &InputTreeNode>::new();
     let mut node_output_lines = HashMap::<NodeId, Vec<String>>::new();
-    let taffy_root = create_node(&mut tree, &root, &mut node_id_mapping, env);
+
+    let taffy_root = root_span.with_span("create_node", || {
+        create_node(&mut tree, &root, &mut node_id_mapping, env)
+    });
 
     // Compute layout with some default viewport size
-    tree.compute_layout_with_measure(
-        taffy_root,
-        Size {
-            width: window_dimension(window_size.0),
-            height: window_dimension(window_size.1),
-        },
-        |known_dimensions, available_space, node_id, node_context, _style| {
-            return match node_context {
-                Some(NodeContext::Text(text)) => {
-                    let input_tree_node = node_id_mapping.get(&node_id).unwrap();
-                    // Default to true if style is not specified
-                    let line_wrap = input_tree_node.style.as_ref().map_or(true, |v| v.line_wrap);
+    root_span.with_span("compute_layout", || {
+        tree.compute_layout_with_measure(
+            taffy_root,
+            Size {
+                width: window_dimension(window_size.0),
+                height: window_dimension(window_size.1),
+            },
+            |known_dimensions, available_space, node_id, node_context, _style| {
+                return match node_context {
+                    Some(NodeContext::Text(text)) => {
+                        let input_tree_node = node_id_mapping.get(&node_id).unwrap();
+                        // Default to true if style is not specified
+                        let line_wrap =
+                            input_tree_node.style.as_ref().map_or(true, |v| v.line_wrap);
 
-                    let (size, lines) = text_utils::measure_size(
-                        text,
-                        known_dimensions,
-                        available_space,
-                        line_wrap,
-                    );
+                        let (size, lines) = text_utils::measure_size(
+                            text,
+                            known_dimensions,
+                            available_space,
+                            line_wrap,
+                        );
 
-                    node_output_lines.insert(node_id, lines);
-                    size
-                }
+                        node_output_lines.insert(node_id, lines);
+                        size
+                    }
 
-                _ => Size {
-                    width: 0.0,
-                    height: 0.0,
-                },
-            };
-        },
-    )
-    .unwrap();
+                    _ => Size {
+                        width: 0.0,
+                        height: 0.0,
+                    },
+                };
+            },
+        )
+        .unwrap();
+    });
 
-    collect_nodes(&tree, taffy_root, &node_id_mapping, &mut node_output_lines)
+    let output_tree = root_span.with_span("collect_nodes", || {
+        collect_nodes(&tree, taffy_root, &node_id_mapping, &mut node_output_lines)
+    });
+
+    root_span.end();
+
+    LayoutResult {
+        root: output_tree,
+        spans: root_span,
+    }
 }
 
 fn window_dimension(size: WindowDimension) -> AvailableSpace {

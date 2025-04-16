@@ -1,11 +1,21 @@
 defmodule Orange.Layout do
   @moduledoc false
 
+  require OpenTelemetry.Tracer, as: Tracer
+
   alias __MODULE__.OutputTreeNode
 
   def layout(tree, window_size) do
-    output_tree = __MODULE__.Binding.layout(tree, window_size)
-    perform_rounding(output_tree)
+    output_tree =
+      Tracer.with_span "layout_binding" do
+        %{root: output_tree, spans: span} = __MODULE__.Binding.layout(tree, window_size)
+        create_spans(span)
+        output_tree
+      end
+
+    Tracer.with_span "layout_rounding" do
+      perform_rounding(output_tree)
+    end
   end
 
   # The layout algorithm returns float values for positions and sizes.
@@ -89,6 +99,19 @@ defmodule Orange.Layout do
       abs_y: node_y,
       children: children
     })
+  end
+
+  # Recursively creates OpenTelemetry spans from NIF-generated spans
+  defp create_spans(%__MODULE__.Span{} = span) do
+    old_ctx = Tracer.current_span_ctx()
+
+    span_ctx =
+      Tracer.start_span(span.name, start_time: span.start_time - System.time_offset(:nanosecond))
+
+    Tracer.set_current_span(span_ctx)
+    Enum.each(span.children, &create_spans/1)
+    Tracer.end_span(span.end_time - System.time_offset(:nanosecond))
+    Tracer.set_current_span(old_ctx)
   end
 
   defmodule Binding do

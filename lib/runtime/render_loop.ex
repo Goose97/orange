@@ -6,6 +6,7 @@ defmodule Orange.Runtime.RenderLoop do
   use GenServer
 
   require Logger
+  require OpenTelemetry.Tracer, as: Tracer
 
   alias Orange.{Rect, CustomComponent, Renderer, Terminal, Runtime}
 
@@ -158,49 +159,39 @@ defmodule Orange.Runtime.RenderLoop do
   end
 
   defp render_tick(state, opts \\ []) do
-    start = System.monotonic_time(:millisecond)
+    Tracer.with_span "render_tick" do
+      {current_tree, mounting_components, unmounting_components} =
+        Tracer.with_span "to_component_tree" do
+          to_component_tree(state.root, state.previous_tree)
+        end
 
-    {current_tree, mounting_components, unmounting_components} =
-      to_component_tree(state.root, state.previous_tree)
+      Process.put({__MODULE__, :component_tree}, current_tree)
 
-    # {current_tree, mounting_components, unmounting_components} =
-    #   :eflambe.apply({__MODULE__, :to_component_tree, [state.root, state.previous_tree]}, return: :value)
+      {width, height} = state.terminal_size
 
-    Process.put({__MODULE__, :component_tree}, current_tree)
-    to_component_tree_time = System.monotonic_time(:millisecond)
+      render_tree = to_render_tree(current_tree)
 
-    {width, height} = state.terminal_size
+      {current_buffer, layout_tree_id_map} =
+        Tracer.with_span "render" do
+          Renderer.render(render_tree, %{width: width, height: height})
+        end
 
-    render_tree = to_render_tree(current_tree)
-    to_render_tree_time = System.monotonic_time(:millisecond)
+      Process.put({__MODULE__, :layout_tree_id_map}, layout_tree_id_map)
 
-    {current_buffer, layout_tree_id_map} =
-      Renderer.render(render_tree, %{width: width, height: height})
+      Tracer.with_span "draw" do
+        if opts[:clean_buffer] do
+          terminal_impl().clear()
+          terminal_impl().draw(current_buffer, nil)
+        else
+          terminal_impl().draw(current_buffer, state.previous_buffer)
+        end
+      end
 
-    Process.put({__MODULE__, :layout_tree_id_map}, layout_tree_id_map)
-    to_buffer_time = System.monotonic_time(:millisecond)
+      after_mount(mounting_components)
+      after_unmount(unmounting_components)
 
-    if opts[:clean_buffer] do
-      terminal_impl().clear()
-      terminal_impl().draw(current_buffer, nil)
-    else
-      terminal_impl().draw(current_buffer, state.previous_buffer)
+      %{state | previous_tree: current_tree, previous_buffer: current_buffer}
     end
-
-    draw_time = System.monotonic_time(:millisecond)
-
-    after_mount(mounting_components)
-    after_unmount(unmounting_components)
-
-    Logger.debug("""
-    Render pass took #{System.monotonic_time(:millisecond) - start}ms:
-    - to_component_tree: #{to_component_tree_time - start}ms
-    - to_render_tree: #{to_render_tree_time - to_component_tree_time}ms
-    - to_buffer: #{to_buffer_time - to_render_tree_time}ms
-    - draw: #{draw_time - to_buffer_time}ms
-    """)
-
-    %{state | previous_tree: current_tree, previous_buffer: current_buffer}
   end
 
   # We need to expand all custom components to their rendered children. Also, we need to
