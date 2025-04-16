@@ -1,3 +1,23 @@
+defmodule Orange.Layout.LayoutResult do
+  @type t :: %__MODULE__{
+          root: Orange.Layout.OutputTreeNode.t(),
+          spans: Orange.Layout.Span.t()
+        }
+
+  defstruct [:root, :spans]
+end
+
+defmodule Orange.Layout.Span do
+  @type t :: %__MODULE__{
+          name: String.t(),
+          start_time: integer(),
+          end_time: integer(),
+          children: list(__MODULE__.t())
+        }
+
+  defstruct [:name, :start_time, :end_time, :children]
+end
+
 defmodule Orange.Layout.InputTreeNode do
   @moduledoc false
 

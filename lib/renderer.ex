@@ -2,6 +2,7 @@ defmodule Orange.Renderer do
   @moduledoc false
 
   require Logger
+  require OpenTelemetry.Tracer, as: Tracer
 
   alias Orange.Layout
   alias Orange.Layout.{OutputTreeNode, InputTreeNode}
@@ -14,46 +15,50 @@ defmodule Orange.Renderer do
   # A buffer is a m×n matrix of cells
   @spec render(ui_element, window) :: {Buffer.t(), %{any() => OutputTreeNode.t()}}
   def render(tree, window) do
-    start = System.monotonic_time(:millisecond)
-
-    input_tree = InputTree.to_input_tree(tree)
-    binding_input_tree_time = System.monotonic_time(:millisecond)
+    input_tree =
+      Tracer.with_span "to_input_tree" do
+        InputTree.to_input_tree(tree)
+      end
 
     width = window[:width]
     height = window[:height]
     buffer = Buffer.new({width, height})
 
-    input_tree_lookup_index = build_input_tree_index(input_tree)
+    input_tree_lookup_index =
+      Tracer.with_span "build_input_tree_index" do
+        build_input_tree_index(input_tree)
+      end
 
     # The tree can be nil if the root element is a fixed position node
     {buffer, output_tree} =
       if input_tree do
         output_tree =
-          input_tree
-          |> Layout.layout({{:fixed, width}, {:fixed, height}})
-          |> Layout.caculate_absolute_position()
+          Tracer.with_span "layout" do
+            input_tree
+            |> Layout.layout({{:fixed, width}, {:fixed, height}})
+            |> Layout.caculate_absolute_position()
+          end
 
-        {
-          render_node(output_tree, input_tree_lookup_index, buffer, window),
-          output_tree
-        }
+        buffer =
+          Tracer.with_span "render_to_buffer" do
+            render_node(output_tree, input_tree_lookup_index, buffer, window)
+          end
+
+        {buffer, output_tree}
       else
         {buffer, nil}
       end
 
-    now = System.monotonic_time(:millisecond)
-
-    Logger.debug("""
-    Renderer took #{now - start}ms:
-    - to_input_tree: #{binding_input_tree_time - start}ms
-    - render: #{now - binding_input_tree_time}ms
-    """)
-
     out_of_flow_output_tree_index = Process.get(:out_of_flow_output_tree_index, %{})
 
-    {buffer,
-     build_output_tree_index(output_tree, input_tree_lookup_index)
-     |> Map.merge(out_of_flow_output_tree_index)}
+    output_tree_index =
+      Tracer.with_span "build_output_tree_index" do
+        output_tree
+        |> build_output_tree_index(input_tree_lookup_index)
+        |> Map.merge(out_of_flow_output_tree_index)
+      end
+
+    {buffer, output_tree_index}
   end
 
   defp build_input_tree_index(_, result \\ %{})

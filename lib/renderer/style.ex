@@ -76,7 +76,7 @@ defmodule Orange.Renderer.Style do
         {:percent, float / 100}
 
       size == nil ->
-        size
+        nil
     end
   end
 

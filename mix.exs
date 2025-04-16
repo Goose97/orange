@@ -89,7 +89,8 @@ defmodule Orange.MixProject do
       {:eflambe, "~> 0.3.0", only: :dev, runtime: false},
       {:benchee, "~> 1.3.0", only: :dev, runtime: false},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
-      {:logger_file_backend, "~> 0.0.14", only: [:dev, :test]}
+      {:logger_file_backend, "~> 0.0.14", only: [:dev, :test]},
+      {:opentelemetry, "~> 1.5"}
     ]
   end
 
