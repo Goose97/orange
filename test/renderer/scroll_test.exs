@@ -1,5 +1,3 @@
-require Logger
-
 defmodule Orange.Renderer.ScrollTest do
   use ExUnit.Case
   import Orange.Macro
