@@ -71,7 +71,7 @@ defmodule Orange.Renderer do
       Map.put(
         result,
         input_tree.id,
-        Map.take(input_tree, [:id, :style, :out_of_flow_children, :attributes])
+        Map.take(input_tree, [:id, :style, :out_of_flow_children, :attributes, :raw_text])
       )
 
     case input_tree.children do
@@ -316,13 +316,63 @@ defmodule Orange.Renderer do
 
   defp render_children(buffer, node, input_tree_lookup_index, window) do
     attributes = get_in(input_tree_lookup_index, [node.id, :attributes])
+    raw_text = get_in(input_tree_lookup_index, [node.id, :raw_text])
 
     scroll_x = attributes[:scroll_x]
     scroll_y = attributes[:scroll_y]
 
-    if scroll_x || scroll_y,
-      do: render_scrollable_children(buffer, node, input_tree_lookup_index),
-      else: do_render_children(buffer, node, input_tree_lookup_index, window)
+    cond do
+      scroll_x || scroll_y ->
+        render_scrollable_children(buffer, node, input_tree_lookup_index)
+
+      raw_text ->
+        render_raw_text(buffer, node, raw_text)
+
+      true ->
+        do_render_children(buffer, node, input_tree_lookup_index, window)
+    end
+  end
+
+  defp render_raw_text(buffer, node, %Orange.RawText{direction: direction, content: content}) do
+    start_x = node.abs_x + if(node.border.left > 0, do: 1, else: 0) + node.padding.left
+    start_y = node.abs_y + if(node.border.top > 0, do: 1, else: 0) + node.padding.top
+
+    draw = fn content, buffer, direction, offset ->
+      coordinates =
+        case direction do
+          :row -> {start_x + offset, start_y}
+          :column -> {start_x, start_y + offset}
+        end
+
+      direction =
+        case direction do
+          :row -> :horizontal
+          :column -> :vertical
+        end
+
+      updated_buffer =
+        Buffer.write_string(buffer, coordinates, content.text, direction,
+          background_color: content[:background_color],
+          color: content[:color]
+        )
+
+      {updated_buffer, offset + String.length(content.text)}
+    end
+
+    # Normalize content into a list of %{text: string, background_color: ..., color: ...}
+    content =
+      if(is_list(content), do: content, else: [content])
+      |> Enum.map(fn
+        text when is_binary(text) -> %{text: text}
+        %{text: _} = v -> v
+      end)
+
+    {buffer, _} =
+      Enum.reduce(content, {buffer, 0}, fn item, {acc_buffer, offset} ->
+        draw.(item, acc_buffer, direction, offset)
+      end)
+
+    buffer
   end
 
   defp do_render_children(buffer, node, input_tree_lookup_index, window \\ nil) do
@@ -606,7 +656,7 @@ defmodule Orange.Renderer do
         [
           List.duplicate("─", scroll_thumb_start),
           List.duplicate("🭹", scroll_thumb_size),
-          List.duplicate("─", scroll_track_length - scroll_thumb_end),
+          List.duplicate("─", scroll_track_length - scroll_thumb_end)
         ]
         |> IO.iodata_to_binary()
 
@@ -641,7 +691,7 @@ defmodule Orange.Renderer do
         [
           List.duplicate("│", scroll_thumb_start),
           List.duplicate("▐", scroll_thumb_size),
-          List.duplicate("│", scroll_track_length - scroll_thumb_end),
+          List.duplicate("│", scroll_track_length - scroll_thumb_end)
         ]
         |> IO.iodata_to_binary()
 

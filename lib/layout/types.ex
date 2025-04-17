@@ -32,7 +32,7 @@ defmodule Orange.Layout.InputTreeNode do
         }
 
   # Only :id, :children, and :style is used by the Rust binding
-  defstruct [:id, :children, :out_of_flow_children, :style, :attributes]
+  defstruct [:id, :children, :raw_text, :out_of_flow_children, :style, :attributes]
 
   defmodule Style do
     @moduledoc false

@@ -10,6 +10,12 @@ defmodule Orange.CustomComponent do
   defstruct [:module, :children, :ref, attributes: []]
 end
 
+defmodule Orange.RawText do
+  @moduledoc false
+
+  defstruct [:direction, :content]
+end
+
 defmodule Orange.Cursor do
   @moduledoc false
 

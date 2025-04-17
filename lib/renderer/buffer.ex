@@ -200,13 +200,17 @@ defmodule Orange.Renderer.Buffer do
     content_height = :array.size(buffer.rows)
 
     content_width =
-      Enum.map(1..content_height, fn i ->
-        case :array.get(i, buffer.rows) do
-          :undefined -> 0
-          row -> :array.size(row)
-        end
-      end)
-      |> Enum.max()
+      if content_height == 0 do
+        0
+      else
+        Enum.map(1..content_height, fn i ->
+          case :array.get(i, buffer.rows) do
+            :undefined -> 0
+            row -> :array.size(row)
+          end
+        end)
+        |> Enum.max()
+      end
 
     {content_width, content_height}
   end

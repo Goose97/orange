@@ -8,7 +8,7 @@ defmodule Orange.Runtime.RenderLoop do
   require Logger
   require OpenTelemetry.Tracer, as: Tracer
 
-  alias Orange.{Rect, CustomComponent, Renderer, Terminal, Runtime}
+  alias Orange.{Rect, CustomComponent, RawText, Renderer, Terminal, Runtime}
 
   def child_spec([root]) do
     %{
@@ -27,7 +27,7 @@ defmodule Orange.Runtime.RenderLoop do
     terminal_impl().hide_cursor()
 
     state = %{
-      root: normalize_custom_component(root),
+      root: normalize_tree_node(root),
       terminal_size: terminal_impl().terminal_size(),
       previous_tree: nil,
       previous_buffer: nil
@@ -46,9 +46,9 @@ defmodule Orange.Runtime.RenderLoop do
     :ok
   end
 
-  # Walk the tree and normalize custom components, turning
-  # Orange.CustomComponent or {Orange.CustomComponent, attrs} into %Orange.CustomComponent{}
-  defp normalize_custom_component(root) do
+  # Walk the tree and normalize tree nodes: 
+  # 1. Orange.CustomComponent or {Orange.CustomComponent, attrs} -> %Orange.CustomComponent{}
+  defp normalize_tree_node(root) do
     case root do
       module when is_atom(module) ->
         %CustomComponent{module: module}
@@ -57,7 +57,7 @@ defmodule Orange.Runtime.RenderLoop do
         # Expand the children
         attrs =
           Keyword.update(attrs, :children, [], fn children ->
-            children |> Enum.reject(&is_nil/1) |> Enum.map(&normalize_custom_component/1)
+            children |> Enum.reject(&is_nil/1) |> Enum.map(&normalize_tree_node/1)
           end)
 
         %CustomComponent{module: module, attributes: attrs}
@@ -65,14 +65,28 @@ defmodule Orange.Runtime.RenderLoop do
       leaf when is_binary(leaf) ->
         leaf
 
+      {:raw_text, _, _} = node ->
+        build_raw_text_node(node)
+
       _ ->
         children =
           (root.children || [])
           |> Enum.reject(&is_nil/1)
-          |> Enum.map(&normalize_custom_component/1)
+          |> Enum.map(&normalize_tree_node/1)
 
         %{root | children: children}
     end
+  end
+
+  defp build_raw_text_node({:raw_text, direction, content}) do
+    content =
+      if(is_list(content), do: content, else: [content])
+      |> Enum.map(fn
+        text when is_binary(text) -> %{text: text}
+        %{text: _} = v -> v
+      end)
+
+    %Orange.RawText{direction: direction, content: content}
   end
 
   defp terminal_impl(), do: Application.get_env(:orange, :terminal, Terminal)
@@ -222,6 +236,8 @@ defmodule Orange.Runtime.RenderLoop do
   defp expand_new(%Rect{} = component),
     do: %{component | children: Enum.map(component.children, &expand_new/1)}
 
+  defp expand_new(%RawText{} = node), do: node
+
   # Custom components
   defp expand_new(%CustomComponent{module: module, attributes: attrs} = component) do
     result = apply(module, :init, [attrs])
@@ -233,7 +249,7 @@ defmodule Orange.Runtime.RenderLoop do
       if child do
         [
           child
-          |> normalize_custom_component()
+          |> normalize_tree_node()
           |> expand_new()
         ]
       else
@@ -327,7 +343,7 @@ defmodule Orange.Runtime.RenderLoop do
       ])
 
     if current_child do
-      current_child = normalize_custom_component(current_child)
+      current_child = normalize_tree_node(current_child)
 
       child =
         case previous_component.children do
@@ -360,6 +376,9 @@ defmodule Orange.Runtime.RenderLoop do
 
       %CustomComponent{children: [child]} ->
         to_render_tree(child)
+
+      %RawText{} = node ->
+        node
     end
   end
 
