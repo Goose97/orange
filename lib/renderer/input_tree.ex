@@ -49,9 +49,10 @@ defmodule Orange.Renderer.InputTree do
 
       _ ->
         inherited_style = Style.inherit_style(node.attributes[:style], parent_style)
+        {children, raw_text} = exclude_raw_elements(node.children)
 
         children =
-          for child_node <- node.children do
+          for child_node <- children do
             do_to_input_tree(child_node, counter, inherited_style, new_id)
           end
 
@@ -65,6 +66,7 @@ defmodule Orange.Renderer.InputTree do
         %InputTreeNode{
           id: new_id,
           children: {:nodes, normal_children},
+          raw_text: raw_text,
           out_of_flow_children: out_of_flow_children,
           attributes: Keyword.put(node.attributes, :style, inherited_style),
           style:
@@ -127,6 +129,25 @@ defmodule Orange.Renderer.InputTree do
     }
 
     new_node
+  end
+
+  # :raw elements are excluded from the layout process. They are rendered ad-hoc in the renderer
+  defp exclude_raw_elements(children) do
+    {raw, remain} = Enum.split_with(children, &is_struct(&1, Orange.RawText))
+
+    if length(raw) > 1 do
+      raise(
+        "#{__MODULE__}.to_input_tree: invalid element childrens. An element can only have one :raw child"
+      )
+    end
+
+    if length(raw) == 1 and length(remain) > 0 do
+      raise(
+        "#{__MODULE__}.to_input_tree: invalid element childrens. An element can't either have one single :raw child or other children"
+      )
+    end
+
+    {remain, List.first(raw)}
   end
 
   defp validate_position!({type, top, right, bottom, left}) when type in [:absolute, :fixed] do
