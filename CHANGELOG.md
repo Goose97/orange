@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.1.0](https://github.com/Goose97/orange/compare/v1.0.0...v1.1.0) (2025-04-17)
+
+
+### Features
+
+* add custom key actions for table rows with new `actions` attribute ([98b1dbf](https://github.com/Goose97/orange/commit/98b1dbfd156f56ba90e70863a5576da8f4872ad5))
+* add customizable colors for table components via `:colors` attribute ([8036bb1](https://github.com/Goose97/orange/commit/8036bb112ad06835eed5f7f8b5408fc2a98b4bcc))
+* add Inspect protocol implementation for Buffer struct ([1d64dcb](https://github.com/Goose97/orange/commit/1d64dcb355d19ac9cda830005dca84a2f969af52))
+* add Inspect protocol implementation for Buffer struct ([edf54eb](https://github.com/Goose97/orange/commit/edf54ebbc3632bb8e72a11e7d3ec663988c0e63f))
+* Add inspect protocol implementation for OutputTreeNode struct ([1d64dcb](https://github.com/Goose97/orange/commit/1d64dcb355d19ac9cda830005dca84a2f969af52))
+* Add inspect protocol implementation for OutputTreeNode struct ([edf54eb](https://github.com/Goose97/orange/commit/edf54ebbc3632bb8e72a11e7d3ec663988c0e63f))
+* add list component ([f70eed8](https://github.com/Goose97/orange/commit/f70eed8f9792bbb8eff7ddb1823f1211d0b7fc6c))
+* add Orange.terminal_size/0 API ([f37fdb2](https://github.com/Goose97/orange/commit/f37fdb23e1e6ddfc7ca57168cffa005a6fac6381))
+* add raw text ([56d23e0](https://github.com/Goose97/orange/commit/56d23e0f80e4f3d5cfedd4a1bb4f88d8b342812b))
+* add row_reverse and column_reverse direction ([ef1e927](https://github.com/Goose97/orange/commit/ef1e9274be02f65b1c7468c0da5c0cb98a6e0720))
+* add table component ([f839225](https://github.com/Goose97/orange/commit/f839225e47a41ed48481d041cdd5f073868a6d5d))
+* Add test case for empty string in text_utils ([09b1a49](https://github.com/Goose97/orange/commit/09b1a49e3e9ae3a86c82d6d611dc6ecaa29375f3))
+* Handle empty string case in split_with_whitespaces function ([c81ca59](https://github.com/Goose97/orange/commit/c81ca5931ac3083f5f44589ca94fd024ac1f4d3c))
+* **list:** auto scroll selected item into view during initial render ([8a09fc7](https://github.com/Goose97/orange/commit/8a09fc7333a647f495bc250c3a528bc8b631dfef))
+* **list:** full width inner content ([e9d5266](https://github.com/Goose97/orange/commit/e9d5266b7d3e71245dd5f2ff4ead5eaae2f8f967))
+* **table:** add sort_key_color attrs ([6e2943d](https://github.com/Goose97/orange/commit/6e2943d4c68dcd20844f56a440addc525363c987))
+* **table:** make selected_row_index optional ([83f2a92](https://github.com/Goose97/orange/commit/83f2a92c47d94e047316fd341175a716a113e132))
+* **table:** more colors customization ([7775ea0](https://github.com/Goose97/orange/commit/7775ea0c55665d0d7e153298e3e8466250b1262f))
+* **trace:** add tracing ([44dbfe7](https://github.com/Goose97/orange/commit/44dbfe7d93ae1ae5cbe3552a12a43bfdffe38bf3))
+
+
+### Bug Fixes
+
+* crash on negative x/y ([bf4da34](https://github.com/Goose97/orange/commit/bf4da34b4bd2a58defe9988f2ee5f885ce336bcd))
+* crash when render only whitespace string ([2dc1ab4](https://github.com/Goose97/orange/commit/2dc1ab493f321b8e6efbbcc2920b41196566cd0e))
+* crash when style is not specified ([1c80395](https://github.com/Goose97/orange/commit/1c8039581f18b43145244d40dac575d8de7fe75d))
+* layout rounding off-by-one bug ([70925c1](https://github.com/Goose97/orange/commit/70925c1bae7b008d5dccd31789e5e9de95d87da5))
+* **list:** optional on_scroll_offset_change ([4d5c2ae](https://github.com/Goose97/orange/commit/4d5c2ae20eb90212341c86f54e2a2c9bc3b2dc33))
+* measure size when height is 0 ([dca0ada](https://github.com/Goose97/orange/commit/dca0ada1705b1064410b969346347cb762ef643a))
+* **table:** empty table footer ([4bcb491](https://github.com/Goose97/orange/commit/4bcb4912a8f6adb32b45f4472d0fc556a17bcd24))
+
 ## [1.0.0](https://github.com/Goose97/orange/compare/v0.5.0...v1.0.0) (2025-03-22)
 
 
