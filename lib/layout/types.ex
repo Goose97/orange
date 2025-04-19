@@ -132,9 +132,9 @@ defmodule Orange.Layout.OutputTreeNode do
           content_text_lines: list(binary()) | nil,
           content_size: {integer(), integer()},
           scrollbar_size: {integer(), integer()},
-          border: __MODULE__.FourValues.t(),
-          padding: __MODULE__.FourValues.t(),
-          margin: __MODULE__.FourValues.t(),
+          border: {integer(), integer(), integer(), integer()},
+          padding: {integer(), integer(), integer(), integer()},
+          margin: {integer(), integer(), integer(), integer()},
           children: children()
         }
 

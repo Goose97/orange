@@ -131,26 +131,6 @@ impl Span {
 }
 
 #[derive(Debug, NifStruct)]
-#[module = "Orange.Layout.OutputTreeNode.FourValues"]
-struct OutputTreeNodeFourValues {
-    left: usize,
-    right: usize,
-    top: usize,
-    bottom: usize,
-}
-
-impl From<Rect<f32>> for OutputTreeNodeFourValues {
-    fn from(value: Rect<f32>) -> Self {
-        Self {
-            left: value.left as usize,
-            right: value.right as usize,
-            top: value.top as usize,
-            bottom: value.bottom as usize,
-        }
-    }
-}
-
-#[derive(Debug, NifStruct)]
 #[module = "Orange.Layout.OutputTreeNode"]
 struct OutputTreeNode {
     id: usize,
@@ -160,9 +140,9 @@ struct OutputTreeNode {
     y: f32,
     content_text_lines: Option<Vec<String>>,
     content_size: (f32, f32),
-    border: OutputTreeNodeFourValues,
-    padding: OutputTreeNodeFourValues,
-    margin: OutputTreeNodeFourValues,
+    border: (usize, usize, usize, usize),
+    padding: (usize, usize, usize, usize),
+    margin: (usize, usize, usize, usize),
     children: TreeNodeChildren<OutputTreeNode>,
 }
 
@@ -570,13 +550,22 @@ fn collect_nodes(
             tree_layout.content_size.width,
             tree_layout.content_size.height,
         ),
-        border: OutputTreeNodeFourValues::from(tree_layout.border),
-        padding: OutputTreeNodeFourValues::from(tree_layout.padding),
-        margin: OutputTreeNodeFourValues::from(tree_layout.margin),
+        border: rect_to_tuple(tree_layout.border),
+        padding: rect_to_tuple(tree_layout.padding),
+        margin: rect_to_tuple(tree_layout.margin),
         children,
     };
 
     return root;
+}
+
+fn rect_to_tuple(value: Rect<f32>) -> (usize, usize, usize, usize) {
+    let left = value.left as usize;
+    let right = value.right as usize;
+    let top = value.top as usize;
+    let bottom = value.bottom as usize;
+
+    (top, right, bottom, left)
 }
 
 rustler::init!("Elixir.Orange.Layout.Binding", [layout]);

@@ -89,20 +89,26 @@ defmodule Orange.Renderer do
     attributes = get_in(input_tree_lookup_index, [node.id, :attributes])
 
     buffer
-    |> render_border(node, attributes)
+    |> maybe_render_border(node, attributes)
     |> maybe_render_title(node, attributes[:title])
     |> render_children(node, input_tree_lookup_index, window)
     |> maybe_render_footer(node, attributes[:footer])
     |> maybe_set_background_color(node, attributes)
   end
 
-  defp render_border(
+  defp maybe_render_border(buffer, %OutputTreeNode{border: {0, 0, 0, 0}}, _attributes), do: buffer
+
+  defp maybe_render_border(
          buffer,
-         %OutputTreeNode{border: border, abs_x: x, abs_y: y, width: w, height: h},
+         %OutputTreeNode{
+           border: {top, right, bottom, left},
+           abs_x: x,
+           abs_y: y,
+           width: w,
+           height: h
+         },
          attributes
        ) do
-    %{top: top, right: right, bottom: bottom, left: left} = border
-
     border_color = get_in(attributes, [:style, :border_color])
     border_style = get_in(attributes, [:style, :border_style]) || :default
 
@@ -334,8 +340,10 @@ defmodule Orange.Renderer do
   end
 
   defp render_raw_text(buffer, node, %Orange.RawText{direction: direction, content: content}) do
-    start_x = node.abs_x + if(node.border.left > 0, do: 1, else: 0) + node.padding.left
-    start_y = node.abs_y + if(node.border.top > 0, do: 1, else: 0) + node.padding.top
+    {border_top, _, _, border_left} = node.border
+    {padding_top, _, _, padding_left} = node.padding
+    start_x = node.abs_x + border_left + padding_left
+    start_y = node.abs_y + border_top + padding_top
 
     draw = fn content, buffer, direction, offset ->
       coordinates =
@@ -386,8 +394,11 @@ defmodule Orange.Renderer do
     buffer =
       case node.children do
         {:text, _text} ->
-          start_x = node.abs_x + if(node.border.left > 0, do: 1, else: 0) + node.padding.left
-          start_y = node.abs_y + if(node.border.top > 0, do: 1, else: 0) + node.padding.top
+          {border_top, _, _, border_left} = node.border
+          {padding_top, _, _, padding_left} = node.padding
+
+          start_x = node.abs_x + if(border_left > 0, do: 1, else: 0) + padding_left
+          start_y = node.abs_y + if(border_top > 0, do: 1, else: 0) + padding_top
 
           opts = [
             color: get_in(attributes, [:style, :color]),
@@ -450,16 +461,17 @@ defmodule Orange.Renderer do
   end
 
   defp render_background_text(buffer, node, background_text) do
-    start_x = node.abs_x + if(node.border.left > 0, do: 1, else: 0) + node.padding.left
-    start_y = node.abs_y + if(node.border.top > 0, do: 1, else: 0) + node.padding.top
+    {border_top, border_right, border_bottom, border_left} = node.border
+    {padding_top, padding_right, padding_bottom, padding_left} = node.padding
+
+    start_x = node.abs_x + if(border_left > 0, do: 1, else: 0) + padding_left
+    start_y = node.abs_y + if(border_top > 0, do: 1, else: 0) + padding_top
 
     inner_width =
-      node.width - node.border.left - node.border.right - node.padding.left -
-        node.padding.right
+      node.width - border_left - border_right - padding_left - padding_right
 
     inner_height =
-      node.height - node.border.top - node.border.bottom - node.padding.top -
-        node.padding.bottom
+      node.height - border_top - border_bottom - padding_top - padding_bottom
 
     if inner_width > 0 and inner_height > 0 do
       {render_text, render_opts} =
@@ -559,8 +571,10 @@ defmodule Orange.Renderer do
          {scroll_x, scroll_y},
          style
        ) do
-    inner_width = node.width - node.border.left - node.border.right
-    inner_height = node.height - node.border.top - node.border.bottom
+    {border_top, border_right, border_bottom, border_left} = node.border
+
+    inner_width = node.width - border_left - border_right
+    inner_height = node.height - border_top - border_bottom
 
     if inner_width == 0 or inner_height == 0 do
       buffer
@@ -582,8 +596,8 @@ defmodule Orange.Renderer do
       scroll_x_offset = scroll_x || 0
       scroll_y_offset = scroll_y || 0
 
-      inner_content_offset_x = node.border.left
-      inner_content_offset_y = node.border.top
+      inner_content_offset_x = border_left
+      inner_content_offset_y = border_top
 
       # Iterate through the visible area of the scrollable buffer
       Enum.reduce(
@@ -630,8 +644,10 @@ defmodule Orange.Renderer do
   defp render_horizontal_scroll_bar(buffer, node, scroll_offset, scroll_bar_color) do
     {content_width, _content_height} = node.content_size
 
-    total_scroll_width = content_width - node.border.left - node.border.right
-    renderable_width = node.width - node.border.left - node.border.right
+    {_, border_right, _, border_left} = node.border
+
+    total_scroll_width = content_width - border_left - border_right
+    renderable_width = node.width - border_left - border_right
 
     scroll_track_length = renderable_width
     # It's possible for the renderable_width to be greater than the total_scroll_width
@@ -660,7 +676,7 @@ defmodule Orange.Renderer do
         ]
         |> IO.iodata_to_binary()
 
-      x = node.abs_x + node.border.left
+      x = node.abs_x + border_left
       y = node.abs_y + node.height - 1
       Buffer.write_string(buffer, {x, y}, string, :horizontal, color: scroll_bar_color)
     else
@@ -672,8 +688,9 @@ defmodule Orange.Renderer do
   defp render_vertical_scroll_bar(buffer, node, scroll_offset, scroll_bar_color) do
     {_content_width, content_height} = node.content_size
 
-    total_scroll_height = content_height - node.border.top - node.border.bottom
-    renderable_height = node.height - node.border.top - node.border.bottom
+    {border_top, _, border_bottom, _} = node.border
+    total_scroll_height = content_height - border_top - border_bottom
+    renderable_height = node.height - border_top - border_bottom
 
     scroll_track_length = renderable_height
     total_scroll_height = max(total_scroll_height, renderable_height)
@@ -696,7 +713,7 @@ defmodule Orange.Renderer do
         |> IO.iodata_to_binary()
 
       x = node.abs_x + node.width - 1
-      y = node.abs_y + node.border.top
+      y = node.abs_y + border_top
       Buffer.write_string(buffer, {x, y}, string, :vertical, color: scroll_bar_color)
     else
       buffer
