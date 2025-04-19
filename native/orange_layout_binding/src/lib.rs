@@ -171,7 +171,7 @@ struct LayoutResult {
     spans: Span,
 }
 
-#[rustler::nif]
+#[rustler::nif(schedule = "DirtyCpu")]
 fn layout(
     env: Env,
     root: InputTreeNode,
