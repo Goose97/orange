@@ -97,8 +97,9 @@ defmodule Orange.Renderer.Style do
     case value do
       {vy, vx} -> {vy, vx, vy, vx}
       {_top, _right, _bottom, _left} -> value
+      0 -> nil
       v when is_integer(v) -> {v, v, v, v}
-      nil -> {0, 0, 0, 0}
+      _ -> nil
     end
   end
 

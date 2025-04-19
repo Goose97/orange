@@ -29,8 +29,8 @@ struct InputTreeNodeStyle {
     height: Option<InputLengthPercentage>,
     min_height: Option<InputLengthPercentage>,
     max_height: Option<InputLengthPercentage>,
-    padding: (usize, usize, usize, usize),
-    margin: (usize, usize, usize, usize),
+    padding: Option<(usize, usize, usize, usize)>,
+    margin: Option<(usize, usize, usize, usize)>,
     border: (usize, usize, usize, usize),
     display: Atom,
     flex_direction: Atom,
@@ -288,19 +288,23 @@ fn node_style(node: &InputTreeNode, env: Env) -> Style {
             left: LengthPercentage::Length(style.border.3 as f32),
         };
 
-        default_style.padding = Rect {
-            top: LengthPercentage::Length(style.padding.0 as f32),
-            right: LengthPercentage::Length(style.padding.1 as f32),
-            bottom: LengthPercentage::Length(style.padding.2 as f32),
-            left: LengthPercentage::Length(style.padding.3 as f32),
-        };
+        if let Some(padding) = style.padding {
+            default_style.padding = Rect {
+                top: LengthPercentage::Length(padding.0 as f32),
+                right: LengthPercentage::Length(padding.1 as f32),
+                bottom: LengthPercentage::Length(padding.2 as f32),
+                left: LengthPercentage::Length(padding.3 as f32),
+            };
+        }
 
-        default_style.margin = Rect {
-            top: LengthPercentageAuto::Length(style.margin.0 as f32),
-            right: LengthPercentageAuto::Length(style.margin.1 as f32),
-            bottom: LengthPercentageAuto::Length(style.margin.2 as f32),
-            left: LengthPercentageAuto::Length(style.margin.3 as f32),
-        };
+        if let Some(margin) = style.margin {
+            default_style.margin = Rect {
+                top: LengthPercentageAuto::Length(margin.0 as f32),
+                right: LengthPercentageAuto::Length(margin.1 as f32),
+                bottom: LengthPercentageAuto::Length(margin.2 as f32),
+                left: LengthPercentageAuto::Length(margin.3 as f32),
+            };
+        }
 
         // Display attributes
 
