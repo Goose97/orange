@@ -255,7 +255,7 @@ fn create_node<'a>(
 
     let node_id = match &node.children {
         TreeNodeChildren::Text(text) => taffy
-            .new_leaf_with_context(style.clone(), NodeContext::text(text))
+            .new_leaf_with_context(style, NodeContext::text(text))
             .unwrap(),
         TreeNodeChildren::Nodes(nodes) => {
             let child_nodes = nodes
@@ -263,9 +263,7 @@ fn create_node<'a>(
                 .map(|node| create_node(taffy, node, node_id_mapping, env))
                 .collect::<Vec<NodeId>>();
 
-            taffy
-                .new_with_children(style.clone(), &child_nodes)
-                .unwrap()
+            taffy.new_with_children(style, &child_nodes).unwrap()
         }
     };
 
