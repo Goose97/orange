@@ -211,7 +211,7 @@ defmodule Orange.Runtime.RenderLoop do
   # We need to expand all custom components to their rendered children. Also, we need to
   # persist the state of the custom components between renders.
   # The algorithm is as follows:
-  # 1. Walk the current tree and compare with the corresponding node in the previous tree (use expend_with_prev/2). Except for the first render, when the previous tree is not available, use expand_new/1
+  # 1. Walk the current tree and compare with the corresponding node in the previous tree (use expand_with_prev/2). Except for the first render, when the previous tree is not available, use expand_new/1
   # 2. Compare the current node to the previous node:
   #   a. If the nodes are of the same type, diff their children and expand them recursively. If the current
   #    node is a custom component, copy the state from the previous node.
