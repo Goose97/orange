@@ -29,6 +29,7 @@ defmodule Orange.Runtime.ComponentRegistry do
       {{_prev_state, current_state}, attrs, module} ->
         updated_record = {{current_state, new_state}, attrs, module}
         Process.put({:component, component_ref}, updated_record)
+        mark_dirty_component(component_ref)
 
         counter = Process.get({:component, :state_version_counter})
         :atomics.add_get(counter, 1, 1)
@@ -39,6 +40,22 @@ defmodule Orange.Runtime.ComponentRegistry do
         - ref: #{inspect(component_ref)}
         """)
     end
+  end
+
+  defp mark_dirty_component(component_ref) do
+    set =
+      Process.get(:dirty_components, MapSet.new())
+      |> MapSet.put(component_ref)
+
+    Process.put(:dirty_components, set)
+  end
+
+  def get_dirty_components(), do: Process.get(:dirty_components, MapSet.new())
+  def reset_dirty_components(), do: Process.put(:dirty_components, MapSet.new())
+
+  def has_dirty_components?() do
+    size = get_dirty_components() |> MapSet.size()
+    size > 0
   end
 
   def get_state_version() do

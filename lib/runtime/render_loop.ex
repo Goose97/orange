@@ -68,6 +68,9 @@ defmodule Orange.Runtime.RenderLoop do
       {:raw_text, _, _} = node ->
         build_raw_text_node(node)
 
+      %RawText{} = node ->
+        node
+
       _ ->
         children =
           (root.children || [])
@@ -125,7 +128,7 @@ defmodule Orange.Runtime.RenderLoop do
     version = Runtime.ComponentRegistry.update_state(ref, new_component_state)
 
     # We perform re-render asynchronously. This way we can potentially batch
-    # multiple state updates and avoid redundant re-renders
+    # multiple state updates and avoid redundant re-renders.
     # We delay the render at most 100ms
     now = System.monotonic_time(:millisecond)
     send(self(), {:state_updated, version, now})
@@ -149,7 +152,9 @@ defmodule Orange.Runtime.RenderLoop do
           |> render_tick(clean_buffer: true)
 
         %Terminal.KeyEvent{} ->
-          render_tick(state)
+          if Runtime.ComponentRegistry.has_dirty_components?(),
+            do: render_tick(state),
+            else: state
       end
 
     {:noreply, state}
@@ -173,10 +178,13 @@ defmodule Orange.Runtime.RenderLoop do
   end
 
   defp render_tick(state, opts \\ []) do
+    dirty_components = Runtime.ComponentRegistry.get_dirty_components()
+    Runtime.ComponentRegistry.reset_dirty_components()
+
     Tracer.with_span "render_tick" do
       {current_tree, mounting_components, unmounting_components} =
         Tracer.with_span "to_component_tree" do
-          to_component_tree(state.root, state.previous_tree)
+          to_component_tree(state.root, state.previous_tree, dirty_components)
         end
 
       Process.put({__MODULE__, :component_tree}, current_tree)
@@ -216,13 +224,17 @@ defmodule Orange.Runtime.RenderLoop do
   #   a. If the nodes are of the same type, diff their children and expand them recursively. If the current
   #    node is a custom component, copy the state from the previous node.
   #   b. If the nodes are of different types, expand the current node as new
-  def to_component_tree(component, previous_tree) do
+  def to_component_tree(component, previous_tree, dirty_components) do
     Process.put({__MODULE__, :mounting_components}, [])
     Process.put({__MODULE__, :unmounting_components}, [])
 
     expanded_tree =
       if previous_tree,
-        do: expand_with_prev(component, previous_tree),
+        do:
+          expand_with_prev(component, previous_tree,
+            dirty_components: dirty_components,
+            subtree_dirty?: false
+          ),
         else: expand_new(component)
 
     mounting_components = Process.get({__MODULE__, :mounting_components})
@@ -243,12 +255,12 @@ defmodule Orange.Runtime.RenderLoop do
     result = apply(module, :init, [attrs])
     ref = Runtime.ComponentRegistry.register(result.state, attrs, module)
 
-    child = apply(module, :render, [result.state, attrs, &update_callback(ref, &1)])
+    render_result = apply(module, :render, [result.state, attrs, &update_callback(ref, &1)])
 
     children =
-      if child do
+      if render_result do
         [
-          child
+          render_result
           |> normalize_tree_node()
           |> expand_new()
         ]
@@ -256,7 +268,7 @@ defmodule Orange.Runtime.RenderLoop do
         []
       end
 
-    %{component | children: children, ref: ref}
+    %{component | children: children, render_result: render_result, ref: ref}
     |> tap(fn component ->
       opts = [events_subscription: Map.get(result, :events_subscription, false)]
       add_to_mounting_list(component, opts)
@@ -279,13 +291,13 @@ defmodule Orange.Runtime.RenderLoop do
 
   defp add_to_unmounting_list(_component), do: :noop
 
-  defp expand_with_prev(%Rect{} = component, %Rect{} = previous_tree) do
+  defp expand_with_prev(%Rect{} = component, %Rect{} = previous_tree, opts) do
     diffs = Runtime.ChildrenDiff.run(component.children, previous_tree.children)
 
     new_children =
       Enum.map(diffs, fn
         {:keep, current, previous} ->
-          expand_with_prev(current, previous)
+          expand_with_prev(current, previous, opts)
 
         {:new, current} ->
           expand_new(current)
@@ -299,65 +311,81 @@ defmodule Orange.Runtime.RenderLoop do
     %{component | children: new_children}
   end
 
-  defp expand_with_prev(%Rect{} = component, previous_tree) do
+  defp expand_with_prev(%Rect{} = component, previous_tree, _) do
     add_to_unmounting_list(previous_tree)
     expand_new(component)
   end
 
   # Discard the previous tree
-  defp expand_with_prev(component, previous_tree) when is_binary(component) do
+  defp expand_with_prev(component, previous_tree, _) when is_binary(component) do
     add_to_unmounting_list(previous_tree)
     component
   end
 
+  # If a component is dirty, all of its descendants is dirty too.
   defp expand_with_prev(
          %CustomComponent{module: module, attributes: attrs},
-         %CustomComponent{module: module} = previous_component
+         %CustomComponent{module: module} = previous_component,
+         opts
        ) do
     %{state: state} = Runtime.ComponentRegistry.get(previous_component.ref)
+
     Runtime.ComponentRegistry.update_attributes(previous_component.ref, attrs)
 
     state =
-      if function_exported?(module, :before_update, 3) do
-        case apply(module, :before_update, [
+      with true <- function_exported?(module, :before_update, 3),
+           {:update, new_state} <-
+             apply(module, :before_update, [
                state,
                attrs,
                &update_callback(previous_component.ref, &1)
              ]) do
-          {:update, new_state} ->
-            Runtime.ComponentRegistry.update_state(previous_component.ref, new_state)
-            new_state
-
-          :noop ->
-            state
-        end
+        Runtime.ComponentRegistry.update_state(previous_component.ref, new_state)
+        new_state
       else
-        state
+        _ -> state
       end
 
-    current_child =
-      apply(module, :render, [
-        state,
-        attrs,
-        &update_callback(previous_component.ref, &1)
-      ])
+    dirty_components = Keyword.get(opts, :dirty_components, [])
+    subtree_dirty? = Keyword.get(opts, :subtree_dirty?, false)
 
-    if current_child do
-      current_child = normalize_tree_node(current_child)
+    is_dirty = subtree_dirty? or previous_component.ref in dirty_components
+
+    render_result =
+      if is_dirty do
+        apply(module, :render, [
+          state,
+          attrs,
+          &update_callback(previous_component.ref, &1)
+        ])
+      else
+        # Optimization: if the current component is not dirty, we can reuse the previous component children
+        previous_component.render_result
+      end
+
+    if render_result do
+      current_child = normalize_tree_node(render_result)
 
       child =
         case previous_component.children do
-          [] -> expand_new(current_child)
-          [prev_child] -> expand_with_prev(current_child, prev_child)
+          [] ->
+            expand_new(current_child)
+
+          [prev_child] ->
+            # If the current component is dirty, all of its descendants is dirty too.
+            expand_with_prev(current_child, prev_child,
+              dirty_components: dirty_components,
+              subtree_dirty?: is_dirty
+            )
         end
 
-      %{previous_component | children: [child]}
+      %{previous_component | children: [child], render_result: render_result}
     else
-      %{previous_component | children: []}
+      %{previous_component | children: [], render_result: nil}
     end
   end
 
-  defp expand_with_prev(%CustomComponent{} = component, previous_tree) do
+  defp expand_with_prev(%CustomComponent{} = component, previous_tree, _) do
     add_to_unmounting_list(previous_tree)
     expand_new(component)
   end

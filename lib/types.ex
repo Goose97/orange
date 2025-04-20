@@ -7,7 +7,7 @@ end
 defmodule Orange.CustomComponent do
   @moduledoc false
 
-  defstruct [:module, :children, :ref, attributes: []]
+  defstruct [:module, :children, :render_result, :ref, attributes: []]
 end
 
 defmodule Orange.RawText do

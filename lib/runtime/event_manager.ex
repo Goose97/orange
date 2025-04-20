@@ -9,7 +9,7 @@ defmodule Orange.Runtime.EventManager do
     @callback unsubscribe(reference()) :: any()
     @callback focus(reference()) :: any()
     @callback unfocus(reference()) :: any()
-    @callback dispatch_event(Orange.Terminal.KeyEvent.t()) :: any()
+    @callback dispatch_event(Orange.Terminal.KeyEvent.t()) :: boolean()
   end
 
   @state __MODULE__.State
@@ -82,7 +82,7 @@ defmodule Orange.Runtime.EventManager do
             Runtime.ComponentRegistry.update_state(component_ref, new_state)
 
           :noop ->
-            :ok
+            nil
         end
       end
     end
