@@ -15,40 +15,44 @@ defmodule Orange.Runtime.ChildrenDiff do
   @spec run([child], [child]) :: [
           {:keep, current :: child, prev :: child} | {:new, child} | {:remove, child}
         ]
+
+  # Both current and previous contain only one element. This is a common case that worth optimizing
+  def run([current_child], [previous_child]) do
+    with true <- same_type?(current_child, previous_child),
+         true <- is_struct(current_child, CustomComponent) or is_struct(previous_child, Rect) do
+      [{:keep, current_child, previous_child}]
+    else
+      _ -> [{:new, current_child}, {:remove, previous_child}]
+    end
+  end
+
   def run(current, previous) do
     lcs = lcs(current, previous)
 
-    new_tree =
-      current
-      |> Enum.with_index()
-      |> Enum.map(fn {element, index} ->
-        in_lcs = Enum.find(lcs, fn {i, _} -> i == index end)
+    {new_tree, _, _} =
+      Enum.reduce(current, {[], lcs, 0}, fn
+        # Found the element in the LCS
+        element, {result, [{i, j} | rest_lcs], i} ->
+          action =
+            if is_struct(element, CustomComponent) or is_struct(element, Rect),
+              do: {:keep, element, Enum.at(previous, j)},
+              else: {:new, element}
 
-        case in_lcs do
-          {_, j} ->
-            case element do
-              element
-              when is_struct(element, CustomComponent)
-              when is_struct(element, Rect) ->
-                {:keep, element, Enum.at(previous, j)}
+          {result ++ [action], rest_lcs, i + 1}
 
-              _ ->
-                {:new, element}
-            end
-
-          nil ->
-            {:new, element}
-        end
+        element, {result, lcs, index} ->
+          {result ++ [{:new, element}], lcs, index + 1}
       end)
 
-    old_tree =
-      previous
-      |> Enum.with_index()
-      |> Enum.map(fn {element, index} ->
-        in_lcs = Enum.find(lcs, fn {_, i} -> i == index end)
-        if !in_lcs, do: {:remove, element}
+    {old_tree, _, _} =
+      Enum.reduce(previous, {[], lcs, 0}, fn
+        # Found the element in the LCS
+        _, {result, [{_, i} | rest_lcs], i} ->
+          {result, rest_lcs, i + 1}
+
+        element, {result, lcs, index} ->
+          {result ++ [{:remove, element}], lcs, index + 1}
       end)
-      |> Enum.reject(&is_nil/1)
 
     new_tree ++ old_tree
   end
@@ -60,21 +64,14 @@ defmodule Orange.Runtime.ChildrenDiff do
 
   # Returns the LCS for current[0..i-1] and previous[0..j-1]
   defp lcs(current, previous, i, j, memo) do
-    update_memo = fn memo, {i, j}, value ->
-      memo = Map.put(memo, {i, j}, value)
-
-      max = Map.get(memo, :max)
-      if length(value) >= length(max), do: Map.put(memo, :max, value), else: memo
-    end
-
     cond do
       i == length(current) || j == length(previous) ->
         {[], memo}
 
-      same_type(Enum.at(current, i), Enum.at(previous, j)) ->
+      same_type?(Enum.at(current, i), Enum.at(previous, j)) ->
         {result, memo} = lcs(current, previous, i + 1, j + 1, memo)
-        result = result ++ [{i, j}]
-        memo = update_memo.(memo, {i, j}, result)
+        result = [{i, j} | result]
+        memo = update_memo(memo, {i, j}, result)
         {result, memo}
 
       (cached = Map.get(memo, {i, j})) != nil ->
@@ -85,12 +82,18 @@ defmodule Orange.Runtime.ChildrenDiff do
         {result2, memo} = lcs(current, previous, i + 1, j, memo)
         result = if length(result1) >= length(result2), do: result1, else: result2
 
-        memo = update_memo.(memo, {i, j}, result)
+        memo = update_memo(memo, {i, j}, result)
         {result, memo}
     end
   end
 
-  defp same_type(element1, element2) do
+  defp update_memo(memo, {i, j}, value) do
+    memo = Map.put(memo, {i, j}, value)
+    max = Map.get(memo, :max)
+    if length(value) >= length(max), do: Map.put(memo, :max, value), else: memo
+  end
+
+  defp same_type?(element1, element2) do
     cond do
       is_binary(element1) ->
         is_binary(element2)
@@ -104,7 +107,7 @@ defmodule Orange.Runtime.ChildrenDiff do
       not is_struct(element1, CustomComponent) and not is_struct(element2, CustomComponent) ->
         element1.__struct__ == element2.__struct__
 
-      true ->
+      :else ->
         false
     end
   end
