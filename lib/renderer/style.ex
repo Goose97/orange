@@ -9,44 +9,41 @@ defmodule Orange.Renderer.Style do
   def to_binding_style(nil, _, _), do: nil
 
   def to_binding_style(style, scroll_x, scroll_y) do
-    border = expand_border(style)
-    # We render the scrollbar on top of the border. It means scroll_x implies border_bottom: true,
-    # and scroll_y implies border_right: true
-    scroll_bar_visible = Keyword.get(style, :scroll_bar, :visible) == :visible
-    border = if scroll_x && scroll_bar_visible, do: put_elem(border, 2, 1), else: border
-    border = if scroll_y && scroll_bar_visible, do: put_elem(border, 1, 1), else: border
+    style = Map.new(style)
+
+    border = expand_border(style, scroll_x, scroll_y)
 
     %InputTreeNode.Style{
-      width: parse_length_percentage(style[:width]),
-      min_width: parse_length_percentage(style[:min_width]),
-      max_width: parse_length_percentage(style[:max_width]),
-      height: parse_length_percentage(style[:height]),
-      min_height: parse_length_percentage(style[:min_height]),
-      max_height: parse_length_percentage(style[:max_height]),
+      width: Map.get(style, :width) |> parse_length_percentage(),
+      min_width: Map.get(style, :min_width) |> parse_length_percentage(),
+      max_width: Map.get(style, :max_width) |> parse_length_percentage(),
+      height: Map.get(style, :height) |> parse_length_percentage(),
+      min_height: Map.get(style, :min_height) |> parse_length_percentage(),
+      max_height: Map.get(style, :max_height) |> parse_length_percentage(),
       border: border,
-      padding: expand_padding_margin(style[:padding]),
-      margin: expand_padding_margin(style[:margin]),
-      display: Keyword.get(style, :display, :flex),
+      padding: Map.get(style, :padding) |> expand_padding_margin(),
+      margin: Map.get(style, :margin) |> expand_padding_margin(),
+      display: Map.get(style, :display, :flex),
 
       # Flex properties
-      flex_direction: style[:flex_direction],
-      flex_grow: style[:flex_grow],
-      flex_shrink: style[:flex_shrink],
-      justify_content: style[:justify_content],
-      align_items: style[:align_items],
-      line_wrap: Keyword.get(style, :line_wrap, true),
+      flex_direction: Map.get(style, :flex_direction),
+      flex_grow: Map.get(style, :flex_grow),
+      flex_shrink: Map.get(style, :flex_shrink),
+      justify_content: Map.get(style, :justify_content),
+      align_items: Map.get(style, :align_items),
+      line_wrap: Map.get(style, :line_wrap, true),
 
       # Gap properties
-      row_gap: style[:row_gap] || style[:gap],
-      column_gap: style[:column_gap] || style[:gap],
+      row_gap: Map.get(style, :row_gap) || Map.get(style, :gap),
+      column_gap: Map.get(style, :column_gap) || Map.get(style, :gap),
 
       # Grid properties
-      grid_template_rows: parse_grid_tracks(style[:grid_template_rows]),
-      grid_template_columns: parse_grid_tracks(style[:grid_template_columns]),
-      grid_auto_rows: parse_grid_tracks(style[:grid_auto_rows]),
-      grid_auto_columns: parse_grid_tracks(style[:grid_auto_columns]),
-      grid_row: parse_grid_line_pair(style[:grid_row]),
-      grid_column: parse_grid_line_pair(style[:grid_column])
+      grid_template_rows: Map.get(style, :grid_template_rows) |> parse_grid_tracks(),
+      grid_template_columns: Map.get(style, :grid_template_columns) |> parse_grid_tracks(),
+      grid_auto_rows: Map.get(style, :grid_auto_rows) |> parse_grid_tracks(),
+      grid_auto_columns: Map.get(style, :grid_auto_columns) |> parse_grid_tracks(),
+      grid_row: Map.get(style, :grid_row) |> parse_grid_line_pair(),
+      grid_column: Map.get(style, :grid_column) |> parse_grid_line_pair()
     }
   end
 
@@ -80,17 +77,37 @@ defmodule Orange.Renderer.Style do
     end
   end
 
-  defp expand_border(style) do
-    border = fn position ->
-      border_value =
-        if style[:"border_#{position}"] != nil,
-          do: style[:"border_#{position}"],
-          else: style[:border]
+  defp expand_border(style, scroll_x, scroll_y) do
+    # We render the scrollbar on top of the border. It means scroll_x implies border_bottom: true,
+    # and scroll_y implies border_right: true
+    scroll_bar_visible = Map.get(style, :scroll_bar, :visible) == :visible
 
-      if border_value, do: 1, else: 0
+    border_bottom = if scroll_x && scroll_bar_visible, do: 1
+    border_right = if scroll_y && scroll_bar_visible, do: 1
+
+    {
+      border_position(style, :top),
+      border_right || border_position(style, :right),
+      border_bottom || border_position(style, :bottom),
+      border_position(style, :left)
+    }
+  end
+
+  @compile {:inline, border_position: 2}
+  defp border_position(style, position) do
+    attr_name =
+      case position do
+        :top -> :border_top
+        :right -> :border_right
+        :bottom -> :border_bottom
+        :left -> :border_left
+      end
+
+    cond do
+      (v = Map.get(style, attr_name)) != nil -> if v, do: 1, else: 0
+      Map.get(style, :border) -> 1
+      :else -> 0
     end
-
-    {border.(:top), border.(:right), border.(:bottom), border.(:left)}
   end
 
   defp expand_padding_margin(value) do
