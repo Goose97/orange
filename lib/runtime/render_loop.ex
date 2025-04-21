@@ -206,10 +206,9 @@ defmodule Orange.Runtime.RenderLoop do
 
       {width, height} = state.terminal_size
 
-      render_tree = to_render_tree(current_tree)
-
       {current_buffer, layout_tree_id_map} =
         Tracer.with_span "render" do
+          render_tree = to_render_tree(current_tree)
           Renderer.render(render_tree, %{width: width, height: height})
         end
 
@@ -239,18 +238,22 @@ defmodule Orange.Runtime.RenderLoop do
   #   a. If the nodes are of the same type, diff their children and expand them recursively. If the current
   #    node is a custom component, copy the state from the previous node.
   #   b. If the nodes are of different types, expand the current node as new
-  def to_component_tree(component, previous_tree, dirty_components) do
+  defp to_component_tree(component, previous_tree, dirty_components) do
     Process.put({__MODULE__, :mounting_components}, [])
     Process.put({__MODULE__, :unmounting_components}, [])
 
     expanded_tree =
-      if previous_tree,
-        do:
-          expand_with_prev(component, previous_tree,
-            dirty_components: dirty_components,
-            subtree_dirty?: false
-          ),
-        else: expand_new(component)
+      if previous_tree do
+        Tracer.set_attribute("type", "expand_with_prev")
+
+        expand_with_prev(component, previous_tree,
+          dirty_components: dirty_components,
+          subtree_dirty?: false
+        )
+      else
+        Tracer.set_attribute("type", "expand_new")
+        expand_new(component)
+      end
 
     mounting_components = Process.get({__MODULE__, :mounting_components})
     unmounting_components = Process.get({__MODULE__, :unmounting_components})
