@@ -127,23 +127,36 @@ defmodule Orange.Runtime.RenderLoop do
 
     version = Runtime.ComponentRegistry.update_state(ref, new_component_state)
 
-    # We perform re-render asynchronously. This way we can potentially batch
-    # multiple state updates and avoid redundant re-renders.
-    # We delay the render at most 100ms
-    now = System.monotonic_time(:millisecond)
-    send(self(), {:state_updated, version, now})
+    is_dispatching_event = Process.get({__MODULE__, :dispatching_event})
+
+    # If we are in event dispatching phase, we don't need to manually schedule the render
+    # because a render is scheduled at the end of the this phase.
+    if !is_dispatching_event do
+      # We perform re-render asynchronously. This way we can potentially batch
+      # multiple state updates and avoid redundant re-renders.
+      # We delay the render at most 20ms
+      now = System.monotonic_time(:millisecond)
+      send(self(), {:state_updated, version, now})
+    end
   end
 
-  @impl true
-  def handle_info({:event, event}, state) do
+  defp dispatch_event(event) do
     now = System.monotonic_time(:millisecond)
+
+    Process.put({__MODULE__, :dispatching_event}, true)
     event_manager_impl().dispatch_event(event)
+    Process.delete({__MODULE__, :dispatching_event})
 
     Logger.debug("""
     Dispatch event:
     - event: #{inspect(event, pretty: true)}
     - duration: #{System.monotonic_time(:millisecond) - now}ms
     """)
+  end
+
+  @impl true
+  def handle_info({:event, event}, state) do
+    dispatch_event(event)
 
     state =
       case event do
@@ -152,9 +165,11 @@ defmodule Orange.Runtime.RenderLoop do
           |> render_tick(clean_buffer: true)
 
         %Terminal.KeyEvent{} ->
-          if Runtime.ComponentRegistry.has_dirty_components?(),
-            do: render_tick(state),
-            else: state
+          if Runtime.ComponentRegistry.has_dirty_components?() do
+            render_tick(state)
+          else
+            state
+          end
       end
 
     {:noreply, state}
