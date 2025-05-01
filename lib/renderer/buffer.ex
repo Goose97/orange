@@ -37,11 +37,43 @@ defmodule Orange.Renderer.Buffer do
 
   def write_string(buffer, {x, y}, text, :horizontal, opts)
       when is_struct(buffer, __MODULE__) do
-    String.graphemes(text)
-    |> Enum.with_index()
-    |> Enum.reduce(buffer, fn {char, index}, acc ->
-      buffer_write(acc, {x + index, y}, char, opts)
-    end)
+    is_overflow_y =
+      case buffer.size do
+        {_, h} -> y >= h
+        _ -> false
+      end
+
+    if is_overflow_y do
+      buffer
+    else
+      row_to_update = :array.get(y, buffer.rows)
+
+      updated_row =
+        String.graphemes(text)
+        |> Enum.with_index()
+        |> Enum.reduce(row_to_update, fn {char, index}, row_acc ->
+          cell = %Renderer.Cell{
+            character: char,
+            foreground: opts[:color],
+            background: opts[:background_color],
+            modifiers: Keyword.get(opts, :text_modifiers, [])
+          }
+
+          cell_x = x + index
+
+          case buffer.size do
+            # Out-of-bounds writes
+            {width, _} -> if cell_x >= width or cell_x < 0, do: :noop, else: :update
+            _ -> :update
+          end
+          |> case do
+            :update -> :array.set(cell_x, cell, row_acc)
+            :noop -> row_acc
+          end
+        end)
+
+      %{buffer | rows: :array.set(y, updated_row, buffer.rows)}
+    end
   end
 
   def write_string(buffer, {x, y}, text, :vertical, opts)
@@ -49,7 +81,24 @@ defmodule Orange.Renderer.Buffer do
     String.graphemes(text)
     |> Enum.with_index()
     |> Enum.reduce(buffer, fn {char, index}, acc ->
-      buffer_write(acc, {x, y + index}, char, opts)
+      cell = %Renderer.Cell{
+        character: char,
+        foreground: opts[:color],
+        background: opts[:background_color],
+        modifiers: Keyword.get(opts, :text_modifiers, [])
+      }
+
+      cell_y = y + index
+
+      case buffer.size do
+        # Out-of-bounds writes
+        {_, height} -> if cell_y >= height or cell_y < 0, do: :noop, else: :update
+        _ -> :update
+      end
+      |> case do
+        :update -> write_cell(acc, {x, cell_y}, cell)
+        :noop -> acc
+      end
     end)
   end
 
@@ -93,37 +142,6 @@ defmodule Orange.Renderer.Buffer do
         acc
       end
     end)
-  end
-
-  defp buffer_write(%__MODULE__{size: {width, height}} = buffer, {x, y}, text, opts) do
-    cond do
-      y >= height or y < 0 ->
-        buffer
-
-      x >= width or x < 0 ->
-        buffer
-
-      true ->
-        cell = %Renderer.Cell{
-          character: text,
-          foreground: opts[:color],
-          background: opts[:background_color],
-          modifiers: Keyword.get(opts, :text_modifiers, [])
-        }
-
-        write_cell(buffer, {x, y}, cell)
-    end
-  end
-
-  defp buffer_write(%__MODULE__{size: nil} = buffer, {x, y}, text, opts) do
-    cell = %Renderer.Cell{
-      character: text,
-      foreground: opts[:color],
-      background: opts[:background_color],
-      modifiers: Keyword.get(opts, :text_modifiers, [])
-    }
-
-    write_cell(buffer, {x, y}, cell)
   end
 
   def set_background_color(buffer, %Renderer.Area{} = area, color)
