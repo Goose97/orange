@@ -49,6 +49,27 @@ defmodule Orange.Renderer.TitleTest do
              """
     end
 
+    test ":title is a raw text" do
+      element =
+        rect style: [border: true, width: "100%", flex_direction: :column],
+             title: %{text: {:raw_text, :row, "Title"}, offset: 3} do
+          "foo"
+          "bar"
+        end
+
+      {buffer, _} = Orange.Renderer.render(element, %{width: 15, height: 6})
+      screen = Buffer.to_string(buffer)
+
+      assert screen == """
+             ┌───Title─────┐
+             │foo----------│
+             │bar----------│
+             └─────────────┘
+             ---------------
+             ---------------\
+             """
+    end
+
     test ":title with center alignment" do
       element =
         rect style: [border: true, width: "100%"],

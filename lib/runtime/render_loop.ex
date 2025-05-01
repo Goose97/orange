@@ -66,7 +66,7 @@ defmodule Orange.Runtime.RenderLoop do
         leaf
 
       {:raw_text, _, _} = node ->
-        build_raw_text_node(node)
+        Orange.RawText.build(node)
 
       %RawText{} = node ->
         node
@@ -79,17 +79,6 @@ defmodule Orange.Runtime.RenderLoop do
 
         %{root | children: children}
     end
-  end
-
-  defp build_raw_text_node({:raw_text, direction, content}) do
-    content =
-      if(is_list(content), do: content, else: [content])
-      |> Enum.map(fn
-        text when is_binary(text) -> %{text: text}
-        %{text: _} = v -> v
-      end)
-
-    %Orange.RawText{direction: direction, content: content}
   end
 
   defp terminal_impl(), do: Application.get_env(:orange, :terminal, Terminal)

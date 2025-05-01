@@ -49,6 +49,27 @@ defmodule Orange.Renderer.FooterTest do
              """
     end
 
+    test ":footer is a raw text" do
+      element =
+        rect style: [border: true, width: "100%", flex_direction: :column],
+             footer: %{text: {:raw_text, :row, "Footer"}, offset: 3} do
+          "foo"
+          "bar"
+        end
+
+      {buffer, _} = Orange.Renderer.render(element, %{width: 15, height: 6})
+      screen = Buffer.to_string(buffer)
+
+      assert screen == """
+             ┌─────────────┐
+             │foo----------│
+             │bar----------│
+             └────Footer───┘
+             ---------------
+             ---------------\
+             """
+    end
+
     test ":footer with center alignment" do
       element =
         rect style: [border: true, width: "100%"],

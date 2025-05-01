@@ -176,34 +176,57 @@ defmodule Orange.Renderer do
 
   defp maybe_render_title(buffer, _, nil), do: buffer
 
-  defp maybe_render_title(buffer, node, title) when is_binary(title),
-    do: maybe_render_title(buffer, node, %{text: title, offset: 0, align: :left})
+  defp maybe_render_title(buffer, node, title) do
+    normalized_title =
+      case title do
+        %{text: _content} -> title
+        _ -> %{text: title, offset: 0, align: :left}
+      end
 
-  defp maybe_render_title(
+    normalized_content =
+      case normalized_title.text do
+        %Orange.Rect{} = rect -> rect
+        text when is_binary(text) -> text
+        {:raw_text, _, _} = raw -> Orange.RawText.build(raw)
+      end
+
+    normalized_title = %{normalized_title | text: normalized_content}
+    do_render_title(buffer, node, normalized_title)
+  end
+
+  defp do_render_title(
          buffer,
          %OutputTreeNode{abs_x: x, abs_y: y, width: w},
-         %{
-           text: title
-         } = title_opts
+         %{text: title} = title_opts
        )
-       when is_binary(title) do
+       when is_binary(title)
+       when is_struct(title, Orange.RawText) do
     offset = Map.get(title_opts, :offset, 0)
     align = Map.get(title_opts, :align, :left)
+
+    title_length =
+      cond do
+        is_binary(title) -> String.length(title)
+        is_struct(title, Orange.RawText) -> Orange.RawText.length(title)
+      end
 
     position_x =
       case align do
         :left -> x + offset + 1
-        :right -> x + w - String.length(title) - offset - 1
-        :center -> x + div(w - String.length(title), 2) + offset
+        :right -> x + w - title_length - offset - 1
+        :center -> x + div(w - title_length, 2) + offset
       end
 
-    Buffer.write_string(buffer, {position_x, y}, title, :horizontal)
+    cond do
+      is_binary(title) ->
+        Buffer.write_string(buffer, {position_x, y}, title, :horizontal)
+
+      is_struct(title, Orange.RawText) ->
+        render_raw_text(buffer, {position_x, y}, title)
+    end
   end
 
-  defp maybe_render_title(buffer, node, title) when is_struct(title, Orange.Rect),
-    do: maybe_render_title(buffer, node, %{text: title, offset: 0, align: :left})
-
-  defp maybe_render_title(buffer, node, %{text: title} = title_opts)
+  defp do_render_title(buffer, node, %{text: title} = title_opts)
        when is_struct(title, Orange.Rect) do
     input_tree = InputTree.to_input_tree(title)
 
@@ -236,34 +259,57 @@ defmodule Orange.Renderer do
 
   defp maybe_render_footer(buffer, _, nil), do: buffer
 
-  defp maybe_render_footer(buffer, node, footer) when is_binary(footer),
-    do: maybe_render_footer(buffer, node, %{text: footer, offset: 0, align: :right})
+  defp maybe_render_footer(buffer, node, title) do
+    normalized_title =
+      case title do
+        %{text: _content} -> title
+        _ -> %{text: title, offset: 0, align: :right}
+      end
 
-  defp maybe_render_footer(
+    normalized_content =
+      case normalized_title.text do
+        %Orange.Rect{} = rect -> rect
+        text when is_binary(text) -> text
+        {:raw_text, _, _} = raw -> Orange.RawText.build(raw)
+      end
+
+    normalized_title = %{normalized_title | text: normalized_content}
+    do_render_footer(buffer, node, normalized_title)
+  end
+
+  defp do_render_footer(
          buffer,
          %OutputTreeNode{abs_x: x, abs_y: y, width: w, height: h},
-         %{
-           text: footer
-         } = footer_opts
+         %{text: footer} = footer_opts
        )
-       when is_binary(footer) do
+       when is_binary(footer)
+       when is_struct(footer, Orange.RawText) do
     offset = Map.get(footer_opts, :offset, 0)
     align = Map.get(footer_opts, :align, :right)
+
+    footer_length =
+      cond do
+        is_binary(footer) -> String.length(footer)
+        is_struct(footer, Orange.RawText) -> Orange.RawText.length(footer)
+      end
 
     position_x =
       case align do
         :left -> x + offset + 1
-        :right -> x + w - String.length(footer) - offset - 1
-        :center -> x + div(w - String.length(footer), 2) + offset
+        :right -> x + w - footer_length - offset - 1
+        :center -> x + div(w - footer_length, 2) + offset
       end
 
-    Buffer.write_string(buffer, {position_x, y + h - 1}, footer, :horizontal)
+    cond do
+      is_binary(footer) ->
+        Buffer.write_string(buffer, {position_x, y + h - 1}, footer, :horizontal)
+
+      is_struct(footer, Orange.RawText) ->
+        render_raw_text(buffer, {position_x, y + h - 1}, footer)
+    end
   end
 
-  defp maybe_render_footer(buffer, node, footer) when is_struct(footer, Orange.Rect),
-    do: maybe_render_footer(buffer, node, %{text: footer, offset: 0, align: :right})
-
-  defp maybe_render_footer(buffer, node, %{text: footer} = footer_opts)
+  defp do_render_footer(buffer, node, %{text: footer} = footer_opts)
        when is_struct(footer, Orange.Rect) do
     input_tree = InputTree.to_input_tree(footer)
 
@@ -332,19 +378,21 @@ defmodule Orange.Renderer do
         render_scrollable_children(buffer, node, input_tree_lookup_index)
 
       raw_text ->
-        render_raw_text(buffer, node, raw_text)
+        {border_top, _, _, border_left} = node.border
+        {padding_top, _, _, padding_left} = node.padding
+        start_x = node.abs_x + border_left + padding_left
+        start_y = node.abs_y + border_top + padding_top
+        render_raw_text(buffer, {start_x, start_y}, raw_text)
 
       true ->
         do_render_children(buffer, node, input_tree_lookup_index, window)
     end
   end
 
-  defp render_raw_text(buffer, node, %Orange.RawText{direction: direction, content: content}) do
-    {border_top, _, _, border_left} = node.border
-    {padding_top, _, _, padding_left} = node.padding
-    start_x = node.abs_x + border_left + padding_left
-    start_y = node.abs_y + border_top + padding_top
-
+  def render_raw_text(buffer, {start_x, start_y}, %Orange.RawText{
+        direction: direction,
+        content: content
+      }) do
     draw = fn content, buffer, direction, offset ->
       coordinates =
         case direction do
