@@ -230,9 +230,7 @@ defmodule Orange.Renderer do
        when is_struct(title, Orange.Rect) do
     input_tree = InputTree.to_input_tree(title)
 
-    output_tree =
-      input_tree
-      |> Orange.Layout.layout({{:fixed, node.width}, {:fixed, 1}})
+    output_tree = Orange.Layout.layout(input_tree, {{:fixed, node.width}, {:fixed, 1}})
 
     offset = Map.get(title_opts, :offset, 0)
     align = Map.get(title_opts, :align, :left)
@@ -313,9 +311,7 @@ defmodule Orange.Renderer do
        when is_struct(footer, Orange.Rect) do
     input_tree = InputTree.to_input_tree(footer)
 
-    output_tree =
-      input_tree
-      |> Orange.Layout.layout({{:fixed, node.width}, {:fixed, 1}})
+    output_tree = Orange.Layout.layout(input_tree, {{:fixed, node.width}, {:fixed, 1}})
 
     offset = Map.get(footer_opts, :offset, 0)
     align = Map.get(footer_opts, :align, :right)
@@ -409,7 +405,8 @@ defmodule Orange.Renderer do
       updated_buffer =
         Buffer.write_string(buffer, coordinates, content.text, direction,
           background_color: content[:background_color],
-          color: content[:color]
+          color: content[:color],
+          text_modifiers: content[:text_modifiers] || []
         )
 
       {updated_buffer, offset + String.length(content.text)}
