@@ -353,14 +353,14 @@ defmodule Orange.Component.Table do
   defp header_separator(attrs) do
     border_color = get_in(attrs, [:colors, :border])
 
-    [
-      rect position: {:absolute, 2, 0, nil, nil}, style: [color: border_color] do
-        "┤"
-      end,
-      rect position: {:absolute, 2, nil, nil, 0}, style: [color: border_color] do
-        "├"
+    rect style: [width: "100%", height: 1, color: border_color] do
+      "├" 
+
+      rect style: [flex_grow: 1], background_text: %{text: "─", color: border_color} do
       end
-    ]
+
+      "┤"
+    end
   end
 
   defp rows(all_rows, column_widths, state, attrs) do
@@ -516,6 +516,7 @@ defmodule Orange.Component.Table do
            width: "100%",
            padding: {0, 1},
            border: true,
+           border_bottom: false,
            text_modifiers: [:bold],
            scroll_bar: :hidden,
            border_style: :round_corners,
