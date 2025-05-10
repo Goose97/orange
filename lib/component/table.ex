@@ -6,9 +6,9 @@ defmodule Orange.Component.Table do
 
     * `:columns` - A list of column definitions. Each column is a map with the following keys:
       * `:id` - The unique identifier of the column
-      * `:name` - The display name of the column
+      * `:name` - A string used as column header
       * `:sort_key` - (Optional) A character key that can be pressed to sort by this column
-      * `:render` - (Optional) A function that renders a cell value. Defaults to `to_string/1`
+      * `:render` - (Optional) A function that renders a cell value, returns a string. Defaults to `to_string/1`
 
       This attribute is required.
 
@@ -312,34 +312,30 @@ defmodule Orange.Component.Table do
     end
   end
 
-  defp column_name(%{id: sort_column_id} = column, {sort_column_id, direction}, attrs) do
-    direction_text =
-      case direction do
-        :desc -> "▼"
-        :asc -> "▲"
+  defp column_name(%{id: sort_column_id} = column, sort, attrs) do
+    content = [%{text: column.name}]
+
+    content =
+      if sort_key = Map.get(column, :sort_key) do
+        sort_key_color = get_in(attrs, [:colors, :sort_key]) || :blue
+        content ++ [%{text: " (#{sort_key})", color: sort_key_color}]
+      else
+        content
       end
 
-    rect do
-      column_with_sort_key(column, attrs)
-      " #{direction_text}"
-    end
-  end
+    case sort do
+      # The column is the currently sorted column
+      {^sort_column_id, direction} ->
+        direction_text =
+          case direction do
+            :desc -> "▼"
+            :asc -> "▲"
+          end
 
-  defp column_name(column, _, attrs), do: column_with_sort_key(column, attrs)
+        content ++ [%{text: " #{direction_text}"}]
 
-  defp column_with_sort_key(column, attrs) do
-    if sort_key = Map.get(column, :sort_key) do
-      sort_key_color = get_in(attrs, [:colors, :sort_key]) || :blue
-
-      rect do
-        column.name
-
-        rect style: [margin: {0, 0, 0, 1}, color: sort_key_color] do
-          "(#{sort_key})"
-        end
-      end
-    else
-      column.name
+      _ ->
+        content
     end
   end
 
@@ -374,10 +370,7 @@ defmodule Orange.Component.Table do
     cell_gap = 2
     padding_x = 1
 
-    row_width =
-      Enum.intersperse(column_widths, cell_gap)
-      |> Enum.sum()
-      |> Kernel.+(padding_x * 2)
+    row_width = Enum.sum(column_widths) + padding_x * 2 + cell_gap * (length(column_widths) - 1)
 
     {children, footer} =
       if state.page_size do
@@ -423,24 +416,28 @@ defmodule Orange.Component.Table do
                 [
                   background_color: row_background_color,
                   color: row_foreground_color,
-                  padding: {0, padding_x},
-                  gap: cell_gap,
                   flex_shrink: 0,
-                  width: row_width
+                  width: row_width,
+                  height: 1,
+                  gap: cell_gap,
+                  padding: {0, padding_x}
                 ],
                 custom_row_style
               )
 
-            rect style: row_style do
+            raw_text =
               row
               |> Enum.with_index()
               |> Enum.map(fn {content, index} ->
                 width = Enum.at(column_widths, index)
 
-                rect style: [width: width, flex_direction: :column, flex_shrink: 0] do
-                  content
+                rect style: [width: width, height: 1] do
+                  {:raw_text, :row, content}
                 end
               end)
+
+            rect style: row_style do
+              raw_text
             end
           end)
 
@@ -470,13 +467,15 @@ defmodule Orange.Component.Table do
 
   # Calculate the width for each column
   defp prepare_render(columns, rows) do
+    columns = List.to_tuple(columns)
+
     rows =
       Enum.map(rows, fn {row_key, row} ->
         contents =
           row
           |> Enum.with_index()
           |> Enum.map(fn {value, index} ->
-            column = Enum.at(columns, index)
+            column = elem(columns, index)
             render_fn = Map.get(column, :render, &to_string/1)
             render_fn.(value)
           end)
@@ -485,8 +484,8 @@ defmodule Orange.Component.Table do
       end)
 
     column_widths =
-      Enum.map(0..(length(columns) - 1), fn index ->
-        column = Enum.at(columns, index)
+      Enum.map(0..(tuple_size(columns) - 1), fn index ->
+        column = elem(columns, index)
         header_width = String.length(column.name)
         # Plus 2 for the possible sort indicator and sort key length
         header_width =
@@ -495,12 +494,7 @@ defmodule Orange.Component.Table do
             else: header_width
 
         row_widths =
-          Enum.map(rows, fn {_, contents} ->
-            Enum.at(contents, index)
-            |> String.split("\n")
-            |> Enum.map(&String.length/1)
-            |> Enum.max()
-          end)
+          Enum.map(rows, fn {_, contents} -> Enum.at(contents, index) |> String.length() end)
 
         Enum.max([header_width | row_widths])
       end)
@@ -526,8 +520,8 @@ defmodule Orange.Component.Table do
       Enum.zip(columns, column_widths)
       |> Enum.map(fn {column, width} ->
         # Plus 2 for the padding
-        rect style: [width: width, flex_shrink: 0] do
-          column_name(column, attrs[:sort_column], attrs)
+        rect style: [width: width, height: 1, flex_shrink: 0] do
+          {:raw_text, :row, column_name(column, attrs[:sort_column], attrs)}
         end
       end)
     end

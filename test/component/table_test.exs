@@ -22,14 +22,14 @@ defmodule Orange.Component.TableTest do
       Test.render(
         {Orange.Component.Table, columns: columns, rows: rows, selected_row_index: 0},
         terminal_size: {30, 10},
-        events: [{:wait_and_snapshot, 10}]
+        events: [{:wait_and_snapshot, 20}]
       )
 
     assert_content(
       snapshot,
       """
       ╭────────────────────────────╮
-      │-Name-(n)----Age-(a)--------│
+      │-Name (n)----Age (a)--------│
       ├────────────────────────────┤
       │ Alice       30        -----│
       │-Bob---------25-------------│
@@ -62,14 +62,14 @@ defmodule Orange.Component.TableTest do
             columns: columns, rows: rows, selected_row_index: 0, sort_column: {:name, :desc}
           },
           terminal_size: {30, 10},
-          events: [{:wait_and_snapshot, 10}]
+          events: [{:wait_and_snapshot, 20}]
         )
 
       assert_content(
         snapshot,
         """
         ╭────────────────────────────╮
-        │-Name-(n) ▼--Age-(a)--------│
+        │-Name (n) ▼--Age (a)--------│
         ├────────────────────────────┤
         │ Charlie     35        -----│
         │-Bob---------25-------------│
@@ -101,14 +101,14 @@ defmodule Orange.Component.TableTest do
             columns: columns, rows: rows, selected_row_index: 0, sort_column: {:name, :asc}
           },
           terminal_size: {30, 10},
-          events: [{:wait_and_snapshot, 10}]
+          events: [{:wait_and_snapshot, 20}]
         )
 
       assert_content(
         snapshot,
         """
         ╭────────────────────────────╮
-        │-Name-(n) ▲--Age-(a)--------│
+        │-Name (n) ▲--Age (a)--------│
         ├────────────────────────────┤
         │ Alice       30        -----│
         │-Bob---------25-------------│
@@ -146,7 +146,7 @@ defmodule Orange.Component.TableTest do
           end
         },
         terminal_size: {30, 10},
-        events: [{:wait_and_snapshot, 10}]
+        events: [{:wait_and_snapshot, 20}]
       )
 
     assert_content(
@@ -185,7 +185,7 @@ defmodule Orange.Component.TableTest do
         snapshot1,
         """
         ╭────────────────────────────╮
-        │-Name-(n)----Age-(a)--------│
+        │-Name (n)----Age (a)--------│
         ├────────────────────────────┤
         │-Alice-------30-------------│
         │ Bob         25        -----│
@@ -198,7 +198,7 @@ defmodule Orange.Component.TableTest do
         snapshot2,
         """
         ╭────────────────────────────╮
-        │-Name-(n)----Age-(a)--------│
+        │-Name (n)----Age (a)--------│
         ├────────────────────────────┤
         │ Alice       30        -----│
         │-Bob---------25-------------│
@@ -225,7 +225,7 @@ defmodule Orange.Component.TableTest do
         snapshot,
         """
         ╭────────────────────────────╮
-        │-Name-(n)----Age-(a)--------│
+        │-Name (n)----Age (a)--------│
         ├────────────────────────────┤
         │-Alice-------30-------------│
         │-Bob---------25-------------│
@@ -252,7 +252,7 @@ defmodule Orange.Component.TableTest do
         snapshot,
         """
         ╭────────────────────────────╮
-        │-Name-(n)----Age-(a)--------│
+        │-Name (n)----Age (a)--------│
         ├────────────────────────────┤
         │ Alice       30        -----│
         │-Bob---------25-------------│
@@ -282,7 +282,7 @@ defmodule Orange.Component.TableTest do
         snapshot1,
         """
         ╭────────────────────────────╮
-        │-Name-(n)----Age-(a)--------│
+        │-Name (n)----Age (a)--------│
         ├────────────────────────────┤
         │ David       40        -----│
         │-Eve---------28-------------│
@@ -295,7 +295,7 @@ defmodule Orange.Component.TableTest do
         snapshot2,
         """
         ╭────────────────────────────╮
-        │-Name-(n)----Age-(a)--------│
+        │-Name (n)----Age (a)--------│
         ├────────────────────────────┤
         │ Alice       30        -----│
         │-Bob---------25-------------│
@@ -321,7 +321,7 @@ defmodule Orange.Component.TableTest do
         snapshot,
         """
         ╭────────────────────────────╮
-        │-Name-(n)----Age-(a)--------│
+        │-Name (n)----Age (a)--------│
         ├────────────────────────────┤
         │ David       40        -----│
         │-Eve---------28-------------│
@@ -347,7 +347,7 @@ defmodule Orange.Component.TableTest do
         snapshot,
         """
         ╭────────────────────────────╮
-        │-Name-(n)----Age-(a)--------│
+        │-Name (n)----Age (a)--------│
         ├────────────────────────────┤
         │ Alice       30        -----│
         │-Bob---------25-------------│
@@ -380,7 +380,7 @@ defmodule Orange.Component.TableTest do
         snapshot1,
         """
         ╭────────────────────────────╮
-        │-Name-(n) ▼--Age-(a)--------│
+        │-Name (n) ▼--Age (a)--------│
         ├────────────────────────────┤
         │ Frank       33        -----│
         │-Eve---------28-------------│
@@ -396,7 +396,7 @@ defmodule Orange.Component.TableTest do
         snapshot2,
         """
         ╭────────────────────────────╮
-        │-Name-(n) ▲--Age-(a)--------│
+        │-Name (n) ▲--Age (a)--------│
         ├────────────────────────────┤
         │ Alice       30        -----│
         │-Bob---------25-------------│
