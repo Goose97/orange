@@ -113,6 +113,17 @@ defmodule Orange.Renderer.Buffer do
     %{buffer | rows: :array.set(y, updated_row, buffer.rows)}
   end
 
+  def write_row_cells(buffer, y, cells) when is_list(cells) do
+    row_to_update = :array.get(y, buffer.rows)
+
+    updated_row =
+      Enum.reduce(cells, row_to_update, fn {x, cell}, row_acc ->
+        :array.set(x, cell, row_acc)
+      end)
+
+    %{buffer | rows: :array.set(y, updated_row, buffer.rows)}
+  end
+
   def clear_area(buffer, %Renderer.Area{width: 0}), do: buffer
   def clear_area(buffer, %Renderer.Area{height: 0}), do: buffer
 
@@ -234,4 +245,9 @@ defmodule Orange.Renderer.Buffer do
   end
 
   def size(%__MODULE__{size: size}), do: size
+
+  def out_of_bound_write?(%{size: nil} = %__MODULE__{}, _x, _y), do: false
+
+  def out_of_bound_write?(%{size: {width, height}} = %__MODULE__{}, x, y),
+    do: x >= width or y >= height
 end

@@ -646,34 +646,37 @@ defmodule Orange.Renderer do
 
       # Iterate through the visible area of the scrollable buffer
       Enum.reduce(
-        inner_content_offset_y..(inner_content_offset_y + inner_height - 1),
+        0..(inner_height - 1),
         buffer,
-        fn column, acc_buffer ->
-          scroll_cell_column = scroll_y_offset + column
+        fn row_index, acc_buffer ->
+          row = inner_content_offset_y + row_index
+          y = node.abs_y + row
 
-          Enum.reduce(
-            inner_content_offset_x..(inner_content_offset_x + inner_width - 1),
-            acc_buffer,
-            fn row, acc_buffer ->
-              scroll_cell_row = scroll_x_offset + row
+          cells_to_write =
+            Enum.flat_map(
+              0..(inner_width - 1),
+              fn column_index ->
+                column = inner_content_offset_x + column_index
 
-              cell = Buffer.get_cell(scrollable_buffer, {scroll_cell_row, scroll_cell_column})
+                cell =
+                  Buffer.get_cell(
+                    scrollable_buffer,
+                    {scroll_x_offset + column, scroll_y_offset + row}
+                  )
 
-              if cell != :undefined do
-                {buffer_width, buffer_height} = buffer.size || {nil, nil}
-                x = node.abs_x + row
-                y = node.abs_y + column
-
-                cond do
-                  buffer_width && x >= buffer_width -> acc_buffer
-                  buffer_height && y >= buffer_height -> acc_buffer
-                  true -> Buffer.write_cell(acc_buffer, {x, y}, cell)
+                with(
+                  true <- cell != :undefined,
+                  x = node.abs_x + column,
+                  false <- Buffer.out_of_bound_write?(buffer, x, y)
+                ) do
+                  [{x, cell}]
+                else
+                  _ -> []
                 end
-              else
-                acc_buffer
               end
-            end
-          )
+            )
+
+          Buffer.write_row_cells(acc_buffer, y, cells_to_write)
         end
       )
     end
