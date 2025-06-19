@@ -432,7 +432,7 @@ defmodule Orange.Component.Table do
                 width = Enum.at(column_widths, index)
 
                 rect style: [width: width, height: 1] do
-                  {:raw_text, :row, content}
+                  {:raw_text, :row, %{text: content, color: row_style[:color]}}
                 end
               end)
 
