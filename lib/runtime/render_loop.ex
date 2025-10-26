@@ -332,12 +332,12 @@ defmodule Orange.Runtime.RenderLoop do
   # If a component is dirty, all of its descendants is dirty too.
   defp expand_with_prev(
          %CustomComponent{module: module, attributes: attrs},
-         %CustomComponent{module: module} = previous_component,
+         %CustomComponent{module: module, ref: previous_ref} = previous_component,
          opts
        ) do
-    %{state: state} = Runtime.ComponentRegistry.get(previous_component.ref)
+    %{state: state} = Runtime.ComponentRegistry.get(previous_ref)
 
-    Runtime.ComponentRegistry.update_attributes(previous_component.ref, attrs)
+    Runtime.ComponentRegistry.update_attributes(previous_ref, attrs)
 
     state =
       with true <- function_exported?(module, :before_update, 3),
@@ -345,9 +345,9 @@ defmodule Orange.Runtime.RenderLoop do
              apply(module, :before_update, [
                state,
                attrs,
-               &update_callback(previous_component.ref, &1)
+               &update_callback(previous_ref, &1)
              ]) do
-        Runtime.ComponentRegistry.update_state(previous_component.ref, new_state)
+        Runtime.ComponentRegistry.update_state(previous_ref, new_state)
         new_state
       else
         _ -> state
@@ -356,14 +356,14 @@ defmodule Orange.Runtime.RenderLoop do
     dirty_components = Keyword.get(opts, :dirty_components, [])
     subtree_dirty? = Keyword.get(opts, :subtree_dirty?, false)
 
-    is_dirty = subtree_dirty? or previous_component.ref in dirty_components
+    is_dirty = subtree_dirty? or previous_ref in dirty_components
 
     render_result =
       if is_dirty do
         apply(module, :render, [
           state,
           attrs,
-          &update_callback(previous_component.ref, &1)
+          &update_callback(previous_ref, &1)
         ])
       else
         # Optimization: if the current component is not dirty, we can reuse the previous component children
