@@ -1,5 +1,60 @@
 # Changelog
 
+## [1.1.0](https://github.com/Goose97/orange/compare/v1.0.0...v1.1.0) (2025-06-19)
+
+
+### Features
+
+* add custom key actions for table rows with new `actions` attribute ([98b1dbf](https://github.com/Goose97/orange/commit/98b1dbfd156f56ba90e70863a5576da8f4872ad5))
+* add customizable colors for table components via `:colors` attribute ([8036bb1](https://github.com/Goose97/orange/commit/8036bb112ad06835eed5f7f8b5408fc2a98b4bcc))
+* add Inspect protocol implementation for Buffer struct ([1d64dcb](https://github.com/Goose97/orange/commit/1d64dcb355d19ac9cda830005dca84a2f969af52))
+* add Inspect protocol implementation for Buffer struct ([edf54eb](https://github.com/Goose97/orange/commit/edf54ebbc3632bb8e72a11e7d3ec663988c0e63f))
+* Add inspect protocol implementation for OutputTreeNode struct ([1d64dcb](https://github.com/Goose97/orange/commit/1d64dcb355d19ac9cda830005dca84a2f969af52))
+* Add inspect protocol implementation for OutputTreeNode struct ([edf54eb](https://github.com/Goose97/orange/commit/edf54ebbc3632bb8e72a11e7d3ec663988c0e63f))
+* add list component ([f70eed8](https://github.com/Goose97/orange/commit/f70eed8f9792bbb8eff7ddb1823f1211d0b7fc6c))
+* Add optional padding and margin support in Rust NIF function ([1a95c15](https://github.com/Goose97/orange/commit/1a95c15cbb574960586d447ecbb19090fa28e1f2))
+* add Orange.terminal_size/0 API ([f37fdb2](https://github.com/Goose97/orange/commit/f37fdb23e1e6ddfc7ca57168cffa005a6fac6381))
+* add raw text ([56d23e0](https://github.com/Goose97/orange/commit/56d23e0f80e4f3d5cfedd4a1bb4f88d8b342812b))
+* add row_reverse and column_reverse direction ([ef1e927](https://github.com/Goose97/orange/commit/ef1e9274be02f65b1c7468c0da5c0cb98a6e0720))
+* add table component ([f839225](https://github.com/Goose97/orange/commit/f839225e47a41ed48481d041cdd5f073868a6d5d))
+* Add test case for empty string in text_utils ([09b1a49](https://github.com/Goose97/orange/commit/09b1a49e3e9ae3a86c82d6d611dc6ecaa29375f3))
+* Handle empty string case in split_with_whitespaces function ([c81ca59](https://github.com/Goose97/orange/commit/c81ca5931ac3083f5f44589ca94fd024ac1f4d3c))
+* **list:** auto scroll selected item into view during initial render ([8a09fc7](https://github.com/Goose97/orange/commit/8a09fc7333a647f495bc250c3a528bc8b631dfef))
+* **list:** full width inner content ([e9d5266](https://github.com/Goose97/orange/commit/e9d5266b7d3e71245dd5f2ff4ead5eaae2f8f967))
+* **nif:** schedule nif on dirtycpu scheduler ([2441c09](https://github.com/Goose97/orange/commit/2441c098d5cc28f4cfb35403c2b43a0b720867e6))
+* support raw_text in title and footer ([038a4cf](https://github.com/Goose97/orange/commit/038a4cfdeb7853ef519b4a4fafeb417c229ba99d))
+* support text_modifiers for raw_text ([415ccee](https://github.com/Goose97/orange/commit/415ccee1d701dcaaa5305d9322f86c6a09f50649))
+* **table:** add sort_key_color attrs ([6e2943d](https://github.com/Goose97/orange/commit/6e2943d4c68dcd20844f56a440addc525363c987))
+* **table:** make selected_row_index optional ([83f2a92](https://github.com/Goose97/orange/commit/83f2a92c47d94e047316fd341175a716a113e132))
+* **table:** more colors customization ([7775ea0](https://github.com/Goose97/orange/commit/7775ea0c55665d0d7e153298e3e8466250b1262f))
+* **trace:** add tracing ([44dbfe7](https://github.com/Goose97/orange/commit/44dbfe7d93ae1ae5cbe3552a12a43bfdffe38bf3))
+
+
+### Bug Fixes
+
+* crash on negative x/y ([bf4da34](https://github.com/Goose97/orange/commit/bf4da34b4bd2a58defe9988f2ee5f885ce336bcd))
+* crash when render only whitespace string ([2dc1ab4](https://github.com/Goose97/orange/commit/2dc1ab493f321b8e6efbbcc2920b41196566cd0e))
+* crash when style is not specified ([1c80395](https://github.com/Goose97/orange/commit/1c8039581f18b43145244d40dac575d8de7fe75d))
+* layout rounding off-by-one bug ([70925c1](https://github.com/Goose97/orange/commit/70925c1bae7b008d5dccd31789e5e9de95d87da5))
+* **list:** optional on_scroll_offset_change ([4d5c2ae](https://github.com/Goose97/orange/commit/4d5c2ae20eb90212341c86f54e2a2c9bc3b2dc33))
+* measure size when height is 0 ([dca0ada](https://github.com/Goose97/orange/commit/dca0ada1705b1064410b969346347cb762ef643a))
+* row_style color doesn't work ([de6dc52](https://github.com/Goose97/orange/commit/de6dc52e84519c9d2c5fba772246468424cea71d))
+* **table:** empty table footer ([4bcb491](https://github.com/Goose97/orange/commit/4bcb4912a8f6adb32b45f4472d0fc556a17bcd24))
+
+
+### Performance Improvements
+
+* batch multiple state updates in a single event handling phase ([fff8c35](https://github.com/Goose97/orange/commit/fff8c35fb5939b88459b283b99b1b2ac55121a0d))
+* improve buffer write ([d5c2c33](https://github.com/Goose97/orange/commit/d5c2c33a5734515a4cd5effb063874956d29ca0d))
+* improve children diff ([d3705d9](https://github.com/Goose97/orange/commit/d3705d95537d4590e5ff62da73894ca1f631050b))
+* improve component render pass ([1f93c00](https://github.com/Goose97/orange/commit/1f93c00798768f1483f8b01e0243b9407b5e3dac))
+* improve scrollable render performance ([39e6fea](https://github.com/Goose97/orange/commit/39e6fea6fafa428b02e4790dbda301421ed23de4))
+* improve to_input_tree performance ([ff62488](https://github.com/Goose97/orange/commit/ff62488963bc6890359dbb7728f4b4be9329e4a8))
+* **nif:** remove unnecessary clone ([b5629cc](https://github.com/Goose97/orange/commit/b5629cc933f1b32965ff87f34a16910eee2a85c6))
+* reduce NIF overhead ([aadaeb3](https://github.com/Goose97/orange/commit/aadaeb3684f3f14f2fcf27759bed386b56a48f6c))
+* **table:** improve table render performance ([654f58b](https://github.com/Goose97/orange/commit/654f58b53c91f8161b476c7623e084b19bad183f))
+* use Map.merge instead of creating new map ([8b60629](https://github.com/Goose97/orange/commit/8b60629745ac054ebf6d17ba1dc5fbf1b6f4f68d))
+
 ## [1.0.0](https://github.com/Goose97/orange/compare/v0.5.0...v1.0.0) (2025-03-22)
 
 
